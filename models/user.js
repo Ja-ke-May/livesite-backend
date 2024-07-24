@@ -39,6 +39,11 @@ const userSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  supportedUsers: {
+    type: [mongoose.Schema.Types.ObjectId],
+    ref: 'User',
+    default: []
+  },
   links: {
     type: [String], 
     default: []
@@ -54,6 +59,10 @@ const userSchema = new mongoose.Schema({
   strikes: {
     type: Number,
     default: 0
+  },
+  lastUsernameChange: {
+    type: Date,
+    default: null
   },
 });
 

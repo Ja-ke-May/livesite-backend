@@ -2,10 +2,13 @@ const express = require('express');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const cors = require('cors');
-const bodyParser = require('body-parser'); // Import body-parser
-const helmet = require('helmet'); // For security
-const rateLimit = require('express-rate-limit'); // For rate limiting
-const userRoutes = require('./routes/userRoutes'); // Adjust path as necessary
+const bodyParser = require('body-parser');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+const multer = require('multer');
+const authMiddleware = require('./middleware/authMiddleware');
+const User = require('./models/user');
+const fs = require('fs');
 
 dotenv.config();
 
@@ -13,24 +16,53 @@ const app = express();
 const port = process.env.PORT || 5000;
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: 'http://localhost:3000',
+  credentials: true,
+}));
 app.use(helmet());
-app.use(bodyParser.json());
+app.use(bodyParser.json({ limit: '10mb' })); // Increase the limit if needed
 
 // Rate Limiting
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100 // limit each IP to 100 requests per windowMs
+  windowMs: 15 * 60 * 1000,
+  max: 100,
 });
 app.use(limiter);
 
 // Database Connection
-mongoose.connect(process.env.MONGODB_URI, {})
+mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log('Connected to MongoDB'))
   .catch(err => console.error('Could not connect to MongoDB', err));
 
+// Multer setup (for handling file uploads)
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
+
+// Routes
+app.post('/api/profile-picture', upload.single('profilePicture'), authMiddleware, async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+
+    const userId = req.user.userId;
+    const profilePictureBase64 = req.file.buffer.toString('base64');
+
+    const user = await User.findByIdAndUpdate(userId, { profilePicture: profilePictureBase64 }, { new: true });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json({ profilePicture: profilePictureBase64 });
+  } catch (err) {
+    console.error('Error uploading profile picture:', err);
+    res.status(500).json({ error: 'Server error, please try again later' });
+  }
+});
+
 // Use Routes
-app.use('/api', userRoutes);
+app.use('/api', require('./routes/userRoutes'));
 
 // Start Server
 app.listen(port, () => {
