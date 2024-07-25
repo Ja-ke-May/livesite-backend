@@ -44,10 +44,11 @@ const userSchema = new mongoose.Schema({
     ref: 'User',
     default: []
   },
-  links: {
-    type: [String], 
-    default: []
-  },
+  links: [{
+    text: String,
+    url: String,
+    imageUrl: String,
+  }],
   results: {
     type: String,
     default: ''

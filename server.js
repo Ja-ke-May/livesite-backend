@@ -7,8 +7,8 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const multer = require('multer');
 const authMiddleware = require('./middleware/authMiddleware');
+const userRoutes = require('./routes/userRoutes');
 const User = require('./models/user');
-const fs = require('fs');
 
 dotenv.config();
 
@@ -21,7 +21,7 @@ app.use(cors({
   credentials: true,
 }));
 app.use(helmet());
-app.use(bodyParser.json({ limit: '10mb' })); // Increase the limit if needed
+app.use(bodyParser.json({ limit: '10mb' }));
 
 // Rate Limiting
 const limiter = rateLimit({
@@ -37,7 +37,7 @@ mongoose.connect(process.env.MONGODB_URI)
 
 // Multer setup (for handling file uploads)
 const storage = multer.memoryStorage();
-const upload = multer({ storage: storage });
+const upload = multer({ storage });
 
 // Routes
 app.post('/api/profile-picture', upload.single('profilePicture'), authMiddleware, async (req, res) => {
@@ -62,7 +62,7 @@ app.post('/api/profile-picture', upload.single('profilePicture'), authMiddleware
 });
 
 // Use Routes
-app.use('/api', require('./routes/userRoutes'));
+app.use('/api', userRoutes);
 
 // Start Server
 app.listen(port, () => {

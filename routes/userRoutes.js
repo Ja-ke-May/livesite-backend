@@ -2,10 +2,10 @@ const express = require('express');
 const User = require('../models/user');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const router = express.Router();
 const authMiddleware = require('../middleware/authMiddleware');
 const multer = require('multer');
 
+const router = express.Router();
 const storage = multer.memoryStorage();
 const fileFilter = (req, file, cb) => {
   const validImageTypes = ['image/jpeg', 'image/png', 'image/gif'];
@@ -16,21 +16,9 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
-const upload = multer({ storage: storage, fileFilter: fileFilter });
+const upload = multer({ storage, fileFilter });
 
-router.post('/profile-picture', (req, res, next) => {
-  upload.single('profilePicture')(req, res, (err) => {
-    if (err instanceof multer.MulterError) {
-      // Handle Multer errors
-      return res.status(400).json({ message: err.message });
-    } else if (err) {
-      // Handle other errors
-      return res.status(400).json({ message: err.message });
-    }
-
-    next();
-  });
-}, authMiddleware, async (req, res) => {
+router.post('/profile-picture', upload.single('profilePicture'), authMiddleware, async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ message: 'No file uploaded' });
@@ -47,7 +35,7 @@ router.post('/profile-picture', (req, res, next) => {
     res.json({ profilePicture: profilePictureBase64 });
   } catch (err) {
     console.error('Error uploading profile picture:', err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Server error, please try again later' });
   }
 });
 
@@ -109,12 +97,13 @@ router.post('/login', async (req, res) => {
 
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
 
-    res.json({ message: 'Login successful', token });
+    res.json({ message: 'Login successful', token, username: user.userName }); // Return the username
   } catch (err) {
     console.error('Error during login:', err);
     res.status(500).json({ error: err.message });
   }
 });
+
 
 router.get('/check-username/:username', async (req, res) => {
   try {
@@ -131,19 +120,22 @@ router.get('/check-username/:username', async (req, res) => {
   }
 });
 
-router.get('/profile', authMiddleware, async (req, res) => {
+// Fetch user profile
+router.get('/profile/:username', authMiddleware, async (req, res) => {
   try {
-    const user = await User.findById(req.user.userId).select('-password');
+    const { username } = req.params;
+    const user = await User.findOne({ userName: username }).select('-password'); 
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
     res.json(user);
   } catch (err) {
     console.error('Error fetching user profile:', err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ message: 'Server error, please try again later' });
   }
 });
 
+// Update username
 router.put('/profile/username', authMiddleware, async (req, res) => {
   try {
     const { userName } = req.body;
@@ -205,16 +197,12 @@ router.put('/profile/bio', authMiddleware, async (req, res) => {
   }
 });
 
-
-// Fetch supporters count and user support status
 router.get('/supporters', authMiddleware, async (req, res) => {
   try {
     const { username } = req.query;
-    console.log('Fetching supporters for username:', username);
     const user = await User.findOne({ userName: username });
 
     if (!user) {
-      console.log('User not found:', username);
       return res.status(404).json({ message: 'User not found' });
     }
 
@@ -226,15 +214,12 @@ router.get('/supporters', authMiddleware, async (req, res) => {
   }
 });
 
-// Toggle support status
 router.post('/supporters/toggle', authMiddleware, async (req, res) => {
   try {
     const { username } = req.body;
-    console.log('Toggling support for username:', username);
     const user = await User.findOne({ userName: username });
 
     if (!user) {
-      console.log('User not found:', username);
       return res.status(404).json({ message: 'User not found' });
     }
 
@@ -253,6 +238,64 @@ router.post('/supporters/toggle', authMiddleware, async (req, res) => {
     res.json({ supportersCount: user.supporters, isSupported: !isUserSupported });
   } catch (err) {
     console.error('Error toggling support status:', err);
+    res.status(500).json({ error: 'Server error, please try again later' });
+  }
+});
+
+
+// Add a new link
+router.post('/profile/link', upload.single('image'), authMiddleware, async (req, res) => {
+  try {
+    const { text, url } = req.body;
+    const user = await User.findById(req.user.userId);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    let imageUrl = '';
+    if (req.file) {
+      imageUrl = req.file.buffer.toString('base64');
+    }
+
+    user.links.push({ text, url, imageUrl });
+    await user.save();
+
+    res.json(user.links);
+  } catch (err) {
+    console.error('Error adding link:', err);
+    res.status(500).json({ error: 'Server error, please try again later' });
+  }
+});
+
+// Delete a link
+router.delete('/profile/link/:linkId', authMiddleware, async (req, res) => {
+  try {
+    const { linkId } = req.params;
+    const userId = req.user.userId;
+
+    console.log(`Attempting to delete link with ID: ${linkId} for user: ${userId}`);
+
+    const user = await User.findById(userId);
+
+    if (!user) {
+      console.log(`User not found: ${userId}`);
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const linkIndex = user.links.findIndex(link => link._id.toString() === linkId);
+    if (linkIndex === -1) {
+      console.log(`Link not found: ${linkId}`);
+      return res.status(404).json({ message: 'Link not found' });
+    }
+
+    user.links.splice(linkIndex, 1); // Remove the link
+    await user.save();
+
+    console.log(`Link deleted successfully: ${linkId}`);
+    res.json(user.links);
+  } catch (err) {
+    console.error('Error deleting link:', err);
     res.status(500).json({ error: 'Server error, please try again later' });
   }
 });
