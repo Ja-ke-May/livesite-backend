@@ -95,7 +95,9 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ message: 'Password incorrect' });
     }
 
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET,);
+
+    // { expiresIn: '72h' } 
 
     res.json({ message: 'Login successful', token, username: user.userName }); // Return the username
   } catch (err) {
@@ -224,24 +226,35 @@ router.post('/supporters/toggle', authMiddleware, async (req, res) => {
     }
 
     const userId = req.user.userId;
+    const supporter = await User.findById(userId);
+
+    if (!supporter) {
+      return res.status(404).json({ message: 'Supporter not found' });
+    }
+
     const isUserSupported = user.supportedUsers.includes(userId);
 
     if (isUserSupported) {
       user.supportedUsers.pull(userId);
       user.supporters -= 1;
+      user.recentActivity.push(`${supporter.userName} removed support from ${user.userName}`);
+      supporter.recentActivity.push(`${supporter.userName} removed support from ${user.userName}`);
     } else {
       user.supportedUsers.push(userId);
       user.supporters += 1;
+      user.recentActivity.push(`${supporter.userName} supported ${user.userName}`);
+      supporter.recentActivity.push(`${supporter.userName} supported ${user.userName}`);
     }
 
     await user.save();
+    await supporter.save();
+
     res.json({ supportersCount: user.supporters, isSupported: !isUserSupported });
   } catch (err) {
     console.error('Error toggling support status:', err);
     res.status(500).json({ error: 'Server error, please try again later' });
   }
 });
-
 
 // Add a new link
 router.post('/profile/link', upload.single('image'), authMiddleware, async (req, res) => {
@@ -296,6 +309,23 @@ router.delete('/profile/link/:linkId', authMiddleware, async (req, res) => {
     res.json(user.links);
   } catch (err) {
     console.error('Error deleting link:', err);
+    res.status(500).json({ error: 'Server error, please try again later' });
+  }
+});
+
+// Fetch recent activity
+router.get('/recent-activity/:username', authMiddleware, async (req, res) => {
+  try {
+    const { username } = req.params;
+    const user = await User.findOne({ userName: username });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json(user.recentActivity);
+  } catch (err) {
+    console.error('Error fetching recent activity:', err);
     res.status(500).json({ error: 'Server error, please try again later' });
   }
 });
