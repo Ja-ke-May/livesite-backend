@@ -32,6 +32,9 @@ router.post('/profile-picture', upload.single('profilePicture'), authMiddleware,
       return res.status(404).json({ message: 'User not found' });
     }
 
+    user.recentActivity.push(`${user.userName} updated their profile picture`);
+    await user.save();
+
     res.json({ profilePicture: profilePictureBase64 });
   } catch (err) {
     console.error('Error uploading profile picture:', err);
@@ -190,6 +193,7 @@ router.put('/profile/bio', authMiddleware, async (req, res) => {
     }
 
     user.bio = bio;
+    user.recentActivity.push(`${user.userName} updated their bio`);
     await user.save();
 
     res.json({ message: 'Bio updated successfully', bio: user.bio });
@@ -272,6 +276,7 @@ router.post('/profile/link', upload.single('image'), authMiddleware, async (req,
     }
 
     user.links.push({ text, url, imageUrl });
+    user.recentActivity.push(`${user.userName} added a new link: ${text}`);
     await user.save();
 
     res.json(user.links);
