@@ -129,7 +129,7 @@ router.get('/check-username/:username', async (req, res) => {
 router.get('/profile/:username', authMiddleware, async (req, res) => {
   try {
     const { username } = req.params;
-    const user = await User.findOne({ userName: username }).select('-password'); 
+    const user = await User.findOne({ userName: username }).select('-password -otherUnnecessaryFields'); 
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
