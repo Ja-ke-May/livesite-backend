@@ -241,8 +241,6 @@ router.post('/supporters/toggle', authMiddleware, async (req, res) => {
     if (isUserSupported) {
       user.supportedUsers.pull(userId);
       user.supporters -= 1;
-      user.recentActivity.push(`${supporter.userName} removed support from ${user.userName}`);
-      supporter.recentActivity.push(`${supporter.userName} removed support from ${user.userName}`);
     } else {
       user.supportedUsers.push(userId);
       user.supporters += 1;
