@@ -77,7 +77,62 @@ app.use('/api', userRoutes);
 // WebSocket signaling
 const liveQueue = [];
 const liveUsers = new Set();  // Track users who are currently live
-const activeStreams = new Map(); // Track active streams
+const activeStreams = new Map(); // Track active streams 
+let currentStreamer = null;
+
+// Online users tracking
+const onlineUsers = new Set();
+
+const timers = {}; // Store timers for each live user
+
+const startTimer = (userId) => {
+  if (timers[userId]) {
+    clearInterval(timers[userId]);
+  }
+  let timer = 60;
+  timers[userId] = setInterval(() => {
+    timer -= 1;
+    io.emit("timer-update", userId, timer);
+    if (timer <= 0) {
+      clearInterval(timers[userId]);
+      io.emit("timer-end", userId);
+      stopLiveStream(userId); // Stop live stream when timer ends
+    }
+  }, 1000);
+};
+
+const extendTimer = (userId, additionalTime) => {
+  if (timers[userId]) {
+    clearInterval(timers[userId]);
+  }
+  let timer = additionalTime;
+  timers[userId] = setInterval(() => {
+    timer -= 1;
+    io.emit("timer-update", userId, timer);
+    if (timer <= 0) {
+      clearInterval(timers[userId]);
+      io.emit("timer-end", userId);
+      stopLiveStream(userId); // Stop live stream when timer ends
+    }
+  }, 1000);
+};
+
+const stopTimer = (userId) => {
+  if (timers[userId]) {
+    clearInterval(timers[userId]);
+    delete timers[userId];
+  }
+};
+
+const stopLiveStream = (userId) => {
+  liveQueue.shift();
+  liveUsers.delete(userId);
+  activeStreams.delete(userId);
+  updateLiveUsers();
+  notifyNextUserInQueue();
+  io.emit('main-feed', null);
+  stopTimer(userId);
+};
 
 const notifyNextUserInQueue = () => {
   if (liveQueue.length > 0) {
@@ -92,8 +147,28 @@ const notifyNextUserInQueue = () => {
 const updateLiveUsers = () => {
   io.emit('live-users', Array.from(liveUsers)); // Broadcast the list of live users
 };
+
 io.on("connection", (socket) => {
   console.log(`New client connected: ${socket.id}`);
+
+  onlineUsers.add(socket.id);
+
+  io.emit('update-online-users', Array.from(onlineUsers).length);
+
+  // Handle the set-initial-vote event
+  socket.on("set-initial-vote", (initialVote) => {
+    console.log(`Setting initial vote for ${socket.id} to ${initialVote}`);
+    io.emit('vote-update', initialVote); // Broadcast the initial vote position
+  });
+
+  socket.on("vote", (newPosition) => {
+    io.emit('vote-update', newPosition);
+    if (newPosition >= 100) {
+      extendTimer(socket.id, 60); // Extend timer by 60 seconds
+    } else if (newPosition <= 0) {
+      stopLiveStream(socket.id); // Kick the main feed
+    }
+  });
 
   // Send current live stream info to new client
   if (liveUsers.size > 0) {
@@ -114,7 +189,8 @@ io.on("connection", (socket) => {
     liveUsers.add(socket.id);  // Add user to the live users set
     activeStreams.set(socket.id, socket.id);  // Track active stream
     updateLiveUsers();  // Update all clients with the new list of live users
-    io.emit('main-feed', socket.id); // Broadcast the live stream id to all clients
+    io.emit('main-feed', socket.id); // Broadcast the live stream id to all clients 
+    startTimer(socket.id);
   });
 
   socket.on("request-offer", (liveUserId) => {
@@ -122,9 +198,13 @@ io.on("connection", (socket) => {
   });
 
   socket.on("offer", (id, offer) => {
-    console.log(`Client ${socket.id} sending offer to ${id}`);
-    socket.to(id).emit("offer", socket.id, offer);
+    try {
+      socket.to(id).emit("offer", socket.id, offer);
+    } catch (error) {
+      console.error(`Error sending offer from ${socket.id} to ${id}:`, error);
+    }
   });
+  
 
   socket.on("answer", (id, answer) => {
     console.log(`Client ${socket.id} sending answer to ${id}`);
@@ -143,23 +223,35 @@ io.on("connection", (socket) => {
     activeStreams.delete(socket.id);
     updateLiveUsers();  // Update all clients with the new list of live users
     notifyNextUserInQueue();
-    io.emit('main-feed', null); // Notify all clients that the live stream has stopped
+    io.emit('main-feed', null); // Notify all clients that the live stream has stopped 
+    stopTimer(socket.id);
   });
 
   socket.on("disconnect", () => {
     console.log(`Client disconnected: ${socket.id}`);
-    const index = liveQueue.indexOf(socket.id);
-    if (index > -1) {
-      liveQueue.splice(index, 1);
-      liveUsers.delete(socket.id);  // Remove user from the live users set
-      activeStreams.delete(socket.id);
-      updateLiveUsers();  // Update all clients with the new list of live users
+    onlineUsers.delete(socket.id);
+    const queueIndex = liveQueue.indexOf(socket.id);
+    if (queueIndex !== -1) {
+      liveQueue.splice(queueIndex, 1);
+    }
+    if (currentStreamer === socket.id) {
+      currentStreamer = null;
       notifyNextUserInQueue();
     }
+    liveUsers.delete(socket.id);
+    activeStreams.delete(socket.id);
+    updateLiveUsers(); 
+    stopTimer(socket.id);
     socket.broadcast.emit("peer-disconnected", socket.id);
   });
+  
 });
 
+
+// Endpoint to get the number of online users
+app.get('/api/online-users', (req, res) => {
+  res.json({ viewers: onlineUsers.size });
+});
 
 server.listen(port, () => {
   console.log(`Server is running on port ${port}`);
