@@ -11,44 +11,51 @@ const timers = {}; // Store timers for each live user
 let slidePosition = 50; // Initial slide position
 let slidePositionAmount = 5; // Initial slide position amount
 
-const startTimer = (userId, io, stopLiveStream) => {
-  if (timers[userId]) {
-    clearInterval(timers[userId]);
+const startTimer = (userId, io, stopLiveStream, additionalTime = 0) => {
+  if (timers[userId] && timers[userId].interval) {
+    clearInterval(timers[userId].interval);
   }
-  let timer = 60;
-  timers[userId] = setInterval(() => {
-    timer -= 1;
-    io.emit("timer-update", userId, timer);
-    if (timer <= 0) {
-      clearInterval(timers[userId]);
-      io.emit("timer-end", userId);
-      stopLiveStream(userId, io);
+
+  if (!timers[userId]) {
+    timers[userId] = {};
+  }
+
+  // Add the additional time (e.g., 60 seconds) to the current time
+  timers[userId].currentTime = (timers[userId].currentTime || 60) + additionalTime;
+
+  // Emit the updated timer to the client immediately
+  io.emit("timer-update", userId, timers[userId].currentTime);
+
+  timers[userId].interval = setInterval(() => {
+    if (timers[userId].currentTime > 0) {
+      timers[userId].currentTime -= 1;
+      io.emit("timer-update", userId, timers[userId].currentTime); // Emit the current time to clients
+  
+      if (timers[userId].currentTime <= 0) {
+        clearInterval(timers[userId].interval);
+        delete timers[userId];
+        io.emit("timer-end", userId);
+        stopLiveStream(userId, io);
+      }
     }
   }, 1000);
 };
 
-const extendTimer = (userId, additionalTime, io, stopLiveStream) => {
-  if (timers[userId]) {
-    clearInterval(timers[userId]);
-  }
-  let timer = additionalTime;
-  timers[userId] = setInterval(() => {
-    timer -= 1;
-    io.emit("timer-update", userId, timer);
-    if (timer <= 0) {
-      clearInterval(timers[userId]);
-      io.emit("timer-end", userId);
-      stopLiveStream(userId, io);
-    }
-  }, 1000);
-};
 
 const stopTimer = (userId) => {
   if (timers[userId]) {
-    clearInterval(timers[userId]);
+    clearInterval(timers[userId].interval);
     delete timers[userId];
   }
 };
+
+const addTime = (userId, io) => {
+  if (timers[userId]) {
+    timers[userId].currentTime += 60; // Add 60 seconds to the current time
+    io.emit("timer-update", userId, timers[userId].currentTime); // Emit the updated time
+  }
+};
+
 
 const stopLiveStream = (userId, io) => {
   liveQueue.shift();
@@ -95,17 +102,24 @@ const handleSocketConnection = (io) => {
     socket.on("vote", (newPosition) => {
       slidePosition = newPosition;
       io.emit('vote-update', slidePosition);
-
+    
       if (slidePosition >= 100) {
         slidePositionAmount /= 2; // Halve the distance each time it reaches 100
         io.emit('current-slide-amount', slidePositionAmount); // Broadcast new slide amount
-        extendTimer(socket.id, 60, io, stopLiveStream); // Extend timer by 60 seconds
+        
+        if (currentStreamer) {
+          addTime(currentStreamer, io); // Pass io to addTime
+        }
+    
+        slidePosition = 50; // Reset the slide position after adding time
+        io.emit('vote-update', slidePosition); // Broadcast the reset vote position
       } else if (slidePosition <= 0) {
         slidePositionAmount = 5; // Reset slide position amount
         io.emit('current-slide-amount', slidePositionAmount); // Broadcast reset slide amount
         stopLiveStream(socket.id, io); // Kick the main feed
       }
     });
+    
   
     if (liveUsers.size > 0) {
       const currentLiveUser = Array.from(liveUsers)[0];
@@ -124,6 +138,7 @@ const handleSocketConnection = (io) => {
       console.log(`Client ${socket.id} going live`);
       liveUsers.add(socket.id);  // Add user to the live users set
       activeStreams.set(socket.id, socket.id);  // Track active stream
+      currentStreamer = socket.id;  
       updateLiveUsers(io);  // Update all clients with the new list of live users
       io.emit('main-feed', socket.id); // Broadcast the live stream id to all clients 
       startTimer(socket.id, io, stopLiveStream);
