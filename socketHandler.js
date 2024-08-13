@@ -20,16 +20,13 @@ const startTimer = (username, io, stopLiveStream, additionalTime = 0) => {
     timers[username] = {};
   }
 
-  // Add the additional time (e.g., 60 seconds) to the current time
   timers[username].currentTime = (timers[username].currentTime || 60) + additionalTime;
-
-  // Emit the updated timer to the client immediately
   io.emit("timer-update", username, timers[username].currentTime);
 
   timers[username].interval = setInterval(() => {
     if (timers[username].currentTime > 0) {
       timers[username].currentTime -= 1;
-      io.emit("timer-update", username, timers[username].currentTime); // Emit the current time to clients
+      io.emit("timer-update", username, timers[username].currentTime);
 
       if (timers[username].currentTime <= 0) {
         clearInterval(timers[username].interval);
@@ -45,68 +42,85 @@ const stopTimer = (username) => {
   if (timers[username]) {
     clearInterval(timers[username].interval);
     delete timers[username];
+    console.log(`Timer stopped for user: ${username}`);
   }
 };
 
 const addTime = (username, io) => {
   if (timers[username]) {
-    timers[username].currentTime += 60; // Add 60 seconds to the current time
-    io.emit("timer-update", username, timers[username].currentTime); // Emit the updated time
+    timers[username].currentTime += 60; 
+    io.emit("timer-update", username, timers[username].currentTime);
+    console.log(`Added time to timer for user: ${username}, new time: ${timers[username].currentTime}`);
   }
 };
 
 const stopLiveStream = (username, io) => {
   if (currentStreamer !== username) return;
 
+  console.log(`Stopping live stream for user: ${username}`);
+  io.to(onlineUsers.get(username)).emit('is-next', false);
+  console.log(`Emitted 'is-next' with value 'false' for user: ${username}`);
+
   liveUsers.delete(username);
   activeStreams.delete(username);
   currentStreamer = null;
 
-  console.log(`Stopping live stream for user: ${username}`);
+    const queueIndex = liveQueue.findIndex(clientId => onlineUsers.get(clientId) === username);
+  if (queueIndex !== -1) {
+    liveQueue.splice(queueIndex, 1);
+    console.log(`Removed ${username} from the queue. Queue after removal: ${liveQueue.join(', ')}`);
+  }
+
   updateLiveUsers(io);
   notifyNextUserInQueue(io);
-  io.emit('main-feed', null); // Clear the main feed
+  io.emit('main-feed', null); 
   stopTimer(username);
 };
-
 
 const notifyNextUserInQueue = (io) => {
   console.log("Notifying next user in queue...");
 
   if (liveQueue.length > 0) {
-      const nextClient = liveQueue.shift();
-      const nextUsername = onlineUsers.get(nextClient);
-      if (!nextUsername) {
-          console.error(`Username for client ID ${nextClient} not found.`);
-          notifyNextUserInQueue(io); // Try the next user in the queue
-          return;
-      }
+    const nextClient = liveQueue.shift();
+    const nextUsername = onlineUsers.get(nextClient);
 
-      currentStreamer = nextUsername;
-      console.log(`Current streamer set to: ${currentStreamer}`);
+    if (!nextUsername) {
+      console.error(`Username for client ID ${nextClient} not found.`);
+      notifyNextUserInQueue(io); 
+      return;
+    }
 
-      io.to(nextClient).emit("go-live");
-      console.log(`Emitted 'go-live' to client: ${nextClient}`);
+   
 
-      console.log(`Preparing to emit 'is-next' to client: ${nextClient}`);
-io.to(nextClient).emit("is-next", true);
-console.log(`Emitted 'is-next' with value 'true' to client: ${nextClient} (Username: ${nextUsername})`);
+    currentStreamer = nextUsername;
+    console.log(`Current streamer set to: ${currentStreamer}`);
 
+    io.to(nextClient).emit("go-live");
+    console.log(`Emitted 'go-live' to client: ${nextClient}`);
 
-      liveUsers.set(nextUsername, nextClient);
-      activeStreams.set(nextUsername, nextClient);
+    io.to(nextClient).emit("is-next", true);
+    console.log(`Emitted 'is-next' with value 'true' to client: ${nextClient} (Username: ${nextUsername})`);
 
-      updateLiveUsers(io);
+    liveUsers.set(nextUsername, nextClient);
+    activeStreams.set(nextUsername, nextClient);
+
+    updateLiveUsers(io);
   } else {
-      console.log("No one is live, emitting 'no-one-live'");
-      io.emit("no-one-live");
+    console.log("No one is live, emitting 'no-one-live'");
+    io.emit("no-one-live");
+
+    if (currentStreamer) {
+      io.to(onlineUsers.get(currentStreamer)).emit("is-next", false);
+      console.log(`Emitted 'is-next' with value 'false' for current streamer: ${currentStreamer}`);
+      currentStreamer = null;
+    }
   }
 };
 
 
 const updateLiveUsers = (io) => {
   console.log(`Updating live users: ${Array.from(liveUsers.keys()).join(', ')}`);
-  io.emit('live-users', Array.from(liveUsers.keys())); // Broadcast the list of live usernames
+  io.emit('live-users', Array.from(liveUsers.keys())); 
 };
 
 const handleSocketConnection = (io) => {
@@ -117,20 +131,19 @@ const handleSocketConnection = (io) => {
       if (!username) {
         console.error(`Username not provided for socket ID: ${socket.id}`);
       } else {
-        onlineUsers.set(socket.id, username); // Store the username associated with the socket ID
+        onlineUsers.set(socket.id, username); 
         console.log(`User registered: ${username} with socket ID: ${socket.id}`);
       }
       io.emit('update-online-users', onlineUsers.size);
     });
 
-    // Send current slide position and amount to newly connected clients
     socket.emit('current-position', slidePosition);
     socket.emit('current-slide-amount', slidePositionAmount);
 
     socket.on("set-initial-vote", (initialVote) => {
-      console.log(`Setting initial vote for ${socket.id} to ${initialVote}`);
       slidePosition = initialVote;
-      io.emit('vote-update', slidePosition); // Broadcast the initial vote position
+      io.emit('vote-update', slidePosition); 
+      console.log(`Initial vote set by ${socket.id} to ${initialVote}`);
     });
 
     socket.on("vote", (newPosition) => {
@@ -138,60 +151,71 @@ const handleSocketConnection = (io) => {
       io.emit('vote-update', slidePosition);
 
       if (slidePosition >= 100) {
-        slidePositionAmount /= 2; // Halve the distance each time it reaches 100
-        io.emit('current-slide-amount', slidePositionAmount); // Broadcast new slide amount
+        slidePositionAmount /= 2; 
+        io.emit('current-slide-amount', slidePositionAmount);
 
         if (currentStreamer) {
-          addTime(currentStreamer, io); // Pass io to addTime
+          addTime(currentStreamer, io); 
         }
 
         slidePosition = 50; 
         io.emit('vote-update', slidePosition);
+        console.log(`Slide position reset to 50 due to reaching 100, current slide amount: ${slidePositionAmount}`);
       } else if (slidePosition <= 0) {
         slidePositionAmount = 5; 
         io.emit('current-slide-amount', slidePositionAmount);
         stopLiveStream(onlineUsers.get(socket.id), io); 
+        console.log(`Slide position reached 0, stopping live stream for ${onlineUsers.get(socket.id)}`);
       }
     });
 
     if (liveUsers.size > 0) {
       const currentLiveUser = Array.from(liveUsers.keys())[0];
       socket.emit("main-feed", currentLiveUser);
+      console.log(`Sent main feed to ${socket.id}, current live user: ${currentLiveUser}`);
     }
 
     socket.on("join-queue", () => {
       const username = onlineUsers.get(socket.id);
-      console.log(`Client ${socket.id} (${username}) joining queue`);
+    
+      // Clear any residual state before rejoining
+      if (username === currentStreamer) {
+        console.log(`Resetting state for user: ${username} before rejoining the queue`);
+        currentStreamer = null;
+        io.to(socket.id).emit("is-next", true);
+      }
+    
       liveQueue.push(socket.id);
-      console.log(`Queue after joining: ${liveQueue.join(', ')}`);
+      console.log(`Client ${socket.id} (${username}) joined the queue. Queue length: ${liveQueue.length}`);
+      
       if (liveQueue.length === 1) {
         io.to(socket.id).emit("go-live");
         console.log(`Emitted 'go-live' to client: ${socket.id}`);
       }
     });
+    
 
     socket.on("go-live", () => {
       if (currentStreamer) {
-          console.warn(`Cannot go live. Current streamer is ${currentStreamer}`);
-          return;
+        console.warn(`Cannot go live. Current streamer is ${currentStreamer}`);
+        io.to(onlineUsers.get(currentStreamer)).emit("is-next", false);
+        return;
       }
-      
+
       const username = onlineUsers.get(socket.id);
       if (!username) {
-          console.error(`Username for client ID ${socket.id} not found.`);
-          return;
+        console.error(`Username for client ID ${socket.id} not found.`);
+        return;
       }
-  
-      console.log(`Client ${socket.id} (${username}) going live`);
+
       liveUsers.set(username, socket.id);
       activeStreams.set(username, socket.id);
       currentStreamer = username;
-      console.log(`Current streamer set to: ${currentStreamer}`);
+      console.log(`Client ${socket.id} (${username}) going live`);
       updateLiveUsers(io);
       io.emit('main-feed', username);
       startTimer(username, io, stopLiveStream);
-  });
-  
+    });
 
     socket.on("request-offer", (liveUsername) => {
       const liveUserSocketId = liveUsers.get(liveUsername);
@@ -223,40 +247,44 @@ const handleSocketConnection = (io) => {
     socket.on("stop-live", () => {
       const username = onlineUsers.get(socket.id);
       console.log(`Client ${socket.id} (${username}) stopping live`);
-      liveUsers.delete(username);  // Remove user from the live users set
+      liveUsers.delete(username); 
       activeStreams.delete(username);
-      updateLiveUsers(io);  // Update all clients with the new list of live users
+      updateLiveUsers(io); 
       notifyNextUserInQueue(io);
-      io.emit('main-feed', null); // Notify all clients that the live stream has stopped
+      io.emit('main-feed', null); 
       stopTimer(username);
     });
 
     socket.on("disconnect", () => {
       const username = onlineUsers.get(socket.id);
       console.log(`Client disconnected: ${socket.id} (${username})`);
-      
+
       onlineUsers.delete(socket.id);
-  
+
       if (username) {
-          liveUsers.delete(username);
-          activeStreams.delete(username);
-          if (currentStreamer === username) {
-              currentStreamer = null;
-              notifyNextUserInQueue(io);
-          }
-          stopTimer(username);
+        liveUsers.delete(username);
+        activeStreams.delete(username);
+
+        if (currentStreamer === username) {
+          currentStreamer = null;
+          notifyNextUserInQueue(io);
+        } else {
+          io.to(socket.id).emit("is-next", false); 
+        }
+
+        stopTimer(username);
       }
-  
+
       const queueIndex = liveQueue.indexOf(socket.id);
       if (queueIndex !== -1) {
-          liveQueue.splice(queueIndex, 1);
+        liveQueue.splice(queueIndex, 1);
       }
       console.log(`Queue after disconnection: ${liveQueue.join(', ')}`);
-  
+
       updateLiveUsers(io);
       socket.broadcast.emit("peer-disconnected", socket.id);
-  });
-  
+    });
+
   });
 };
 
