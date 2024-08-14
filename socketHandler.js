@@ -71,6 +71,12 @@ const stopLiveStream = (username, io) => {
     console.log(`Removed ${username} from the queue. Queue after removal: ${liveQueue.join(', ')}`);
   }
 
+  if (liveQueue.length === 0) {
+    currentStreamer = null;  
+  } else {
+    notifyNextUserInQueue(io);
+  }
+
   updateLiveUsers(io);
   notifyNextUserInQueue(io);
   io.emit('main-feed', null); 
@@ -180,11 +186,16 @@ const handleSocketConnection = (io) => {
     socket.on("join-queue", () => {
       const username = onlineUsers.get(socket.id);
     
+      if (liveQueue.includes(socket.id)) {
+        console.log(`User ${username} is already in the queue or currently live.`);
+        socket.emit("queue-error", "Already in queue or currently live."); // Send an error message to the client
+        return;
+      }
+    
       // Clear any residual state before rejoining
       if (username === currentStreamer) {
         console.log(`Resetting state for user: ${username} before rejoining the queue`);
-        currentStreamer = null;
-        io.to(socket.id).emit("is-next", true);
+        stopLiveStream(username, io);  // Ensure the user is fully removed from the current state
       }
     
       liveQueue.push(socket.id);
@@ -195,10 +206,6 @@ const handleSocketConnection = (io) => {
         console.log(`Emitted 'go-live' to client: ${socket.id}`);
       }
     });
-
-    socket.on("go-live-prompt" , () => {
-      io.emit('go-live', username);
-  })
     
 
     socket.on("go-live", () => {
@@ -270,36 +277,44 @@ const handleSocketConnection = (io) => {
     socket.on("disconnect", () => {
       const username = onlineUsers.get(socket.id);
       console.log(`Client disconnected: ${socket.id} (${username})`);
-
+    
+      // Remove from online users
       onlineUsers.delete(socket.id);
-
+    
       if (username) {
-        liveUsers.delete(username);
-        activeStreams.delete(username);
-
-        
-          currentStreamer = liveQueue[0];
-          notifyNextUserInQueue(io);
-        
-
+        // Remove from live users
+        if (liveUsers.has(username)) {
+          liveUsers.delete(username);
+          console.log(`Removed ${username} from live users.`);
+        }
+    
+        // Remove from active streams
+        if (activeStreams.has(username)) {
+          activeStreams.delete(username);
+          console.log(`Removed ${username} from active streams.`);
+        }
+    
+        // Remove from live queue
+        const queueIndex = liveQueue.findIndex(user => user === username);
+        if (queueIndex !== -1) {
+          liveQueue.splice(queueIndex, 1);
+          console.log(`Removed ${username} from live queue.`);
+        }
+    
+        // Stop timer if running
         stopTimer(username);
+    
+        // If the disconnected user was the current streamer, reset currentStreamer and notify next user
+        if (currentStreamer === username) {
+          currentStreamer = null;
+          notifyNextUserInQueue(io);
+        }
       }
-
-      const queueIndex = liveQueue.indexOf(socket.id);
-      if (queueIndex !== -1) {
-        liveQueue.splice(queueIndex, 1);
-      }
-      console.log(`Queue after disconnection: ${liveQueue.join(', ')}`);
-
-      slidePosition = 50;
-      slidePositionAmount = 5;
-      
-      socket.emit('current-position', slidePosition);
-      socket.emit('current-slide-amount', slidePositionAmount);
-      
+    
       updateLiveUsers(io);
       socket.broadcast.emit("peer-disconnected", socket.id);
     });
+    
 
   });
 };
