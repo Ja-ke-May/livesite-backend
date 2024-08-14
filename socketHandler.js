@@ -63,7 +63,7 @@ const stopLiveStream = (username, io) => {
 
   liveUsers.delete(username);
   activeStreams.delete(username);
-  currentStreamer = null;
+  currentStreamer = liveQueue[0];
 
     const queueIndex = liveQueue.findIndex(clientId => onlineUsers.get(clientId) === username);
   if (queueIndex !== -1) {
@@ -80,42 +80,44 @@ const stopLiveStream = (username, io) => {
 const notifyNextUserInQueue = (io) => {
   console.log("Notifying next user in queue...");
 
-  if (liveQueue.length > 0) {
-    const nextClient = liveQueue.shift();
-    const nextUsername = onlineUsers.get(nextClient);
+  if (liveQueue.length >= 1) {
+      const nextClient = liveQueue.shift();
+      const nextUsername = onlineUsers.get(nextClient);
 
-    if (!nextUsername) {
-      console.error(`Username for client ID ${nextClient} not found.`);
-      notifyNextUserInQueue(io); 
-      return;
-    }
+      if (!nextUsername) {
+          console.error(`Username for client ID ${nextClient} not found.`);
+          notifyNextUserInQueue(io);
+          return;
+      }
 
-   
+      currentStreamer = nextUsername;
+      console.log(`Current streamer set to: ${currentStreamer}`);
 
-    currentStreamer = nextUsername;
-    console.log(`Current streamer set to: ${currentStreamer}`);
+      // Emit events to all sockets associated with this username
+      onlineUsers.forEach((user, socketId) => {
+          if (user === nextUsername) {
+              io.to(socketId).emit("go-live-prompt");
+              io.to(socketId).emit("is-next", false);
+              console.log(`Emitted 'go-live-prompt' and 'is-next' to socket: ${socketId}`);
+          }
+      });
 
-    io.to(nextClient).emit("go-live");
-    console.log(`Emitted 'go-live' to client: ${nextClient}`);
+      liveUsers.set(nextUsername, nextClient);
+      activeStreams.set(nextUsername, nextClient);
 
-    io.to(nextClient).emit("is-next", true);
-    console.log(`Emitted 'is-next' with value 'true' to client: ${nextClient} (Username: ${nextUsername})`);
-
-    liveUsers.set(nextUsername, nextClient);
-    activeStreams.set(nextUsername, nextClient);
-
-    updateLiveUsers(io);
+      updateLiveUsers(io);
   } else {
-    console.log("No one is live, emitting 'no-one-live'");
-    io.emit("no-one-live");
+      console.log("No one is live, emitting 'no-one-live'");
+      io.emit("no-one-live");
 
-    if (currentStreamer) {
-      io.to(onlineUsers.get(currentStreamer)).emit("is-next", false);
-      console.log(`Emitted 'is-next' with value 'false' for current streamer: ${currentStreamer}`);
-      currentStreamer = null;
-    }
+      if (currentStreamer) {
+          io.to(onlineUsers.get(currentStreamer)).emit("is-next", false);
+          console.log(`Emitted 'is-next' with value 'false' for current streamer: ${currentStreamer}`);
+          currentStreamer = null;
+      }
   }
 };
+
 
 
 const updateLiveUsers = (io) => {
@@ -189,16 +191,20 @@ const handleSocketConnection = (io) => {
       console.log(`Client ${socket.id} (${username}) joined the queue. Queue length: ${liveQueue.length}`);
       
       if (liveQueue.length === 1) {
-        io.to(socket.id).emit("go-live");
+        io.to(socket.id).emit("go-live-prompt");
         console.log(`Emitted 'go-live' to client: ${socket.id}`);
       }
     });
+
+    socket.on("go-live-prompt" , () => {
+      io.emit('go-live', username);
+  })
     
 
     socket.on("go-live", () => {
       if (currentStreamer) {
         console.warn(`Cannot go live. Current streamer is ${currentStreamer}`);
-        io.to(onlineUsers.get(currentStreamer)).emit("is-next", false);
+        io.to(onlineUsers.get(currentStreamer)).emit("is-next", true);
         return;
       }
 
@@ -207,6 +213,12 @@ const handleSocketConnection = (io) => {
         console.error(`Username for client ID ${socket.id} not found.`);
         return;
       }
+
+      slidePosition = 50;
+      slidePositionAmount = 5;
+
+      socket.emit('current-position', slidePosition);
+      socket.emit('current-slide-amount', slidePositionAmount);
 
       liveUsers.set(username, socket.id);
       activeStreams.set(username, socket.id);
@@ -265,12 +277,10 @@ const handleSocketConnection = (io) => {
         liveUsers.delete(username);
         activeStreams.delete(username);
 
-        if (currentStreamer === username) {
-          currentStreamer = null;
+        
+          currentStreamer = liveQueue[0];
           notifyNextUserInQueue(io);
-        } else {
-          io.to(socket.id).emit("is-next", false); 
-        }
+        
 
         stopTimer(username);
       }
@@ -281,6 +291,12 @@ const handleSocketConnection = (io) => {
       }
       console.log(`Queue after disconnection: ${liveQueue.join(', ')}`);
 
+      slidePosition = 50;
+      slidePositionAmount = 5;
+      
+      socket.emit('current-position', slidePosition);
+      socket.emit('current-slide-amount', slidePositionAmount);
+      
       updateLiveUsers(io);
       socket.broadcast.emit("peer-disconnected", socket.id);
     });
