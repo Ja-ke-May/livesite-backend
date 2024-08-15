@@ -209,7 +209,15 @@ const handleSocketConnection = (io) => {
         console.log(`Emitted 'go-live' to client: ${socket.id}`);
       }
     });
+
+    socket.on("check-username", (username, callback) => {
+      const isInLiveQueue = liveQueue.some(socketId => onlineUsers.get(socketId) === username);
     
+      const exists = isInLiveQueue;
+    
+      callback(exists);
+  });
+  
 
     socket.on("go-live", () => {
       if (currentStreamer) {
@@ -269,6 +277,14 @@ const handleSocketConnection = (io) => {
     socket.on("stop-live", () => {
       const username = onlineUsers.get(socket.id);
       console.log(`Client ${socket.id} (${username}) stopping live`);
+
+      // Remove from live queue
+      const queueIndex = liveQueue.findIndex(socketId => socketId === socket.id);
+      if (queueIndex !== -1) {
+        liveQueue.splice(queueIndex, 1);
+        console.log(`Removed socket ID ${socket.id} from live queue.`);
+      }
+      
       liveUsers.delete(username); 
       activeStreams.delete(username);
       updateLiveUsers(io); 
@@ -296,13 +312,15 @@ const handleSocketConnection = (io) => {
           activeStreams.delete(username);
           console.log(`Removed ${username} from active streams.`);
         }
+
+        
     
         // Remove from live queue
-        const queueIndex = liveQueue.findIndex(user => user === username);
-        if (queueIndex !== -1) {
-          liveQueue.splice(queueIndex, 1);
-          console.log(`Removed ${username} from live queue.`);
-        }
+        const queueIndex = liveQueue.findIndex(socketId => socketId === socket.id);
+    if (queueIndex !== -1) {
+      liveQueue.splice(queueIndex, 1);
+      console.log(`Removed socket ID ${socket.id} from live queue.`);
+    }
     
         // Stop timer if running
         stopTimer(username);
