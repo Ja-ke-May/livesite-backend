@@ -79,6 +79,7 @@ const stopLiveStream = (username, io) => {
 
   updateLiveUsers(io);
   notifyNextUserInQueue(io);
+  
   io.emit('main-feed', null); 
   stopTimer(username);
 };
@@ -151,6 +152,7 @@ const handleSocketConnection = (io) => {
     socket.on("set-initial-vote", (initialVote) => {
       slidePosition = initialVote;
       io.emit('vote-update', slidePosition); 
+      io.emit('current-slide-amount', 5); 
       console.log(`Initial vote set by ${socket.id} to ${initialVote}`);
     });
 
@@ -179,6 +181,7 @@ const handleSocketConnection = (io) => {
 
     if (liveUsers.size > 0) {
       const currentLiveUser = Array.from(liveUsers.keys())[0];
+
       socket.emit("main-feed", currentLiveUser);
       console.log(`Sent main feed to ${socket.id}, current live user: ${currentLiveUser}`);
     }
