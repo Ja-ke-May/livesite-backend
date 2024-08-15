@@ -87,6 +87,7 @@ const stopLiveStream = (username, io) => {
 const notifyNextUserInQueue = (io) => {
   console.log("Notifying next user in queue...");
 
+ 
   if (liveQueue.length >= 1) {
       const nextClient = liveQueue.shift();
       const nextUsername = onlineUsers.get(nextClient);
@@ -105,6 +106,7 @@ const notifyNextUserInQueue = (io) => {
           if (user === nextUsername) {
               io.to(socketId).emit("go-live-prompt");
               io.to(socketId).emit("is-next", false);
+              
               console.log(`Emitted 'go-live-prompt' and 'is-next' to socket: ${socketId}`);
           }
       });
@@ -204,11 +206,18 @@ const handleSocketConnection = (io) => {
       liveQueue.push(socket.id);
       console.log(`Client ${socket.id} (${username}) joined the queue. Queue length: ${liveQueue.length}`);
       
+      const position = liveQueue.findIndex((socketId) => onlineUsers.get(socketId) === username) + 1;
+   socket.emit("queue-position-update", position);
+
       if (liveQueue.length === 1) {
         io.to(socket.id).emit("go-live-prompt");
         console.log(`Emitted 'go-live' to client: ${socket.id}`);
       }
-    });
+    
+
+    
+  });
+  
 
     socket.on("check-username", (username, callback) => {
       const isInLiveQueue = liveQueue.some(socketId => onlineUsers.get(socketId) === username);
