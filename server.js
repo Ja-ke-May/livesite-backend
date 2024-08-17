@@ -12,7 +12,8 @@ const multer = require('multer');
 const authMiddleware = require('./middleware/authMiddleware');
 const userRoutes = require('./routes/userRoutes');
 const User = require('./models/user');
-const { handleSocketConnection, onlineUsers } = require('./socketHandler'); // Import the handler and onlineUsers
+const Comment = require('./models/comment');
+const { handleSocketConnection, onlineUsers } = require('./socketHandler'); 
 
 dotenv.config();
 
@@ -72,6 +73,34 @@ app.post('/api/profile-picture', upload.single('profilePicture'), authMiddleware
     res.status(500).json({ error: 'Server error, please try again later' });
   }
 });
+
+// Add this route after your other routes
+app.post('/api/comments', authMiddleware, async (req, res) => {
+  try {
+    const { comment, username } = req.body;  // Extract username and comment from the request body
+
+    if (!comment || comment.trim() === '') {
+      return res.status(400).json({ message: 'Comment cannot be empty' });
+    }
+
+    if (!username) {
+      return res.status(400).json({ message: 'Username is required' });
+    }
+
+    const newComment = new Comment({
+      username,
+      comment: comment.trim(),
+    });
+
+    await newComment.save();
+
+    res.status(201).json({ message: 'Comment saved successfully' });
+  } catch (err) {
+    console.error('Error saving comment:', err);
+    res.status(500).json({ error: 'Server error, please try again later' });
+  }
+});
+
 
 // Use Routes
 app.use('/api', userRoutes);

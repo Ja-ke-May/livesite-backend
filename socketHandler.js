@@ -138,6 +138,10 @@ const handleSocketConnection = (io) => {
   io.on("connection", (socket) => {
     console.log(`New client connected: ${socket.id}`);
 
+    onlineUsers.set(socket.id, null);
+
+    io.emit('update-online-users', onlineUsers.size);
+
     socket.on("register-user", (username) => {
       if (!username) {
         console.error(`Username not provided for socket ID: ${socket.id}`);
@@ -225,6 +229,14 @@ const handleSocketConnection = (io) => {
       const exists = isInLiveQueue;
     
       callback(exists);
+  });
+
+   // Listening for new comments
+   socket.on("new-comment", (commentData) => {
+    console.log(`New comment from ${commentData.username}: ${commentData.comment}`);
+    
+    // Broadcast the new comment to all clients
+    io.emit('new-comment', commentData);
   });
   
 
