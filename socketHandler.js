@@ -213,36 +213,51 @@ const handleSocketConnection = (io) => {
       console.log(`Sent main feed to ${socket.id}, current live user: ${currentLiveUser}`);
     }
 
-    socket.on("join-queue", () => {
-      const username = onlineUsers.get(socket.id);
+    socket.on("join-queue", ({ username, isFastPass }) => {
       lastActivity.set(socket.id, Date.now());
-    
+  
       if (liveQueue.includes(socket.id)) {
-        console.log(`User ${username} is already in the queue or currently live.`);
-        socket.emit("queue-error", "Already in queue or currently live."); // Send an error message to the client
-        return;
+          console.log(`User ${username} is already in the queue or currently live.`);
+          socket.emit("queue-error", "Already in queue or currently live."); // Send an error message to the client
+          return;
       }
-    
+  
       // Clear any residual state before rejoining
       if (username === currentStreamer) {
-        console.log(`Resetting state for user: ${username} before rejoining the queue`);
-        stopLiveStream(username, io);  // Ensure the user is fully removed from the current state
+          console.log(`Resetting state for user: ${username} before rejoining the queue`);
+          stopLiveStream(username, io);  // Ensure the user is fully removed from the current state
       }
-    
-      liveQueue.push(socket.id);
-      console.log(`Client ${socket.id} (${username}) joined the queue. Queue length: ${liveQueue.length}`);
-      
+  
+      if (isFastPass) {
+          let insertionIndex = 1; // Start inserting at position 2 (index 1)
+  
+          // Find the first non-Fast Pass user or the end of the queue
+          for (let i = 1; i < liveQueue.length; i++) {
+              const socketId = liveQueue[i];
+              if (!onlineUsers.get(socketId)?.isFastPass) {
+                  break;
+              }
+              insertionIndex++;
+          }
+  
+          // Insert the user at the calculated position
+          liveQueue.splice(insertionIndex, 0, socket.id);
+          console.log(`User ${username} used Fast Pass and was inserted at position ${insertionIndex + 1} in the queue.`);
+      } else {
+          // Add the user to the end of the queue
+          liveQueue.push(socket.id);
+          console.log(`Client ${socket.id} (${username}) joined the queue. Queue length: ${liveQueue.length}`);
+      }
+  
       const position = liveQueue.findIndex((socketId) => onlineUsers.get(socketId) === username) + 1;
-   socket.emit("queue-position-update", position);
-
+      socket.emit("queue-position-update", position);
+  
       if (liveQueue.length === 1 && liveUsers.size === 0) {
-        io.to(socket.id).emit("go-live-prompt");
-        console.log(`Emitted 'go-live' to client: ${socket.id}`);
+          io.to(socket.id).emit("go-live-prompt");
+          console.log(`Emitted 'go-live' to client: ${socket.id}`);
       }
-    
-
-    
   });
+  
   
 
     socket.on("check-username", (username, callback) => {
