@@ -9,7 +9,7 @@ const lastActivity = new Map();
 
 const timers = {}; // Store timers for each live user
 
-const inactivityTimeout = 3600000; // 1 hour
+const inactivityTimeout = 120000; // 2 minutes
 
 let slidePosition = 50; // Initial slide position
 let slidePositionAmount = 5; // Initial slide position amount
@@ -235,7 +235,7 @@ const handleSocketConnection = (io) => {
       const position = liveQueue.findIndex((socketId) => onlineUsers.get(socketId) === username) + 1;
    socket.emit("queue-position-update", position);
 
-      if (liveQueue.length === 1) {
+      if (liveQueue.length === 1 && liveUsers.size === 0) {
         io.to(socket.id).emit("go-live-prompt");
         console.log(`Emitted 'go-live' to client: ${socket.id}`);
       }

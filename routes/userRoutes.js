@@ -333,4 +333,85 @@ router.get('/recent-activity/:username', authMiddleware, async (req, res) => {
   }
 });
 
+router.post('/send-tokens', authMiddleware, async (req, res) => {
+  try {
+    console.log("Request body:", req.body);
+    const { recipientUsername, tokenAmount } = req.body;
+
+    if (!recipientUsername || !tokenAmount || tokenAmount <= 0) {
+      console.log("Validation failed:", { sender, recipientUsername, tokenAmount });
+      return res.status(400).json({ message: 'Recipient username and a valid token amount are required' });
+    }
+
+    const sender = await User.findById(req.user.userId);
+    const recipient = await User.findOne({ userName: recipientUsername });
+
+    if (!sender) {
+      console.log("Sender not found:", req.user.userId);
+      return res.status(404).json({ message: 'Sender not found' });
+    }
+    if (!recipient) {
+      console.log("Recipient not found:", sender,  recipientUsername);
+      return res.status(404).json({ message: 'Recipient not found' });
+    }
+
+    if (sender.userName === recipient.userName) {
+      console.log("Sender and recipient are the same:", sender.userName);
+      return res.status(400).json({ message: 'You cannot send tokens to yourself' });
+    }
+    
+
+    if (sender.tokens < tokenAmount) {
+      console.log("Insufficient tokens:", sender.tokens, tokenAmount);
+      return res.status(400).json({ message: 'Insufficient tokens' });
+    }
+
+    sender.tokens -= tokenAmount;
+    recipient.tokens += tokenAmount;
+
+    sender.recentActivity.push(`Sent ${tokenAmount} tokens to ${recipient.userName}`);
+    recipient.recentActivity.push(`Received ${tokenAmount} tokens from ${sender.userName}`);
+
+    await sender.save();
+    await recipient.save();
+
+    res.json({ message: `Successfully transferred ${tokenAmount} tokens to ${recipient.userName}` });
+  } catch (err) {
+    console.error('Error transferring tokens:', err);
+    res.status(500).json({ error: 'Server error, please try again later' });
+  }
+});
+
+// Deduct tokens
+router.post('/deduct-tokens', authMiddleware, async (req, res) => {
+  try {
+    const { amount } = req.body;
+
+    if (!amount || amount <= 0) {
+      return res.status(400).json({ message: 'A valid token amount is required' });
+    }
+
+    const user = await User.findById(req.user.userId);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (user.tokens < amount) {
+      return res.status(400).json({ message: 'Insufficient tokens' });
+    }
+
+    user.tokens -= amount;
+    user.recentActivity.push(`Used ${amount} tokens for a Fast Pass`);
+
+    await user.save();
+
+    res.json({ message: `Successfully deducted ${amount} tokens`, tokens: user.tokens });
+  } catch (err) {
+    console.error('Error deducting tokens:', err);
+    res.status(500).json({ error: 'Server error, please try again later' });
+  }
+});
+
+
 module.exports = router;
