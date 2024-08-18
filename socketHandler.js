@@ -80,7 +80,6 @@ const stopLiveStream = (username, io) => {
     notifyNextUserInQueue(io);
   }
 
-  updateLiveUsers(io);
   notifyNextUserInQueue(io);
   
   io.emit('main-feed', null); 
@@ -92,7 +91,7 @@ const notifyNextUserInQueue = (io) => {
 
  
   if (liveQueue.length >= 1) {
-      const nextClient = liveQueue.shift();
+      const nextClient = liveQueue[0];
       const nextUsername = onlineUsers.get(nextClient);
 
       if (!nextUsername) {
@@ -101,23 +100,17 @@ const notifyNextUserInQueue = (io) => {
           return;
       }
 
-      currentStreamer = nextUsername;
-      console.log(`Current streamer set to: ${currentStreamer}`);
+      if (!currentStreamer) { 
+        io.to(nextClient).emit("is-next", true);
+        console.log(`Emitted 'is-next' with value 'true' for user: ${nextUsername}`);
+    }
+       
+       liveQueue.forEach((socketId, index) => {
+        const userPosition = index + 1;
+        io.to(socketId).emit("queue-position-update", userPosition);
+        console.log(`Emitted updated queue position ${userPosition} to socket ID: ${socketId}`);
+    });
 
-      // Emit events to all sockets associated with this username
-      onlineUsers.forEach((user, socketId) => {
-          if (user === nextUsername) {
-              io.to(socketId).emit("go-live-prompt");
-              io.to(socketId).emit("is-next", false);
-              
-              console.log(`Emitted 'go-live-prompt' and 'is-next' to socket: ${socketId}`);
-          }
-      });
-
-      liveUsers.set(nextUsername, nextClient);
-      activeStreams.set(nextUsername, nextClient);
-
-      updateLiveUsers(io);
   } else {
       console.log("No one is live, emitting 'no-one-live'");
       io.emit("no-one-live");
@@ -349,7 +342,6 @@ const handleSocketConnection = (io) => {
       
       liveUsers.delete(username); 
       activeStreams.delete(username);
-      updateLiveUsers(io); 
       notifyNextUserInQueue(io);
       io.emit('main-feed', null); 
       stopTimer(username);
@@ -395,7 +387,6 @@ const handleSocketConnection = (io) => {
         }
       }
     
-      updateLiveUsers(io);
       clearInterval(activityChecker);
       socket.broadcast.emit("peer-disconnected", socket.id);
     });
