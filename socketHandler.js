@@ -5,8 +5,11 @@ let currentStreamer = null;
 
 // Online users tracking
 const onlineUsers = new Map();
+const lastActivity = new Map(); 
 
 const timers = {}; // Store timers for each live user
+
+const inactivityTimeout = 3600000; // 1 hour
 
 let slidePosition = 50; // Initial slide position
 let slidePositionAmount = 5; // Initial slide position amount
@@ -139,6 +142,21 @@ const handleSocketConnection = (io) => {
     console.log(`New client connected: ${socket.id}`);
 
     onlineUsers.set(socket.id, null);
+    lastActivity.set(socket.id, Date.now());
+
+    const activityChecker = setInterval(() => {
+      const now = Date.now();
+      const last = lastActivity.get(socket.id);
+      const username = onlineUsers.get(socket.id);
+
+      // If the socket does not have a username linked and exceeds inactivity timeout, disconnect
+      if (!username && last && now - last > inactivityTimeout) {
+        console.log(`Client ${socket.id} inactive for too long, disconnecting...`);
+        socket.disconnect(true);
+        clearInterval(activityChecker);
+      }
+    }, inactivityTimeout / 2);
+
 
     io.emit('update-online-users', onlineUsers.size);
 
@@ -147,6 +165,7 @@ const handleSocketConnection = (io) => {
         console.error(`Username not provided for socket ID: ${socket.id}`);
       } else {
         onlineUsers.set(socket.id, username); 
+        lastActivity.set(socket.id, Date.now());
         console.log(`User registered: ${username} with socket ID: ${socket.id}`);
       }
       io.emit('update-online-users', onlineUsers.size);
@@ -157,13 +176,15 @@ const handleSocketConnection = (io) => {
 
     socket.on("set-initial-vote", (initialVote) => {
       slidePosition = initialVote;
+      lastActivity.set(socket.id, Date.now());
       io.emit('vote-update', slidePosition); 
       io.emit('current-slide-amount', 5); 
       console.log(`Initial vote set by ${socket.id} to ${initialVote}`);
     });
 
     socket.on("vote", (newPosition) => {
-      slidePosition = newPosition;
+      slidePosition = newPosition; 
+      lastActivity.set(socket.id, Date.now());
       io.emit('vote-update', slidePosition);
 
       if (slidePosition >= 100) {
@@ -194,6 +215,7 @@ const handleSocketConnection = (io) => {
 
     socket.on("join-queue", () => {
       const username = onlineUsers.get(socket.id);
+      lastActivity.set(socket.id, Date.now());
     
       if (liveQueue.includes(socket.id)) {
         console.log(`User ${username} is already in the queue or currently live.`);
@@ -225,7 +247,7 @@ const handleSocketConnection = (io) => {
 
     socket.on("check-username", (username, callback) => {
       const isInLiveQueue = liveQueue.some(socketId => onlineUsers.get(socketId) === username);
-    
+      lastActivity.set(socket.id, Date.now());
       const exists = isInLiveQueue;
     
       callback(exists);
@@ -234,7 +256,7 @@ const handleSocketConnection = (io) => {
    // Listening for new comments
    socket.on("new-comment", (commentData) => {
     console.log(`New comment from ${commentData.username}: ${commentData.comment}`);
-    
+    lastActivity.set(socket.id, Date.now()); 
     // Broadcast the new comment to all clients
     io.emit('new-comment', commentData);
   });
@@ -263,6 +285,7 @@ const handleSocketConnection = (io) => {
       activeStreams.set(username, socket.id);
       currentStreamer = username;
       console.log(`Client ${socket.id} (${username}) going live`);
+      lastActivity.set(socket.id, Date.now());
       updateLiveUsers(io);
       io.emit('main-feed', username);
       startTimer(username, io, stopLiveStream);
@@ -279,6 +302,7 @@ const handleSocketConnection = (io) => {
     socket.on("offer", (id, offer) => {
       try {
         socket.to(id).emit("offer", socket.id, offer);
+        lastActivity.set(socket.id, Date.now()); 
         console.log(`Emitted 'offer' from ${socket.id} to ${id}`);
       } catch (error) {
         console.error(`Error sending offer from ${socket.id} to ${id}:`, error);
@@ -288,11 +312,13 @@ const handleSocketConnection = (io) => {
     socket.on("answer", (id, answer) => {
       console.log(`Client ${socket.id} sending answer to ${id}`);
       socket.to(id).emit("answer", socket.id, answer);
+      lastActivity.set(socket.id, Date.now()); 
     });
 
     socket.on("ice-candidate", (id, candidate) => {
       console.log(`Client ${socket.id} sending ICE candidate to ${id}`);
       socket.to(id).emit("ice-candidate", socket.id, candidate);
+      lastActivity.set(socket.id, Date.now());
     });
 
     socket.on("stop-live", () => {
@@ -320,6 +346,7 @@ const handleSocketConnection = (io) => {
     
       // Remove from online users
       onlineUsers.delete(socket.id);
+      lastActivity.delete(socket.id);
     
       if (username) {
         // Remove from live users
@@ -354,6 +381,7 @@ const handleSocketConnection = (io) => {
       }
     
       updateLiveUsers(io);
+      clearInterval(activityChecker);
       socket.broadcast.emit("peer-disconnected", socket.id);
     });
     
