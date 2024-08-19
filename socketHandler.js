@@ -9,7 +9,7 @@ const lastActivity = new Map();
 
 const timers = {}; // Store timers for each live user
 
-const inactivityTimeout = 120000; // 2 minutes
+const inactivityTimeout = 60000; // 1 minutes not if username
 
 let slidePosition = 50; // Initial slide position
 let slidePositionAmount = 5; // Initial slide position amount
@@ -24,7 +24,7 @@ const startTimer = (username, io, stopLiveStream, additionalTime = 0) => {
   }
 
   timers[username].currentTime = (timers[username].currentTime || 60) + additionalTime;
-  io.emit("timer-update", username, timers[username].currentTime);
+  io.emit("timer-update", timers[username].currentTime);
 
   timers[username].interval = setInterval(() => {
     if (timers[username].currentTime > 0) {
