@@ -9,7 +9,7 @@ const lastActivity = new Map();
 
 const timers = {}; // Store timers for each live user
 
-const inactivityTimeout = 60000; // 1 minutes not if username
+const inactivityTimeout = 3600000; // 1 hour
 
 let slidePosition = 50; // Initial slide position
 let slidePositionAmount = 5; // Initial slide position amount
