@@ -86,6 +86,19 @@ const stopLiveStream = (username, io) => {
   stopTimer(username);
 };
 
+const updateUpNext = (io) => {
+  let nextUsername = null;
+
+  if (liveQueue.length > 0) {
+      const nextClientId = liveQueue[0]; 
+      nextUsername = onlineUsers.get(nextClientId);
+  }
+
+  io.emit('up-next-update', nextUsername);
+  console.log(`upNext updated to: ${nextUsername}`);
+};
+
+
 const notifyNextUserInQueue = (io) => {
   console.log("Notifying next user in queue...");
 
@@ -162,6 +175,7 @@ const handleSocketConnection = (io) => {
         console.log(`User registered: ${username} with socket ID: ${socket.id}`);
       }
       io.emit('update-online-users', onlineUsers.size);
+      updateUpNext(io);  
     });
 
     socket.emit('current-position', slidePosition);
@@ -249,6 +263,7 @@ const handleSocketConnection = (io) => {
           io.to(socket.id).emit("go-live-prompt");
           console.log(`Emitted 'go-live' to client: ${socket.id}`);
       }
+      updateUpNext(io);  
   });
   
   
@@ -305,6 +320,7 @@ const handleSocketConnection = (io) => {
         io.to(liveUserSocketId).emit("new-peer", socket.id);
         console.log(`Emitted 'new-peer' to live user socket ID: ${liveUserSocketId}`);
       }
+      updateUpNext(io); 
     });
 
     socket.on("offer", (id, offer) => {
@@ -315,6 +331,7 @@ const handleSocketConnection = (io) => {
       } catch (error) {
         console.error(`Error sending offer from ${socket.id} to ${id}:`, error);
       }
+      updateUpNext(io); 
     });
 
     socket.on("answer", (id, answer) => {
@@ -345,6 +362,7 @@ const handleSocketConnection = (io) => {
       notifyNextUserInQueue(io);
       io.emit('main-feed', null); 
       stopTimer(username);
+      updateUpNext(io);  
     });
 
     socket.on("disconnect", () => {
