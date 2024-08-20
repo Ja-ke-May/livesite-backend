@@ -1,6 +1,6 @@
 const liveQueue = [];
-const liveUsers = new Map();  // Use a Map to track users who are currently live by username
-const activeStreams = new Map(); // Track active streams by username
+const liveUsers = new Map(); 
+const activeStreams = new Map(); 
 let currentStreamer = null;
 
 // Online users tracking
@@ -11,8 +11,8 @@ const timers = {}; // Store timers for each live user
 
 const inactivityTimeout = 3600000; // 1 hour
 
-let slidePosition = 50; // Initial slide position
-let slidePositionAmount = 5; // Initial slide position amount
+let slidePosition = 50; 
+let slidePositionAmount = 5;
 
 const startTimer = (username, io, stopLiveStream, additionalTime = 0) => {
   if (timers[username] && timers[username].interval) {
