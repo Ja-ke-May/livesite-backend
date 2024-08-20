@@ -26,7 +26,7 @@ const io = socketIo(server, {
   },
 });
 
-const port = process.env.PORT || 5000;
+const port = process.env.PORT || 'https://livesite-backend.onrender.com';
 
 // Middleware
 app.use(cors({
