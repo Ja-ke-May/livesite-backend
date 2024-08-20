@@ -21,16 +21,16 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    origin: "https://livesite-mu.vercel.app/",
+    origin: "https://livesite-mu.vercel.app",
     methods: ["GET", "POST"],
   },
 });
 
-const port = process.env.PORT || 'https://livesite-backend.onrender.com';
+const port = process.env.PORT || 5000;
 
 // Middleware
 app.use(cors({
-  origin: 'https://livesite-mu.vercel.app/',
+  origin: 'https://livesite-mu.vercel.app',
   credentials: true,
 }));
 app.use(helmet());
