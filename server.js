@@ -21,12 +21,12 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    origin: "https://livesite-mu.vercel.app",
+    origin: "wss://livesite-backend.onrender.com",
     methods: ["GET", "POST"],
   },
 });
 
-const port = process.env.PORT || 5000;
+const port = 'https://livesite-backend.onrender.com';
 
 // Middleware
 app.use(cors({
