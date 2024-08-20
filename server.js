@@ -37,10 +37,12 @@ app.use(cors({
 app.use(helmet());
 app.use(bodyParser.json({ limit: '10mb' }));
 
+app.set('trust proxy', 1);
+
 // Rate Limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 10000,
+  max: 1000,
 });
 app.use(limiter);
 
