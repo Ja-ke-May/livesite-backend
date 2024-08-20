@@ -27,6 +27,7 @@ const io = socketIo(server, {
 });
 
 const port = process.env.PORT || 5000;
+const host = process.env.HOST || '0.0.0.0';
 
 // Middleware
 app.use(cors({
@@ -113,6 +114,6 @@ app.get('/online-users', (req, res) => {
 // Initialize Socket.IO
 handleSocketConnection(io);
 
-server.listen(port, () => {
+server.listen(port, host, () => {
   console.log(`Server is running on port ${port}`);
 });
