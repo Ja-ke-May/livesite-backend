@@ -53,7 +53,7 @@ const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
 // Routes
-app.post('/api/profile-picture', upload.single('profilePicture'), authMiddleware, async (req, res) => {
+app.post('/profile-picture', upload.single('profilePicture'), authMiddleware, async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ message: 'No file uploaded' });
@@ -75,7 +75,7 @@ app.post('/api/profile-picture', upload.single('profilePicture'), authMiddleware
 });
 
 // Add this route after your other routes
-app.post('/api/comments', authMiddleware, async (req, res) => {
+app.post('/comments', authMiddleware, async (req, res) => {
   try {
     const { comment, username } = req.body;  // Extract username and comment from the request body
 
@@ -103,10 +103,10 @@ app.post('/api/comments', authMiddleware, async (req, res) => {
 
 
 // Use Routes
-app.use('/api', userRoutes);
+app.use('/', userRoutes);
 
 // Endpoint to get the number of online users
-app.get('/api/online-users', (req, res) => {
+app.get('/online-users', (req, res) => {
   res.json({ viewers: onlineUsers.size });
 });
 
