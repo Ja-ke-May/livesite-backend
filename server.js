@@ -21,12 +21,13 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    origin: "wss://livesite-backend.onrender.com",
+    origin: "https://livesite-backend.onrender.com",
     methods: ["GET", "POST"],
   },
 });
 
-const port = 'https://livesite-backend.onrender.com';
+
+const port = process.env.PORT || 5000;
 
 // Middleware
 app.use(cors({
