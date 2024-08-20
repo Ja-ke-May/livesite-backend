@@ -31,13 +31,11 @@ const port = process.env.PORT || 5000;
 
 // Middleware
 app.use(cors({
-  origin: 'https://localhost:3000',
+  origin: 'https://livesite-mu.vercel.app',
   credentials: true,
 }));
 app.use(helmet());
 app.use(bodyParser.json({ limit: '10mb' }));
-
-app.set('trust proxy', 1);
 
 // Rate Limiting
 const limiter = rateLimit({
