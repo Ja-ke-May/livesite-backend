@@ -21,7 +21,7 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    origin: "https://localhost:5000",
+    origin: "https://localhost:3000",
     methods: ["GET", "POST"],
   },
 });
@@ -31,7 +31,7 @@ const port = process.env.PORT || 5000;
 
 // Middleware
 app.use(cors({
-  origin: 'https://localhost:5000',
+  origin: 'https://localhost:3000',
   credentials: true,
 }));
 app.use(helmet());
