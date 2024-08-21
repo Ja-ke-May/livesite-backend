@@ -287,7 +287,6 @@ const handleSocketConnection = (io) => {
 
     socket.on("go-live", () => {
       
-      currentStreamer = null;
       if (currentStreamer) {
         console.warn(`Cannot go live. Current streamer is ${currentStreamer}`);
         io.to(onlineUsers.get(currentStreamer)).emit("is-next", true);
