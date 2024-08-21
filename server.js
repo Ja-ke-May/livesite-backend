@@ -13,6 +13,8 @@ const authMiddleware = require('./middleware/authMiddleware');
 const userRoutes = require('./routes/userRoutes');
 const { handleSocketConnection, onlineUsers } = require('./socketHandler'); 
 
+const Comment = require('./models/Comment');
+
 dotenv.config();
 
 const app = express();
