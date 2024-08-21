@@ -13,7 +13,7 @@ const authMiddleware = require('./middleware/authMiddleware');
 const userRoutes = require('./routes/userRoutes');
 const { handleSocketConnection, onlineUsers } = require('./socketHandler'); 
 
-const Comment = require('./models/Comment');
+const Comment = require('./models/comment');
 
 dotenv.config();
 
