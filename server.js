@@ -11,8 +11,6 @@ const rateLimit = require('express-rate-limit');
 const multer = require('multer');
 const authMiddleware = require('./middleware/authMiddleware');
 const userRoutes = require('./routes/userRoutes');
-const User = require('./models/user');
-const Comment = require('./models/comment');
 const { handleSocketConnection, onlineUsers } = require('./socketHandler'); 
 
 dotenv.config();
@@ -20,6 +18,7 @@ dotenv.config();
 const app = express();
 const server = http.createServer(app);
 
+// Initialize Socket.IO with CORS configuration
 const io = socketIo(server, {
   cors: {
     origin: [process.env.FRONTEND_URL, 'https://localhost:3000'],
@@ -40,8 +39,8 @@ app.use(bodyParser.json({ limit: '10mb' }));
 
 // Rate Limiting
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 1000,
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 1000, // limit each IP to 1000 requests per windowMs
 });
 app.use(limiter);
 
@@ -76,7 +75,7 @@ app.post('/profile-picture', upload.single('profilePicture'), authMiddleware, as
   }
 });
 
-// Add this route after your other routes
+// Comments Route
 app.post('/comments', authMiddleware, async (req, res) => {
   try {
     const { comment, username } = req.body;  // Extract username and comment from the request body
@@ -102,7 +101,6 @@ app.post('/comments', authMiddleware, async (req, res) => {
     res.status(500).json({ error: 'Server error, please try again later' });
   }
 });
-
 
 // Use Routes
 app.use('/', userRoutes);
