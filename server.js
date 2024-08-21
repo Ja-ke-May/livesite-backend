@@ -19,21 +19,22 @@ dotenv.config();
 
 const app = express();
 const server = http.createServer(app);
+
 const io = socketIo(server, {
   cors: {
-    origin: "https://localhost:3000",
+    origin: process.env.FRONTEND_URL || "https://localhost:3000", 
     methods: ["GET", "POST"],
   },
 });
-
 
 const port = process.env.PORT || 5000;
 
 // Middleware
 app.use(cors({
-  origin: 'https://localhost:3000',
+  origin: process.env.FRONTEND_URL || 'https://localhost:3000',
   credentials: true,
 }));
+
 app.use(helmet());
 app.use(bodyParser.json({ limit: '10mb' }));
 
