@@ -413,5 +413,33 @@ router.post('/deduct-tokens', authMiddleware, async (req, res) => {
   }
 });
 
+// Award tokens to a user
+router.post('/award-tokens', authMiddleware, async (req, res) => {
+  try {
+    const { username, amount } = req.body;
+
+    if (!username || !amount || amount <= 0) {
+      return res.status(400).json({ message: 'Username and a valid token amount are required' });
+    }
+
+    const user = await User.findOne({ userName: username });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    user.tokens += amount;
+    user.recentActivity.push(`Received ${amount} tokens`);
+
+    await user.save();
+
+    res.json({ message: `Successfully awarded ${amount} tokens to ${username}`, tokens: user.tokens });
+  } catch (err) {
+    console.error('Error awarding tokens:', err);
+    res.status(500).json({ error: 'Server error, please try again later' });
+  }
+});
+
+
 
 module.exports = router;

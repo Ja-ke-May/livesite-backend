@@ -1,3 +1,5 @@
+const axios = require('axios'); 
+
 const liveQueue = [];
 const liveUsers = new Map(); 
 const activeStreams = new Map(); 
@@ -189,7 +191,7 @@ const handleSocketConnection = (io) => {
       console.log(`Initial vote set by ${socket.id} to ${initialVote}`);
     });
 
-    socket.on("vote", (newPosition) => {
+    socket.on("vote", async (newPosition) => { // Ensure this function is async
       slidePosition = newPosition; 
       lastActivity.set(socket.id, Date.now());
       io.emit('vote-update', slidePosition);
@@ -200,6 +202,22 @@ const handleSocketConnection = (io) => {
 
         if (currentStreamer) {
           addTime(currentStreamer, io); 
+
+          // Award 100 tokens to the current live user
+          try {
+             await axios.post('https://livesite-backend.onrender.com/award-tokens', {
+              username: currentStreamer,
+              amount: 100
+            }, {
+              headers: {
+                'Authorization': `Bearer ${yourAuthToken}`
+              }
+            });
+
+            console.log(`Awarded 100 tokens to ${currentStreamer}`);
+          } catch (error) {
+            console.error(`Failed to award tokens to ${currentStreamer}:`, error.response ? error.response.data : error.message);
+          }
         }
 
         slidePosition = 50; 
@@ -215,10 +233,10 @@ const handleSocketConnection = (io) => {
 
     if (liveUsers.size > 0) {
       const currentLiveUser = Array.from(liveUsers.keys())[0];
-
       socket.emit("main-feed", currentLiveUser);
       console.log(`Sent main feed to ${socket.id}, current live user: ${currentLiveUser}`);
     }
+
 
     socket.on("join-queue", ({ username, isFastPass }) => {
       lastActivity.set(socket.id, Date.now());
