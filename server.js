@@ -14,6 +14,7 @@ const userRoutes = require('./routes/userRoutes');
 const { handleSocketConnection, onlineUsers } = require('./socketHandler'); 
 
 const Comment = require('./models/comment');
+console.log('Comment model:', Comment);
 
 dotenv.config();
 
