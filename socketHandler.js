@@ -1,10 +1,9 @@
-const liveQueue = [];
-let currentStreamer = null;
+const liveQueue = []; 
+let currentStreamer = null; 
 
 // Online users tracking
 const onlineUsers = new Map();
 const lastActivity = new Map();
-const userConnections = new Map(); // New: Track multiple connections per user
 
 const timers = {}; // Store timers for the live user
 
@@ -146,13 +145,6 @@ const handleSocketConnection = (io) => {
       } else {
         onlineUsers.set(socket.id, username);
         lastActivity.set(socket.id, Date.now());
-
-        // New: Track user connections
-        if (!userConnections.has(username)) {
-          userConnections.set(username, new Set());
-        }
-        userConnections.get(username).add(socket.id);
-
         console.log(`User registered: ${username} with socket ID: ${socket.id}`);
       }
       io.emit('update-online-users', onlineUsers.size);
@@ -353,19 +345,11 @@ const handleSocketConnection = (io) => {
       lastActivity.delete(socket.id);
 
       if (username) {
-        const userSockets = userConnections.get(username);
-        if (userSockets) {
-          userSockets.delete(socket.id);
-          if (userSockets.size === 0) {
-            userConnections.delete(username);
-
-            if (currentStreamer === username) {
-              currentStreamer = null;
-              notifyNextUserInQueue(io);
-            }
-            stopTimer(username);
-          }
+        if (currentStreamer === username) {
+          currentStreamer = null;
+          notifyNextUserInQueue(io);
         }
+        stopTimer(username);
       }
 
       clearInterval(activityChecker);
