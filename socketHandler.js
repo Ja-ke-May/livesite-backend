@@ -311,9 +311,9 @@ const handleSocketConnection = (io) => {
 
     socket.on("offer", (id, offer) => {
       try {
+        console.log(`Emitted 'offer' from ${socket.id} to ${id}`);
         socket.to(id).emit("offer", socket.id, offer);
         lastActivity.set(socket.id, Date.now());
-        console.log(`Emitted 'offer' from ${socket.id} to ${id}`);
       } catch (error) {
         console.error(`Error sending offer from ${socket.id} to ${id}:`, error);
       }
@@ -321,9 +321,13 @@ const handleSocketConnection = (io) => {
     });
 
     socket.on("answer", (id, answer) => {
-      console.log(`Client ${socket.id} sending answer to ${id}`);
-      socket.to(id).emit("answer", socket.id, answer);
-      lastActivity.set(socket.id, Date.now());
+      try {
+        console.log(`Relaying answer from ${socket.id} to ${id}`);
+        socket.to(id).emit("answer", socket.id, answer);
+        lastActivity.set(socket.id, Date.now());
+      } catch (error) {
+        console.error(`Error relaying answer from ${socket.id} to ${id}:`, error);
+      }
     });
 
     socket.on("ice-candidate", (id, candidate) => {
