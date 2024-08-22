@@ -358,6 +358,13 @@ const handleSocketConnection = (io) => {
       onlineUsers.delete(socket.id);
       lastActivity.delete(socket.id);
 
+      const queueIndex = liveQueue.indexOf(socket.id);
+      if (queueIndex !== -1) {
+        liveQueue.splice(queueIndex, 1);
+        console.log(`Removed socket ID ${socket.id} from live queue.`);
+      }
+
+
       if (username) {
         if (currentStreamer === username) {
           liveUsers.delete(username); // Remove from live users
