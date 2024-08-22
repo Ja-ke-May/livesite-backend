@@ -1,12 +1,14 @@
-const liveQueue = []; 
-let currentStreamer = null; 
+const liveQueue = [];
+let currentStreamer = null;
+const liveUsers = new Map(); // Track live users and their corresponding socket IDs
 
+// Online users tracking
 const onlineUsers = new Map();
 const lastActivity = new Map();
 
-const timers = {}; 
+const timers = {}; // Store timers for the live user
 
-const inactivityTimeout = 3600000; 
+const inactivityTimeout = 3600000; // 1 hour
 
 let slidePosition = 50;
 let slidePositionAmount = 5;
@@ -60,6 +62,7 @@ const stopLiveStream = (username, io) => {
   console.log(`Stopping live stream for user: ${username}`);
   io.to(onlineUsers.get(username)).emit('is-next', false);
   currentStreamer = null;
+  liveUsers.delete(username); // Remove from live users
 
   const queueIndex = liveQueue.findIndex(socketId => onlineUsers.get(socketId) === username);
   if (queueIndex !== -1) {
@@ -281,6 +284,7 @@ const handleSocketConnection = (io) => {
       socket.emit('current-slide-amount', slidePositionAmount);
 
       currentStreamer = username;
+      liveUsers.set(username, socket.id); // Track the live user
       console.log(`Client ${socket.id} (${username}) going live`);
       lastActivity.set(socket.id, Date.now());
       io.emit('main-feed', username);
@@ -291,7 +295,7 @@ const handleSocketConnection = (io) => {
     });
 
     socket.on("request-offer", (liveUsername) => {
-      const liveUserSocketId = currentStreamer && onlineUsers.get(liveUsername);
+      const liveUserSocketId = liveUsers.get(liveUsername);
       if (liveUserSocketId) {
         io.to(liveUserSocketId).emit("new-peer", socket.id);
         console.log(`Emitted 'new-peer' to live user socket ID: ${liveUserSocketId}`);
@@ -332,6 +336,7 @@ const handleSocketConnection = (io) => {
         console.log(`Removed socket ID ${socket.id} from live queue.`);
       }
 
+      liveUsers.delete(username); // Remove from live users
       currentStreamer = null;
       notifyNextUserInQueue(io);
       io.emit('main-feed', null);
@@ -348,6 +353,7 @@ const handleSocketConnection = (io) => {
 
       if (username) {
         if (currentStreamer === username) {
+          liveUsers.delete(username); // Remove from live users
           currentStreamer = null;
           notifyNextUserInQueue(io);
         }
