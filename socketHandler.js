@@ -1,9 +1,10 @@
-const liveQueue = []; 
-let currentStreamer = null; 
+const liveQueue = [];
+let currentStreamer = null;
 
 // Online users tracking
 const onlineUsers = new Map();
 const lastActivity = new Map();
+const userConnections = new Map(); // New: Track multiple connections per user
 
 const timers = {}; // Store timers for the live user
 
@@ -71,6 +72,8 @@ const stopLiveStream = (username, io) => {
   notifyNextUserInQueue(io);
 
   io.emit('main-feed', null);
+
+  updateUpNext(io);
   stopTimer(username);
 };
 
@@ -143,6 +146,13 @@ const handleSocketConnection = (io) => {
       } else {
         onlineUsers.set(socket.id, username);
         lastActivity.set(socket.id, Date.now());
+
+        // New: Track user connections
+        if (!userConnections.has(username)) {
+          userConnections.set(username, new Set());
+        }
+        userConnections.get(username).add(socket.id);
+
         console.log(`User registered: ${username} with socket ID: ${socket.id}`);
       }
       io.emit('update-online-users', onlineUsers.size);
@@ -194,8 +204,8 @@ const handleSocketConnection = (io) => {
       } else if (slidePosition <= 0) {
         slidePositionAmount = 5;
         io.emit('current-slide-amount', slidePositionAmount);
-        stopLiveStream(onlineUsers.get(socket.id), io);
-        console.log(`Slide position reached 0, stopping live stream for ${onlineUsers.get(socket.id)}`);
+        stopLiveStream(username, io);
+        console.log(`Slide position reached 0, stopping live stream for ${username}`);
       }
     });
 
@@ -343,11 +353,19 @@ const handleSocketConnection = (io) => {
       lastActivity.delete(socket.id);
 
       if (username) {
-        if (currentStreamer === username) {
-          currentStreamer = null;
-          notifyNextUserInQueue(io);
+        const userSockets = userConnections.get(username);
+        if (userSockets) {
+          userSockets.delete(socket.id);
+          if (userSockets.size === 0) {
+            userConnections.delete(username);
+
+            if (currentStreamer === username) {
+              currentStreamer = null;
+              notifyNextUserInQueue(io);
+            }
+            stopTimer(username);
+          }
         }
-        stopTimer(username);
       }
 
       clearInterval(activityChecker);
