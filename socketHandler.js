@@ -23,7 +23,7 @@ const startTimer = (username, io, stopLiveStream, additionalTime = 0) => {
   }
 
   timers[username].currentTime = (timers[username].currentTime || 60) + additionalTime;
-  io.emit("timer-update", timers[username].currentTime);
+  io.emit("timer-update", username, timers[username].currentTime);
 
   timers[username].interval = setInterval(() => {
     if (timers[username].currentTime > 0) {
@@ -34,7 +34,7 @@ const startTimer = (username, io, stopLiveStream, additionalTime = 0) => {
         clearInterval(timers[username].interval);
         delete timers[username];
         io.emit("timer-end", username);
-        stopLiveStream(username, io);
+        stopLiveStream(username, io);  // End the live stream when time runs out
       }
     }
   }, 1000);
@@ -60,9 +60,12 @@ const stopLiveStream = (username, io) => {
   if (currentStreamer !== username) return;
 
   console.log(`Stopping live stream for user: ${username}`);
+  
   io.to(onlineUsers.get(username)).emit('is-next', false);
-  currentStreamer = null;
+  io.emit('main-feed', null); // Notify all clients that the stream has ended
+  
   liveUsers.delete(username); // Remove from live users
+  currentStreamer = null;
 
   const queueIndex = liveQueue.findIndex(socketId => onlineUsers.get(socketId) === username);
   if (queueIndex !== -1) {
@@ -71,11 +74,14 @@ const stopLiveStream = (username, io) => {
   }
 
   notifyNextUserInQueue(io);
-
-  io.emit('main-feed', null);
-
-  updateUpNext(io);
   stopTimer(username);
+  cleanupWebRTCConnections(io); // Cleanup WebRTC connections
+  updateUpNext(io);
+};
+
+const cleanupWebRTCConnections = (io) => {
+  console.log("Cleaning up all WebRTC connections for the previous streamer...");
+  io.emit('cleanup-connections');
 };
 
 const updateUpNext = (io) => {
@@ -341,6 +347,7 @@ const handleSocketConnection = (io) => {
       notifyNextUserInQueue(io);
       io.emit('main-feed', null);
       stopTimer(username);
+      cleanupWebRTCConnections(io); // Cleanup WebRTC connections
       updateUpNext(io);
     });
 
@@ -358,6 +365,7 @@ const handleSocketConnection = (io) => {
           notifyNextUserInQueue(io);
         }
         stopTimer(username);
+        cleanupWebRTCConnections(io); // Cleanup WebRTC connections
       }
 
       clearInterval(activityChecker);
