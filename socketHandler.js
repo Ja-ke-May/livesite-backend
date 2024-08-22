@@ -34,7 +34,7 @@ const startTimer = (username, io, stopLiveStream, additionalTime = 0) => {
         clearInterval(timers[username].interval);
         delete timers[username];
         io.emit("timer-end", username);
-        stopLiveStream(username, io);  // End the live stream when time runs out
+        stopLiveStream(currentStreamer, io);
       }
     }
   }, 1000);
@@ -43,7 +43,8 @@ const startTimer = (username, io, stopLiveStream, additionalTime = 0) => {
 const stopTimer = (username) => {
   if (timers[username]) {
     clearInterval(timers[username].interval);
-    delete timers[username];
+    delete timers[username]; 
+
     console.log(`Timer stopped for user: ${username}`);
   }
 };
@@ -204,7 +205,7 @@ const handleSocketConnection = (io) => {
       } else if (slidePosition <= 0) {
         slidePositionAmount = 5;
         io.emit('current-slide-amount', slidePositionAmount);
-        stopLiveStream(onlineUsers.get(socket.id), io); 
+        stopLiveStream(currentStreamer, io); 
         console.log(`Slide position reached 0, stopping live stream for ${username}`);
       }
     });
