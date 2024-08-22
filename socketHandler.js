@@ -196,7 +196,7 @@ const handleSocketConnection = (io) => {
       } else if (slidePosition <= 0) {
         slidePositionAmount = 5;
         io.emit('current-slide-amount', slidePositionAmount);
-        stopLiveStream(username, io);
+        stopLiveStream(onlineUsers.get(socket.id), io); // Corrected to ensure correct user is passed
         console.log(`Slide position reached 0, stopping live stream for ${username}`);
       }
     });
@@ -286,6 +286,9 @@ const handleSocketConnection = (io) => {
       lastActivity.set(socket.id, Date.now());
       io.emit('main-feed', username);
       startTimer(username, io, stopLiveStream);
+
+      // Notify all viewers to establish peer connections with the new streamer
+      io.emit('new-peer', socket.id); // Send the socket ID of the new streamer to all clients
     });
 
     socket.on("request-offer", (liveUsername) => {
