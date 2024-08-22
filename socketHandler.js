@@ -1,13 +1,12 @@
 const liveQueue = []; 
 let currentStreamer = null; 
 
-// Online users tracking
 const onlineUsers = new Map();
 const lastActivity = new Map();
 
-const timers = {}; // Store timers for the live user
+const timers = {}; 
 
-const inactivityTimeout = 3600000; // 1 hour
+const inactivityTimeout = 3600000; 
 
 let slidePosition = 50;
 let slidePositionAmount = 5;
@@ -196,7 +195,7 @@ const handleSocketConnection = (io) => {
       } else if (slidePosition <= 0) {
         slidePositionAmount = 5;
         io.emit('current-slide-amount', slidePositionAmount);
-        stopLiveStream(onlineUsers.get(socket.id), io); // Corrected to ensure correct user is passed
+        stopLiveStream(onlineUsers.get(socket.id), io); 
         console.log(`Slide position reached 0, stopping live stream for ${username}`);
       }
     });
