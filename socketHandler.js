@@ -358,30 +358,38 @@ const handleSocketConnection = (io) => {
     socket.on("disconnect", () => {
       const username = onlineUsers.get(socket.id);
       console.log(`Client disconnected: ${socket.id} (${username})`);
-
+    
       onlineUsers.delete(socket.id);
       lastActivity.delete(socket.id);
-
+    
       const queueIndex = liveQueue.indexOf(socket.id);
       if (queueIndex !== -1) {
         liveQueue.splice(queueIndex, 1);
         console.log(`Removed socket ID ${socket.id} from live queue.`);
       }
-
-
+    
+      // Check if the disconnected user is the current live streamer
       if (username) {
         if (currentStreamer === username) {
+          console.log(`Current live streamer ${username} has disconnected.`);
           liveUsers.delete(username); // Remove from live users
           currentStreamer = null;
+    
           notifyNextUserInQueue(io);
+    
+          // Stop the timer and cleanup WebRTC connections
+          stopTimer(username);
+          cleanupWebRTCConnections(io);
+          io.emit('main-feed', null); // Notify all clients that the stream has ended
+        } else {
+          console.log(`Disconnected user ${username} was not the live streamer, no impact on the live stream.`);
         }
-        stopTimer(username);
-        cleanupWebRTCConnections(io); // Cleanup WebRTC connections
       }
-
+    
       clearInterval(activityChecker);
       socket.broadcast.emit("peer-disconnected", socket.id);
     });
+    
 
   });
 };
