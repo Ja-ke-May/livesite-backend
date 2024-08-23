@@ -61,7 +61,7 @@ const stopLiveStream = (username, io) => {
 
   console.log(`Stopping live stream for user: ${username}`);
   
-  io.to(onlineUsers.get(username)).emit('is-next', false);
+  io.to(liveUsers.get(username)).emit('reset-state');
   io.emit('main-feed', null); // Notify all clients that the stream has ended
   
   liveUsers.delete(username); // Remove from live users
