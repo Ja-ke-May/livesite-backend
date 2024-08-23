@@ -346,13 +346,15 @@ const handleSocketConnection = (io) => {
         console.log(`Removed socket ID ${socket.id} from live queue.`);
       }
 
-      liveUsers.delete(username); // Remove from live users
-      currentStreamer = null;
-      notifyNextUserInQueue(io);
-      io.emit('main-feed', null);
-      stopTimer(username);
-      cleanupWebRTCConnections(io); // Cleanup WebRTC connections
-      updateUpNext(io);
+      if (currentStreamer === username) {
+        liveUsers.delete(username); // Remove from live users
+        currentStreamer = null;
+        notifyNextUserInQueue(io);
+        io.emit('main-feed', null);
+        stopTimer(username);
+        cleanupWebRTCConnections(io); // Cleanup WebRTC connections
+        updateUpNext(io);
+      }
     });
 
     socket.on("disconnect", () => {
@@ -369,28 +371,24 @@ const handleSocketConnection = (io) => {
       }
     
       // Check if the disconnected user is the current live streamer
-      if (username) {
-        if (currentStreamer === username) {
-          console.log(`Current live streamer ${username} has disconnected.`);
-          liveUsers.delete(username); // Remove from live users
-          currentStreamer = null;
+      if (username && currentStreamer === username) {
+        console.log(`Current live streamer ${username} has disconnected.`);
+        liveUsers.delete(username); // Remove from live users
+        currentStreamer = null;
     
-          notifyNextUserInQueue(io);
+        notifyNextUserInQueue(io);
     
-          // Stop the timer and cleanup WebRTC connections
-          stopTimer(username);
-          cleanupWebRTCConnections(io);
-          io.emit('main-feed', null); // Notify all clients that the stream has ended
-        } else {
-          console.log(`Disconnected user ${username} was not the live streamer, no impact on the live stream.`);
-        }
+        // Stop the timer and cleanup WebRTC connections
+        stopTimer(username);
+        cleanupWebRTCConnections(io);
+        io.emit('main-feed', null); // Notify all clients that the stream has ended
+      } else {
+        console.log(`Disconnected user ${username} was not the live streamer, no impact on the live stream.`);
       }
     
       clearInterval(activityChecker);
       socket.broadcast.emit("peer-disconnected", socket.id);
     });
-    
-
   });
 };
 
