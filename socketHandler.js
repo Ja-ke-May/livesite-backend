@@ -34,7 +34,7 @@ const startTimer = (username, io, stopLiveStream, additionalTime = 0) => {
         clearInterval(timers[username].interval);
         delete timers[username];
         io.emit("timer-end", username);
-        stopLiveStream(currentStreamer, io);
+        stopLiveStream(username, io);  // End the live stream when time runs out
       }
     }
   }, 1000);
@@ -43,8 +43,7 @@ const startTimer = (username, io, stopLiveStream, additionalTime = 0) => {
 const stopTimer = (username) => {
   if (timers[username]) {
     clearInterval(timers[username].interval);
-    delete timers[username]; 
-
+    delete timers[username];
     console.log(`Timer stopped for user: ${username}`);
   }
 };
@@ -76,7 +75,13 @@ const stopLiveStream = (username, io) => {
 
   notifyNextUserInQueue(io);
   stopTimer(username);
+  cleanupWebRTCConnections(io); // Cleanup WebRTC connections
   updateUpNext(io);
+};
+
+const cleanupWebRTCConnections = (io) => {
+  console.log("Cleaning up all WebRTC connections for the previous streamer...");
+  io.emit('cleanup-connections');
 };
 
 const updateUpNext = (io) => {
@@ -199,7 +204,7 @@ const handleSocketConnection = (io) => {
       } else if (slidePosition <= 0) {
         slidePositionAmount = 5;
         io.emit('current-slide-amount', slidePositionAmount);
-        stopLiveStream(currentStreamer, io); 
+        stopLiveStream(onlineUsers.get(socket.id), io); 
         console.log(`Slide position reached 0, stopping live stream for ${username}`);
       }
     });
@@ -346,6 +351,7 @@ const handleSocketConnection = (io) => {
       notifyNextUserInQueue(io);
       io.emit('main-feed', null);
       stopTimer(username);
+      cleanupWebRTCConnections(io); // Cleanup WebRTC connections
       updateUpNext(io);
     });
 
@@ -370,6 +376,7 @@ const handleSocketConnection = (io) => {
           notifyNextUserInQueue(io);
         }
         stopTimer(username);
+        cleanupWebRTCConnections(io); // Cleanup WebRTC connections
       }
 
       clearInterval(activityChecker);
