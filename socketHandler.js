@@ -62,6 +62,14 @@ const stopLiveStream = (username, io) => {
   console.log(`Stopping live stream for user: ${username}`);
   
   io.to(liveUsers.get(username)).emit('reset-state');
+
+   // Reset state and disconnect the streamer
+   if (liveUsers.has(username)) {
+    const streamerSocketId = liveUsers.get(username);
+    io.to(streamerSocketId).emit('reset-state');
+    io.to(streamerSocketId).emit('disconnect', "Time is up"); // Force disconnect
+  }
+  
   io.emit('main-feed', null); // Notify all clients that the stream has ended
   
   liveUsers.delete(username); // Remove from live users
