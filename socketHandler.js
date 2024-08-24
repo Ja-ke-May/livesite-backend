@@ -204,8 +204,7 @@ const handleSocketConnection = (io) => {
       } else if (slidePosition <= 0) {
         slidePositionAmount = 5;
         io.emit('current-slide-amount', slidePositionAmount);
-        stopLiveStream(onlineUsers.get(socket.id), io); 
-        console.log(`Slide position reached 0, stopping live stream for ${username}`);
+        stopLiveStream(currentStreamer, io); 
       }
     });
 
