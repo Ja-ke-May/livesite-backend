@@ -62,7 +62,6 @@ const stopLiveStream = (username, io) => {
   console.log(`Stopping live stream for user: ${username}`);
   
   io.to(liveUsers.get(username)).emit('reset-state');
-  io.to(liveUsers.get(username)).emit('stop-live'); 
   io.emit('main-feed', null); // Notify all clients that the stream has ended
   
   liveUsers.delete(username); // Remove from live users
@@ -74,10 +73,9 @@ const stopLiveStream = (username, io) => {
     console.log(`Removed ${username} from the queue. Queue after removal: ${liveQueue.join(', ')}`);
   }
 
-  cleanupWebRTCConnections(io); 
-
   notifyNextUserInQueue(io);
   stopTimer(username);
+  cleanupWebRTCConnections(io); // Cleanup WebRTC connections
   updateUpNext(io);
 };
 
