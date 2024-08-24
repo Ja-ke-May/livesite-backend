@@ -274,6 +274,12 @@ const handleSocketConnection = (io) => {
       
       io.emit('main-feed', null); 
 
+      slidePosition = 50;
+      slidePositionAmount = 5;
+
+      socket.emit('current-position', slidePosition);
+      socket.emit('current-slide-amount', slidePositionAmount);
+
       if (currentStreamer) {
         console.warn(`Cannot go live. Current streamer is ${currentStreamer}`);
         io.to(onlineUsers.get(currentStreamer)).emit("is-next", true);
@@ -286,11 +292,7 @@ const handleSocketConnection = (io) => {
         return;
       }
 
-      slidePosition = 50;
-      slidePositionAmount = 5;
-
-      socket.emit('current-position', slidePosition);
-      socket.emit('current-slide-amount', slidePositionAmount);
+      
 
       currentStreamer = username;
       liveUsers.set(username, socket.id); // Track the live user
