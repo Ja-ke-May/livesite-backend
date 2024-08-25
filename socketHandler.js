@@ -152,8 +152,12 @@ const handleSocketConnection = (io) => {
     socket.on("register-user", (username) => {
       if (!username) {
         console.error(`Username not provided for socket ID: ${socket.id}`);
+        socket.emit('current-position', slidePosition);
+        socket.emit('current-slide-amount', slidePositionAmount);
       } else {
-        onlineUsers.set(socket.id, username);
+        onlineUsers.set(socket.id, username); 
+        socket.emit('current-position', slidePosition);
+        socket.emit('current-slide-amount', slidePositionAmount);
         lastActivity.set(socket.id, Date.now());
         console.log(`User registered: ${username} with socket ID: ${socket.id}`);
       }
