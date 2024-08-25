@@ -126,7 +126,6 @@ app.post('/report', authMiddleware, async (req, res) => {
       return res.status(400).json({ message: 'Content is required' });
     }
 
-    // Create a new report
     const report = new Report({
       userId,
       content,
