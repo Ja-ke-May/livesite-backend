@@ -101,7 +101,13 @@ const notifyNextUserInQueue = (io) => {
 
   if (liveQueue.length >= 1) {
     const nextClient = liveQueue[0];
-    const nextUsername = onlineUsers.get(nextClient);
+    const nextUsername = onlineUsers.get(nextClient); 
+
+    liveQueue.forEach((socketId, index) => {
+      const userPosition = index + 1;
+      io.to(socketId).emit("queue-position-update", userPosition);
+      console.log(`Emitted updated queue position ${userPosition} to socket ID: ${socketId}`);
+    });
 
     if (!nextUsername) {
       console.error(`Username for client ID ${nextClient} not found.`);
@@ -114,11 +120,7 @@ const notifyNextUserInQueue = (io) => {
       console.log(`Emitted 'is-next' with value 'true' for user: ${nextUsername}`);
     }
 
-    liveQueue.forEach((socketId, index) => {
-      const userPosition = index + 1;
-      io.to(socketId).emit("queue-position-update", userPosition);
-      console.log(`Emitted updated queue position ${userPosition} to socket ID: ${socketId}`);
-    });
+   
 
   } else {
     console.log("No one is live, emitting 'no-one-live'");
@@ -364,6 +366,8 @@ const handleSocketConnection = (io) => {
     socket.on("disconnect", () => {
       const username = onlineUsers.get(socket.id);
       console.log(`Client disconnected: ${socket.id} (${username})`);
+
+      notifyNextUserInQueue(io);
     
       onlineUsers.delete(socket.id);
       lastActivity.delete(socket.id);
@@ -380,7 +384,7 @@ const handleSocketConnection = (io) => {
         liveUsers.delete(username); // Remove from live users
         currentStreamer = null;
     
-        notifyNextUserInQueue(io);
+        
     
         // Stop the timer and cleanup WebRTC connections
         stopTimer(username);
