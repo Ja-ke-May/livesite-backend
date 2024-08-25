@@ -13,6 +13,8 @@ const authMiddleware = require('./middleware/authMiddleware');
 const userRoutes = require('./routes/userRoutes');
 const { handleSocketConnection, onlineUsers } = require('./socketHandler'); 
 
+const User = require('./models/user');
+
 const Comment = require('./models/comment');
 console.log('Comment model:', Comment);
 
