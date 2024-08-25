@@ -52,9 +52,19 @@ mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log('Connected to MongoDB'))
   .catch(err => console.error('Could not connect to MongoDB', err));
 
-// Multer setup (for handling file uploads)
+// Multer setup with file type and size validation
 const storage = multer.memoryStorage();
-const upload = multer({ storage });
+const upload = multer({
+  storage,
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
+    if (!allowedTypes.includes(file.mimetype)) {
+      return cb(new Error('Invalid file type. Only JPEG, PNG, and GIF are allowed.'));
+    }
+    cb(null, true);
+  },
+  limits: { fileSize: 1024 * 1024 * 10 }, 
+});
 
 // Routes
 app.post('/profile-picture', upload.single('profilePicture'), authMiddleware, async (req, res) => {
