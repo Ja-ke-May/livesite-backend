@@ -117,7 +117,7 @@ app.post('/comments', authMiddleware, async (req, res) => {
   }
 }); 
 
-app.post('/reports', authMiddleware, async (req, res) => {
+app.post('/report', authMiddleware, async (req, res) => {
   try {
     const { content } = req.body;
     const userId = req.user.userId; 
