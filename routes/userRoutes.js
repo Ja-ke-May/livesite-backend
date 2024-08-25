@@ -402,7 +402,7 @@ router.post('/deduct-tokens', authMiddleware, async (req, res) => {
     }
 
     user.tokens -= amount;
-    user.recentActivity.push(`Spent ${amount} tokens`);
+    
 
     await user.save();
 
