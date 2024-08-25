@@ -14,7 +14,7 @@ const userRoutes = require('./routes/userRoutes');
 const { handleSocketConnection, onlineUsers } = require('./socketHandler'); 
 
 const User = require('./models/user');
-
+const Report = require('./models/report');
 const Comment = require('./models/comment');
 console.log('Comment model:', Comment);
 
@@ -113,6 +113,30 @@ app.post('/comments', authMiddleware, async (req, res) => {
     res.status(201).json({ message: 'Comment saved successfully' });
   } catch (err) {
     console.error('Error saving comment:', err);
+    res.status(500).json({ error: 'Server error, please try again later' });
+  }
+}); 
+
+router.post('/reports', authMiddleware, async (req, res) => {
+  try {
+    const { content } = req.body;
+    const userId = req.user.userId; // Assuming user ID is in req.user
+
+    if (!content) {
+      return res.status(400).json({ message: 'Content is required' });
+    }
+
+    // Create a new report
+    const report = new Report({
+      userId,
+      content,
+    });
+
+    await report.save();
+
+    res.status(201).json({ message: 'Report submitted successfully' });
+  } catch (err) {
+    console.error('Error submitting report:', err);
     res.status(500).json({ error: 'Server error, please try again later' });
   }
 });
