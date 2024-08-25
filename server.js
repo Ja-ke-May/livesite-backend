@@ -93,7 +93,7 @@ app.post('/profile-picture', upload.single('profilePicture'), authMiddleware, as
 // Comments Route
 app.post('/comments', authMiddleware, async (req, res) => {
   try {
-    const { comment, username } = req.body;  // Extract username and comment from the request body
+    const { comment, username } = req.body;  
 
     if (!comment || comment.trim() === '') {
       return res.status(400).json({ message: 'Comment cannot be empty' });
@@ -117,10 +117,10 @@ app.post('/comments', authMiddleware, async (req, res) => {
   }
 }); 
 
-router.post('/reports', authMiddleware, async (req, res) => {
+app.post('/reports', authMiddleware, async (req, res) => {
   try {
     const { content } = req.body;
-    const userId = req.user.userId; // Assuming user ID is in req.user
+    const userId = req.user.userId; 
 
     if (!content) {
       return res.status(400).json({ message: 'Content is required' });
