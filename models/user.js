@@ -21,7 +21,7 @@ const userSchema = new mongoose.Schema({
   },
   tokens: {
     type: Number,
-    default: 100 
+    default: 1000 
   },
   purchases: {
     type: [String], 
