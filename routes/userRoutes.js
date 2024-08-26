@@ -440,6 +440,40 @@ router.post('/award-tokens', authMiddleware, async (req, res) => {
   }
 });
 
+// Update live duration
+router.post('/profile/live-duration', authMiddleware, async (req, res) => {
+  try {
+    const { username, liveDuration } = req.body;
 
+    if (!username || !liveDuration || liveDuration < 0) {
+      return res.status(400).json({ message: 'Username and a valid live duration are required' });
+    }
+
+    const user = await User.findOne({ userName: username });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Update total live duration
+    user.totalLiveDuration = (user.totalLiveDuration || 0) + liveDuration;
+
+    // Check and update the longest live duration
+    if (liveDuration > user.longestLiveDuration) {
+      user.longestLiveDuration = liveDuration;
+    }
+
+    await user.save();
+
+    res.json({ 
+      message: `Successfully updated live duration for ${username}`, 
+      totalLiveDuration: user.totalLiveDuration,
+      longestLiveDuration: user.longestLiveDuration
+    });
+  } catch (err) {
+    console.error('Error updating live duration:', err);
+    res.status(500).json({ error: 'Server error, please try again later' });
+  }
+});
 
 module.exports = router;

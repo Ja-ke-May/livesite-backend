@@ -65,6 +65,14 @@ const userSchema = new mongoose.Schema({
     type: Date,
     default: null
   },
+  totalLiveDuration: {
+    type: Number,
+    default: 0  
+  },
+  longestLiveDuration: {
+    type: Number,
+    default: 0  
+  }
 });
 
 const User = mongoose.model('User', userSchema);
