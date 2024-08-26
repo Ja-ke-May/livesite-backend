@@ -445,15 +445,26 @@ router.post('/profile/live-duration', authMiddleware, async (req, res) => {
   try {
     const { username, liveDuration } = req.body;
 
+    // Log the incoming request data
+    console.log('Received request to update live duration:', { username, liveDuration });
+
     if (!username || !liveDuration || liveDuration < 0) {
+      console.log('Invalid data received:', { username, liveDuration });
       return res.status(400).json({ message: 'Username and a valid live duration are required' });
     }
 
     const user = await User.findOne({ userName: username });
 
     if (!user) {
+      console.log('User not found:', username);
       return res.status(404).json({ message: 'User not found' });
     }
+
+    // Log the current durations before updating
+    console.log('Current user durations:', {
+      totalLiveDuration: user.totalLiveDuration,
+      longestLiveDuration: user.longestLiveDuration,
+    });
 
     // Update total live duration
     user.totalLiveDuration = (user.totalLiveDuration || 0) + liveDuration;
@@ -464,6 +475,12 @@ router.post('/profile/live-duration', authMiddleware, async (req, res) => {
     }
 
     await user.save();
+
+    // Log the updated durations after saving
+    console.log('Updated user durations:', {
+      totalLiveDuration: user.totalLiveDuration,
+      longestLiveDuration: user.longestLiveDuration,
+    });
 
     res.json({ 
       message: `Successfully updated live duration for ${username}`, 
