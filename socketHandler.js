@@ -221,43 +221,46 @@ const handleSocketConnection = (io) => {
 
     socket.on("join-queue", ({ username, isFastPass }) => {
       lastActivity.set(socket.id, Date.now());
-
+    
       if (liveQueue.includes(socket.id)) {
         console.log(`User ${username} is already in the queue or currently live.`);
         socket.emit("queue-error", "Already in queue or currently live.");
         return;
       }
-
+    
       if (username === currentStreamer) {
         console.log(`Resetting state for user: ${username} before rejoining the queue`);
         stopLiveStream(username, io);
       }
-
+    
       if (isFastPass) {
-        let insertionIndex = 1;
-
-        for (let i = 1; i < liveQueue.length; i++) {
-          const socketId = liveQueue[i];
-          if (!onlineUsers.get(socketId)?.isFastPass) {
-            break;
-          }
-          insertionIndex++;
+        // Insert the user at the second position (index 1)
+        if (liveQueue.length >= 2) {
+          // Move existing user at index 1 and everyone else back by one position
+          liveQueue.splice(1, 0, socket.id);
+    
+          console.log(`User ${username} used Fast Pass and was inserted at position 2 in the queue.`);
+        } else {
+          // If there are less than 2 users, just push the user at the end of the queue
+          liveQueue.push(socket.id);
+          console.log(`User ${username} used Fast Pass but was inserted at the end due to insufficient queue length.`);
         }
-
-        liveQueue.splice(insertionIndex, 0, socket.id);
-        console.log(`User ${username} used Fast Pass and was inserted at position ${insertionIndex + 1} in the queue.`);
       } else {
         liveQueue.push(socket.id);
         console.log(`Client ${socket.id} (${username}) joined the queue. Queue length: ${liveQueue.length}`);
       }
-
-      const position = liveQueue.findIndex((socketId) => onlineUsers.get(socketId) === username) + 1;
-      socket.emit("queue-position-update", position);
-
+    
+      // Emit queue position updates
+      liveQueue.forEach((socketId, index) => {
+        io.to(socketId).emit("queue-position-update", index + 1);
+      });
+    
+      // If this is the first user in the queue and no one is streaming, prompt them to go live
       if (liveQueue.length === 1 && !currentStreamer) {
         io.to(socket.id).emit("go-live-prompt");
         console.log(`Emitted 'go-live' to client: ${socket.id}`);
       }
+    
       updateUpNext(io);
     });
 
