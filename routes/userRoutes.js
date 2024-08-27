@@ -467,7 +467,7 @@ router.post('/profile/live-duration', authMiddleware, async (req, res) => {
     });
 
     // Update total live duration
-    user.totalLiveDuration =  liveDuration;
+    user.totalLiveDuration += liveDuration;
 
     // Check and update the longest live duration
     if (liveDuration > user.longestLiveDuration) {
