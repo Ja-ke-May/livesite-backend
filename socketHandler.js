@@ -421,6 +421,7 @@ const handleSocketConnection = (io) => {
       console.log(`Client disconnected: ${socket.id} (${username})`);
     
       try {
+        await recordLiveDuration(username); 
         notifyNextUserInQueue(io);
     
         onlineUsers.delete(socket.id);
@@ -437,7 +438,7 @@ const handleSocketConnection = (io) => {
           liveUsers.delete(username);
           currentStreamer = null;
     
-          await recordLiveDuration(username); 
+          
           stopTimer(username);
           cleanupWebRTCConnections(io);
           io.emit('main-feed', null); 
