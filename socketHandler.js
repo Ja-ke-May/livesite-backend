@@ -15,6 +15,8 @@ const inactivityTimeout = 3600000; // 1 hour
 let slidePosition = 50;
 let slidePositionAmount = 5;
 
+const User = require('./models/user'); 
+
 const startTimer = (username, io, stopLiveStream, additionalTime = 0) => {
   if (timers[username] && timers[username].interval) {
     clearInterval(timers[username].interval);
