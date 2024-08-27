@@ -440,50 +440,53 @@ router.post('/award-tokens', authMiddleware, async (req, res) => {
   }
 });
 
-// Start or stop live session
+// Update live duration
 router.post('/profile/live-duration', authMiddleware, async (req, res) => {
   try {
-    const { username, liveDuration, action } = req.body;
+    const { username, liveDuration } = req.body;
 
-    if (!username || !action || (action !== 'start' && action !== 'stop')) {
-      return res.status(400).json({ message: 'Username and valid action (start/stop) are required' });
+    // Log the incoming request data
+    console.log('Received request to update live duration:', { username, liveDuration });
+
+    if (!username || !liveDuration || liveDuration < 0) {
+      console.log('Invalid data received:', { username, liveDuration });
+      return res.status(400).json({ message: 'Username and a valid live duration are required' });
     }
 
     const user = await User.findOne({ userName: username });
 
     if (!user) {
+      console.log('User not found:', username);
       return res.status(404).json({ message: 'User not found' });
     }
 
-    if (action === 'start') {
-      // Start the session
-      user.sessionStart = new Date();
-      await user.save();
-      return res.json({ message: `Live session started for ${username}` });
-    } else if (action === 'stop') {
-      // Stop the session and calculate duration
-      if (!user.sessionStart) {
-        return res.status(400).json({ message: 'Session not started or already stopped' });
-      }
-      const sessionEnd = new Date();
-      const sessionDuration = (sessionEnd - new Date(user.sessionStart)) / 1000; 
+    // Log the current durations before updating
+    console.log('Current user durations:', {
+      totalLiveDuration: user.totalLiveDuration,
+      longestLiveDuration: user.longestLiveDuration,
+    });
 
-      user.totalLiveDuration += sessionDuration;
-      if (sessionDuration > user.longestLiveDuration) {
-        user.longestLiveDuration = sessionDuration;
-      }
+    // Update total live duration
+    user.totalLiveDuration = (user.totalLiveDuration || 0) + liveDuration;
 
-      // Reset session start
-      user.sessionStart = null;
-
-      await user.save();
-
-      return res.json({ 
-        message: `Live session stopped for ${username}`, 
-        totalLiveDuration: user.totalLiveDuration,
-        longestLiveDuration: user.longestLiveDuration
-      });
+    // Check and update the longest live duration
+    if (liveDuration > user.longestLiveDuration) {
+      user.longestLiveDuration = liveDuration;
     }
+
+    await user.save();
+
+    // Log the updated durations after saving
+    console.log('Updated user durations:', {
+      totalLiveDuration: user.totalLiveDuration,
+      longestLiveDuration: user.longestLiveDuration,
+    });
+
+    res.json({ 
+      message: `Successfully updated live duration for ${username}`, 
+      totalLiveDuration: user.totalLiveDuration,
+      longestLiveDuration: user.longestLiveDuration
+    });
   } catch (err) {
     console.error('Error updating live duration:', err);
     res.status(500).json({ error: 'Server error, please try again later' });

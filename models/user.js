@@ -73,14 +73,6 @@ const userSchema = new mongoose.Schema({
     type: Number,
     default: 0  
   },
-  sessionStart: {
-    type: Date,
-    default: null
-  },
-  sessionEnd: {
-    type: Date,
-    default: null
-  },
 });
 
 const User = mongoose.model('User', userSchema);
