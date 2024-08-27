@@ -6,6 +6,8 @@ const liveUsers = new Map(); // Track live users and their corresponding socket 
 const onlineUsers = new Map();
 const lastActivity = new Map();
 
+const liveStartTime = new Map(); 
+
 const timers = {}; // Store timers for the live user
 
 const inactivityTimeout = 3600000; // 1 hour
@@ -56,7 +58,44 @@ const addTime = (username, io) => {
   }
 };
 
-const stopLiveStream = (username, io) => {
+const recordLiveDuration = async (username) => {
+  const startTime = liveStartTime.get(username);
+  if (startTime) {
+    const duration = Date.now() - startTime; // Calculate duration in milliseconds
+    const durationInSeconds = duration / 1000; // Convert to seconds
+    console.log(`User ${username} was live for ${durationInSeconds} seconds.`);
+    
+    try {
+      // Fetch the user from the database
+      const user = await User.findOne({ userName: username });
+      if (!user) {
+        console.error(`User ${username} not found in database.`);
+        return;
+      }
+
+      // Update the total live duration
+      user.totalLiveDuration += durationInSeconds;
+
+      // Update the longest live duration if this session is longer
+      if (durationInSeconds > user.longestLiveDuration) {
+        user.longestLiveDuration = durationInSeconds;
+      }
+
+      // Save the updated user document
+      await user.save();
+      console.log(`Updated live duration for user ${username}. Total: ${user.totalLiveDuration} seconds, Longest: ${user.longestLiveDuration} seconds.`);
+    } catch (err) {
+      console.error(`Error updating live duration for user ${username}:`, err);
+    }
+
+    liveStartTime.delete(username); // Clean up the start time
+  } else {
+    console.error(`No start time found for user ${username}.`);
+  }
+};
+
+
+const stopLiveStream = async (username, io) => {
   if (currentStreamer !== username) return;
 
   console.log(`Stopping live stream for user: ${username}`);
@@ -72,6 +111,8 @@ const stopLiveStream = (username, io) => {
     liveQueue.splice(queueIndex, 1);
     console.log(`Removed ${username} from the queue. Queue after removal: ${liveQueue.join(', ')}`);
   }
+
+  await recordLiveDuration(username); 
 
   notifyNextUserInQueue(io);
   stopTimer(username);
@@ -304,13 +345,16 @@ const handleSocketConnection = (io) => {
 
       currentStreamer = username;
       liveUsers.set(username, socket.id); // Track the live user
+      liveStartTime.set(username, Date.now()); 
       console.log(`Client ${socket.id} (${username}) going live`);
       lastActivity.set(socket.id, Date.now());
-      io.emit('main-feed', username);
-      startTimer(username, io, stopLiveStream);
-
+      io.emit('main-feed', username); 
       // Notify all viewers to establish peer connections with the new streamer
       io.emit('new-peer', socket.id); // Send the socket ID of the new streamer to all clients
+
+      startTimer(username, io, stopLiveStream);
+
+      
     });
 
     socket.on("request-offer", (liveUsername) => {
@@ -370,40 +414,43 @@ const handleSocketConnection = (io) => {
       }
     });
 
-    socket.on("disconnect", () => {
+    socket.on("disconnect", async () => {
       const username = onlineUsers.get(socket.id);
       console.log(`Client disconnected: ${socket.id} (${username})`);
-
-      notifyNextUserInQueue(io);
     
-      onlineUsers.delete(socket.id);
-      lastActivity.delete(socket.id);
+      try {
+        notifyNextUserInQueue(io);
     
-      const queueIndex = liveQueue.indexOf(socket.id);
-      if (queueIndex !== -1) {
-        liveQueue.splice(queueIndex, 1);
-        console.log(`Removed socket ID ${socket.id} from live queue.`);
-      }
+        onlineUsers.delete(socket.id);
+        lastActivity.delete(socket.id);
     
-      // Check if the disconnected user is the current live streamer
-      if (username && currentStreamer === username) {
-        console.log(`Current live streamer ${username} has disconnected.`);
-        liveUsers.delete(username); // Remove from live users
-        currentStreamer = null;
+        const queueIndex = liveQueue.indexOf(socket.id);
+        if (queueIndex !== -1) {
+          liveQueue.splice(queueIndex, 1);
+          console.log(`Removed socket ID ${socket.id} from live queue.`);
+        }
     
-        
+        if (username && currentStreamer === username) {
+          console.log(`Current live streamer ${username} has disconnected.`);
+          liveUsers.delete(username);
+          currentStreamer = null;
     
-        // Stop the timer and cleanup WebRTC connections
-        stopTimer(username);
-        cleanupWebRTCConnections(io);
-        io.emit('main-feed', null); // Notify all clients that the stream has ended
-      } else {
-        console.log(`Disconnected user ${username} was not the live streamer, no impact on the live stream.`);
+          await recordLiveDuration(username); 
+          stopTimer(username);
+          cleanupWebRTCConnections(io);
+          io.emit('main-feed', null); 
+        } else {
+          console.log(`Disconnected user ${username} was not the live streamer, no impact on the live stream.`);
+        }
+    
+      } catch (error) {
+        console.error(`Error handling disconnection for ${username}:`, error);
       }
     
       clearInterval(activityChecker);
       socket.broadcast.emit("peer-disconnected", socket.id);
     });
+    
   });
 };
 
