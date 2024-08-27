@@ -440,57 +440,41 @@ router.post('/award-tokens', authMiddleware, async (req, res) => {
   }
 });
 
-// Update live duration
-router.post('/profile/live-duration', authMiddleware, async (req, res) => {
+router.post('/profile/end-live-session', authMiddleware, async (req, res) => {
   try {
-    const { username, liveDuration } = req.body;
-
-    // Log the incoming request data
-    console.log('Received request to update live duration:', { username, liveDuration });
-
-    if (!username || !liveDuration || liveDuration < 0) {
-      console.log('Invalid data received:', { username, liveDuration });
-      return res.status(400).json({ message: 'Username and a valid live duration are required' });
-    }
+    const { username } = req.body;
 
     const user = await User.findOne({ userName: username });
 
-    if (!user) {
-      console.log('User not found:', username);
-      return res.status(404).json({ message: 'User not found' });
+    if (!user || !user.currentSessionStart) {
+      return res.status(400).json({ message: 'No live session in progress for this user' });
     }
 
-    // Log the current durations before updating
-    console.log('Current user durations:', {
-      totalLiveDuration: user.totalLiveDuration,
-      longestLiveDuration: user.longestLiveDuration,
-    });
+    // Calculate the session duration
+    const sessionDuration = Math.floor((Date.now() - user.currentSessionStart) / 1000);
 
-    // Update total live duration
-    user.totalLiveDuration += liveDuration;
+    // Update total live duration and longest live duration
+    user.totalLiveDuration += sessionDuration;
 
-    // Check and update the longest live duration
-    if (liveDuration > user.longestLiveDuration) {
-      user.longestLiveDuration = liveDuration;
+    if (sessionDuration > user.longestLiveDuration) {
+      user.longestLiveDuration = sessionDuration;
     }
 
+    // Save and reset current session start time
+    user.currentSessionStart = null;
     await user.save();
 
-    // Log the updated durations after saving
-    console.log('Updated user durations:', {
-      totalLiveDuration: user.totalLiveDuration,
-      longestLiveDuration: user.longestLiveDuration,
-    });
-
-    res.json({ 
-      message: `Successfully updated live duration for ${username}`, 
+    res.json({
+      message: `Successfully ended live session for ${username}`,
       totalLiveDuration: user.totalLiveDuration,
       longestLiveDuration: user.longestLiveDuration
     });
+
   } catch (err) {
-    console.error('Error updating live duration:', err);
+    console.error('Error ending live session:', err);
     res.status(500).json({ error: 'Server error, please try again later' });
   }
 });
+
 
 module.exports = router;
