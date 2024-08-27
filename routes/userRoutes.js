@@ -440,7 +440,7 @@ router.post('/award-tokens', authMiddleware, async (req, res) => {
   }
 });
 
-router.post('/profile/end-live-session', authMiddleware, async (req, res) => {
+router.post('/profile/live-duration', authMiddleware, async (req, res) => {
   try {
     const { username } = req.body;
 
