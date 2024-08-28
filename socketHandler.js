@@ -2,8 +2,6 @@ const liveQueue = [];
 let currentStreamer = null;
 const liveUsers = new Map(); // Track live users and their corresponding socket IDs
 
-const liveUserHeartbeats = new Map();
-
 // Online users tracking
 const onlineUsers = new Map();
 const lastActivity = new Map();
@@ -101,7 +99,7 @@ const recordLiveDuration = async (username) => {
 
 const stopLiveStream = async (username, io) => {
   if (currentStreamer !== username) return;
-  liveUserHeartbeats.delete(username);
+
   console.log(`Stopping live stream for user: ${username}`);
   
   io.to(liveUsers.get(username)).emit('reset-state');
@@ -175,18 +173,6 @@ const notifyNextUserInQueue = (io) => {
   }
 };
 
-
-setInterval(() => {
-  if (currentStreamer) {
-      const lastHeartbeat = liveUserHeartbeats.get(currentStreamer);
-      if (lastHeartbeat && Date.now() - lastHeartbeat > 15000) { // 15 seconds timeout
-          console.log(`No heartbeat received from live user: ${currentStreamer}. Ending their session.`);
-          stopLiveStream(currentStreamer, io); // End the live stream and move to the next user
-          liveUserHeartbeats.delete(currentStreamer);
-      }
-  }
-}, 10000); 
-
 const handleSocketConnection = (io) => {
   io.on("connection", (socket) => {
     console.log(`New client connected: ${socket.id}`);
@@ -226,13 +212,6 @@ const handleSocketConnection = (io) => {
 
     socket.emit('current-position', slidePosition);
     socket.emit('current-slide-amount', slidePositionAmount);
-
-    socket.on("heartbeat", (username) => {
-      if (username === currentStreamer) {
-          liveUserHeartbeats.set(username, Date.now());
-      }
-  });
-
 
     socket.on("set-initial-vote", (initialVote) => {
       slidePosition = initialVote;
@@ -445,7 +424,7 @@ const handleSocketConnection = (io) => {
     
       try {
         await recordLiveDuration(username); 
-        notifyNextUserInQueue(io);
+         notifyNextUserInQueue(io);
     
         
     
