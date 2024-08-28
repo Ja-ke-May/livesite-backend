@@ -160,7 +160,9 @@ const notifyNextUserInQueue = (io) => {
 
     if (!currentStreamer) {
       io.to(nextClient).emit("is-next", true);
-      console.log(`Emitted 'is-next' with value 'true' for user: ${nextUsername}`);
+      console.log(`Emitted 'is-next' with value 'true' for user: ${nextUsername}`); 
+      io.to(nextClient).emit("go-live-prompt"); // Prompt the next user to go live
+            console.log(`Emitted 'go-live-prompt' to user: ${nextUsername}`);
     }
 
    
@@ -422,7 +424,7 @@ const handleSocketConnection = (io) => {
     
       try {
         await recordLiveDuration(username); 
-        notifyNextUserInQueue(io);
+        
     
         onlineUsers.delete(socket.id);
         lastActivity.delete(socket.id);
@@ -441,7 +443,9 @@ const handleSocketConnection = (io) => {
           
           stopTimer(username);
           cleanupWebRTCConnections(io);
-          io.emit('main-feed', null); 
+          io.emit('main-feed', null);  
+
+          notifyNextUserInQueue(io);
         } else {
           console.log(`Disconnected user ${username} was not the live streamer, no impact on the live stream.`);
         }
