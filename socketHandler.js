@@ -118,13 +118,7 @@ const stopLiveStream = async (username, io) => {
 
   notifyNextUserInQueue(io);
   stopTimer(username);
-  cleanupWebRTCConnections(io); // Cleanup WebRTC connections
   updateUpNext(io);
-};
-
-const cleanupWebRTCConnections = (io) => {
-  console.log("Cleaning up all WebRTC connections for the previous streamer...");
-  io.emit('cleanup-connections');
 };
 
 const updateUpNext = (io) => {
@@ -413,7 +407,6 @@ const handleSocketConnection = (io) => {
         notifyNextUserInQueue(io);
         io.emit('main-feed', null);
         stopTimer(username);
-        cleanupWebRTCConnections(io); // Cleanup WebRTC connections
         updateUpNext(io);
       }
     });
@@ -444,7 +437,6 @@ const handleSocketConnection = (io) => {
           onlineUsers.delete(socket.id);
           lastActivity.delete(socket.id);
           stopTimer(username);
-          cleanupWebRTCConnections(io);
           io.emit('main-feed', null);  
 
          
