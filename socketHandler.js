@@ -424,7 +424,7 @@ const handleSocketConnection = (io) => {
     
       try {
         await recordLiveDuration(username); 
-        
+        notifyNextUserInQueue(io);
     
         
     
@@ -447,7 +447,7 @@ const handleSocketConnection = (io) => {
           cleanupWebRTCConnections(io);
           io.emit('main-feed', null);  
 
-          notifyNextUserInQueue(io);
+         
         } else {
           console.log(`Disconnected user ${username} was not the live streamer, no impact on the live stream.`);
         }
