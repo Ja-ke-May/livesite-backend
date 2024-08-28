@@ -8,7 +8,8 @@ const lastActivity = new Map();
 
 const liveStartTime = new Map(); 
 
-const timers = {}; // Store timers for the live user
+const timers = {}; // Store timers for the live user 
+const responseTimers = {}; 
 
 const inactivityTimeout = 3600000; // 1 hour 
 
@@ -159,7 +160,17 @@ const notifyNextUserInQueue = (io) => {
             console.log(`Emitted 'go-live-prompt' to user: ${nextUsername}`);
     }
 
-   
+    if (responseTimers[nextUsername]) {
+      clearTimeout(responseTimers[nextUsername]);
+    }
+
+    responseTimers[nextUsername] = setTimeout(() => {
+      console.log(`User ${nextUsername} did not respond in time. Disconnecting...`);
+      io.to(nextClient).emit('disconnected-due-to-inactivity');
+      liveQueue.shift(); 
+      notifyNextUserInQueue(io); 
+    }, 90000); 
+  
 
   } else {
     console.log("No one is live, emitting 'no-one-live'");
@@ -324,6 +335,11 @@ const handleSocketConnection = (io) => {
 
       io.emit('update-online-users', onlineUsers.size);
 
+      if (responseTimers[username]) {
+        clearTimeout(responseTimers[username]);
+        delete responseTimers[username];
+      }
+
       slidePosition = 50;
       slidePositionAmount = 5;
 
@@ -422,7 +438,6 @@ const handleSocketConnection = (io) => {
       lastActivity.delete(socket.id);
     
       io.emit('update-online-users', onlineUsers.size);
-      console.log(onlineUsers.size);
     
       try {
         await recordLiveDuration(username);
