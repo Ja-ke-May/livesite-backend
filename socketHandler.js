@@ -424,28 +424,30 @@ const handleSocketConnection = (io) => {
     
       try {
         await recordLiveDuration(username); 
+        
+    
+        
     
         const queueIndex = liveQueue.indexOf(socket.id);
         if (queueIndex !== -1) {
           liveQueue.splice(queueIndex, 1);
           console.log(`Removed socket ID ${socket.id} from live queue.`);
         }
+
+       
     
         if (username && currentStreamer === username) {
           console.log(`Current live streamer ${username} has disconnected.`);
           liveUsers.delete(username);
           currentStreamer = null;
     
-          
+          onlineUsers.delete(socket.id);
+          lastActivity.delete(socket.id);
           stopTimer(username);
-          
+          cleanupWebRTCConnections(io);
           io.emit('main-feed', null);  
 
-          
-          onlineUsers.delete(socket.id);
-        lastActivity.delete(socket.id);
-        cleanupWebRTCConnections(io);
-        notifyNextUserInQueue(io);
+          notifyNextUserInQueue(io);
         } else {
           console.log(`Disconnected user ${username} was not the live streamer, no impact on the live stream.`);
         }
