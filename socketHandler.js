@@ -424,10 +424,6 @@ const handleSocketConnection = (io) => {
     
       try {
         await recordLiveDuration(username); 
-        
-    
-        onlineUsers.delete(socket.id);
-        lastActivity.delete(socket.id);
     
         const queueIndex = liveQueue.indexOf(socket.id);
         if (queueIndex !== -1) {
@@ -442,10 +438,14 @@ const handleSocketConnection = (io) => {
     
           
           stopTimer(username);
-          cleanupWebRTCConnections(io);
+          
           io.emit('main-feed', null);  
 
-          notifyNextUserInQueue(io);
+          
+          onlineUsers.delete(socket.id);
+        lastActivity.delete(socket.id);
+        cleanupWebRTCConnections(io);
+        notifyNextUserInQueue(io);
         } else {
           console.log(`Disconnected user ${username} was not the live streamer, no impact on the live stream.`);
         }
