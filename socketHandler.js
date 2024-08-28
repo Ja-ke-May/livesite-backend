@@ -10,7 +10,7 @@ const liveStartTime = new Map();
 
 const timers = {}; // Store timers for the live user
 
-const inactivityTimeout = 6000; // 6 seconds
+const inactivityTimeout = 3600000; // 1 hour 
 
 let slidePosition = 50;
 let slidePositionAmount = 5;
@@ -155,7 +155,7 @@ const notifyNextUserInQueue = (io) => {
     if (!currentStreamer) {
       io.to(nextClient).emit("is-next", true);
       console.log(`Emitted 'is-next' with value 'true' for user: ${nextUsername}`); 
-      io.to(nextClient).emit("go-live-prompt"); // Prompt the next user to go live
+      io.to(nextClient).emit("go-live-prompt"); 
             console.log(`Emitted 'go-live-prompt' to user: ${nextUsername}`);
     }
 
@@ -178,9 +178,8 @@ const handleSocketConnection = (io) => {
       const now = Date.now();
       const last = lastActivity.get(socket.id);
       const username = onlineUsers.get(socket.id);
-      const isGuest = !username || onlineUsers.get(socket.id) === "guest";
 
-      if (isGuest && last && now - last > inactivityTimeout) {
+      if (!username && last && now - last > inactivityTimeout) {
         console.log(`Client ${socket.id} inactive for too long, disconnecting...`);
         socket.disconnect(true);
         clearInterval(activityChecker);
