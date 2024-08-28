@@ -11,7 +11,7 @@ const rateLimit = require('express-rate-limit');
 const multer = require('multer');
 const authMiddleware = require('./middleware/authMiddleware');
 const userRoutes = require('./routes/userRoutes');
-const { handleSocketConnection, onlineUsers } = require('./socketHandler'); 
+const { handleSocketConnection } = require('./socketHandler'); 
 
 const User = require('./models/user');
 const Report = require('./models/report');
@@ -142,11 +142,6 @@ app.post('/report', authMiddleware, async (req, res) => {
 
 // Use Routes
 app.use('/', userRoutes);
-
-// Endpoint to get the number of online users
-app.get('/online-users', (req, res) => {
-  res.json({ viewers: onlineUsers.size });
-});
 
 // Initialize Socket.IO
 handleSocketConnection(io);

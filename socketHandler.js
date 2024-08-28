@@ -10,7 +10,7 @@ const liveStartTime = new Map();
 
 const timers = {}; // Store timers for the live user
 
-const inactivityTimeout = 6000; // 1 minute
+const inactivityTimeout = 6000; // 6 seconds
 
 let slidePosition = 50;
 let slidePositionAmount = 5;
@@ -187,7 +187,7 @@ const handleSocketConnection = (io) => {
       }
     }, inactivityTimeout / 2);
 
-    io.emit('update-online-users', onlineUsers.size);
+    
 
     socket.on("register-user", (username) => {
       if (!username) {
@@ -261,7 +261,7 @@ const handleSocketConnection = (io) => {
 
     socket.on("join-queue", ({ username, isFastPass }) => {
       lastActivity.set(socket.id, Date.now());
-    
+      io.emit('update-online-users', onlineUsers.size);
       if (liveQueue.includes(socket.id)) {
         console.log(`User ${username} is already in the queue or currently live.`);
         socket.emit("queue-error", "Already in queue or currently live.");
@@ -316,11 +316,14 @@ const handleSocketConnection = (io) => {
       console.log(`New comment from ${commentData.username}: ${commentData.comment}`);
       lastActivity.set(socket.id, Date.now());
       io.emit('new-comment', commentData);
+      io.emit('update-online-users', onlineUsers.size);
     });
 
     socket.on("go-live", () => {
       
       io.emit('main-feed', null); 
+
+      io.emit('update-online-users', onlineUsers.size);
 
       slidePosition = 50;
       slidePositionAmount = 5;
@@ -448,6 +451,7 @@ const handleSocketConnection = (io) => {
       clearInterval(activityChecker);
       socket.broadcast.emit("peer-disconnected", socket.id);
       notifyNextUserInQueue(io);
+      io.emit('update-online-users', onlineUsers.size);
     });
     
   });
