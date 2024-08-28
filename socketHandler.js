@@ -160,15 +160,6 @@ const notifyNextUserInQueue = (io) => {
     }
 
    
-   timers[nextUsername] = setTimeout(() => {
-    if (!currentStreamer) { 
-      console.log(`User ${nextUsername} did not respond to the go-live-prompt in time. Disconnecting...`);
-      io.to(nextClient).emit("timeout-disconnect"); 
-      socket.disconnect(true); 
-      liveQueue.shift(); 
-      notifyNextUserInQueue(io);
-    }
-  }, 90000); 
 
   } else {
     console.log("No one is live, emitting 'no-one-live'");
@@ -455,6 +446,7 @@ const handleSocketConnection = (io) => {
     
       clearInterval(activityChecker);
       socket.broadcast.emit("peer-disconnected", socket.id);
+      notifyNextUserInQueue(io);
     });
     
   });
