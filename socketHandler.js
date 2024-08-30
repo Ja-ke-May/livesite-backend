@@ -116,9 +116,10 @@ const stopLiveStream = async (username, io) => {
 
   await recordLiveDuration(username); 
 
+  updateUpNext(io);
   notifyNextUserInQueue(io);
   stopTimer(username);
-  updateUpNext(io);
+  
 };
 
 const updateUpNext = (io) => {
@@ -201,7 +202,6 @@ const handleSocketConnection = (io) => {
         console.log(`User registered: ${username} with socket ID: ${socket.id}`);
       }
       io.emit('update-online-users', onlineUsers.size);
-      updateUpNext(io);
     });
 
     socket.emit('current-position', slidePosition);
@@ -388,7 +388,6 @@ const handleSocketConnection = (io) => {
         io.to(liveUserSocketId).emit("new-peer", socket.id);
         console.log(`Emitted 'new-peer' to live user socket ID: ${liveUserSocketId}`);
       }
-      updateUpNext(io);
     });
 
     socket.on("offer", (id, offer) => {
@@ -399,7 +398,6 @@ const handleSocketConnection = (io) => {
       } catch (error) {
         console.error(`Error sending offer from ${socket.id} to ${id}:`, error);
       }
-      updateUpNext(io);
     });
 
     socket.on("answer", (id, answer) => {
@@ -431,10 +429,11 @@ const handleSocketConnection = (io) => {
       if (currentStreamer === username) {
         liveUsers.delete(username); // Remove from live users
         currentStreamer = null;
+        updateUpNext(io);
         notifyNextUserInQueue(io);
         io.emit('main-feed', null);
         stopTimer(username);
-        updateUpNext(io);
+        
       }
     });
 
