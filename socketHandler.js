@@ -216,7 +216,7 @@ const handleSocketConnection = (io) => {
       if (slidePosition >= 100) {
         slidePositionAmount /= 2;
         io.emit('current-slide-amount', slidePositionAmount);
-
+        io.emit('reset-votes');
         if (currentStreamer) {
           addTime(currentStreamer, io);
 
