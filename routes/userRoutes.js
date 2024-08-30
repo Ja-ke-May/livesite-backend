@@ -493,31 +493,7 @@ router.post('/profile/live-duration', authMiddleware, async (req, res) => {
   }
 });
 
-router.put('/profile/color', authMiddleware, async (req, res) => {
-  const { username, colorType, colorValue } = req.body;
 
-  try {
-    const user = await User.findOne({ username });
-
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    // Update the color based on the type (commentColor, borderColor, usernameColor)
-    if (colorType === 'commentColor') {
-      user.commentColor = colorValue;
-    } else if (colorType === 'borderColor') {
-      user.borderColor = colorValue;
-    } else if (colorType === 'usernameColor') {
-      user.usernameColor = colorValue;
-    }
-
-    await user.save();
-    res.status(200).json({ message: 'Color updated successfully' });
-  } catch (error) {
-    res.status(500).json({ message: 'Failed to update color' });
-  }
-});
 
 
 module.exports = router;

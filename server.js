@@ -159,6 +159,34 @@ app.post('/report', authMiddleware, async (req, res) => {
   }
 });
 
+// Assuming this is part of `server.js` and not inside a separate route file
+app.put('/comment/color', authMiddleware, async (req, res) => {
+  const { username, colorType, color } = req.body; // adjusted to match the frontend
+
+  try {
+    const user = await User.findOne({ userName: username });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Update the color based on the type (commentColor, borderColor, usernameColor)
+    if (colorType === 'commentColor') {
+      user.commentColor = color;
+    } else if (colorType === 'borderColor') {
+      user.borderColor = color;
+    } else if (colorType === 'usernameColor') {
+      user.usernameColor = color;
+    }
+
+    await user.save();
+    res.status(200).json({ message: 'Color updated successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to update color' });
+  }
+});
+
+
 // Use Routes
 app.use('/', userRoutes);
 
