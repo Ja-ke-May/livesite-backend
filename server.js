@@ -90,9 +90,34 @@ app.post('/profile-picture', upload.single('profilePicture'), authMiddleware, as
   }
 });
 
+
+
+app.post('/report', authMiddleware, async (req, res) => {
+  try {
+    const { content } = req.body;
+    const userId = req.user.userId; 
+
+    if (!content) {
+      return res.status(400).json({ message: 'Content is required' });
+    }
+
+    const report = new Report({
+      userId,
+      content,
+    });
+
+    await report.save();
+
+    res.status(201).json({ message: 'Report submitted successfully' });
+  } catch (err) {
+    console.error('Error submitting report:', err);
+    res.status(500).json({ error: 'Server error, please try again later' });
+  }
+});
+
 app.post('/comments', authMiddleware, async (req, res) => {
   try {
-    const { comment, username } = req.body;  
+    const { comment, username } = req.body;
 
     if (!comment || comment.trim() === '') {
       return res.status(400).json({ message: 'Comment cannot be empty' });
@@ -128,36 +153,13 @@ app.post('/comments', authMiddleware, async (req, res) => {
       createdAt: newComment.createdAt,
     });
 
-    res.status(201).json({ message: 'Comment saved successfully' });
+    res.status(201).json({ message: 'Comment saved and emitted successfully' });
   } catch (err) {
-    console.error('Error saving comment:', err);
+    console.error('Error saving and emitting comment:', err);
     res.status(500).json({ error: 'Server error, please try again later' });
   }
 });
 
-
-app.post('/report', authMiddleware, async (req, res) => {
-  try {
-    const { content } = req.body;
-    const userId = req.user.userId; 
-
-    if (!content) {
-      return res.status(400).json({ message: 'Content is required' });
-    }
-
-    const report = new Report({
-      userId,
-      content,
-    });
-
-    await report.save();
-
-    res.status(201).json({ message: 'Report submitted successfully' });
-  } catch (err) {
-    console.error('Error submitting report:', err);
-    res.status(500).json({ error: 'Server error, please try again later' });
-  }
-});
 
 // Use Routes
 app.use('/', userRoutes);
