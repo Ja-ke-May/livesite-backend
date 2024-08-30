@@ -493,7 +493,40 @@ router.post('/profile/live-duration', authMiddleware, async (req, res) => {
   }
 });
 
+router.put('/comment/color', authMiddleware, async (req, res) => {
+  try {
+    const { username, colorType, color } = req.body;
 
+    if (!username || !colorType || !color) {
+      return res.status(400).json({ message: 'Username, color type, and color are required' });
+    }
+
+    // Find the user by username
+    const user = await User.findOne({ userName: username });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Update the user's color based on the color type
+    if (colorType === 'commentColor') {
+      user.commentColor = color;
+    } else if (colorType === 'borderColor') {
+      user.borderColor = color;
+    } else if (colorType === 'usernameColor') {
+      user.usernameColor = color;
+    } else {
+      return res.status(400).json({ message: 'Invalid color type' });
+    }
+
+    await user.save();
+
+    res.json({ message: 'Color updated successfully', user });
+  } catch (err) {
+    console.error('Error updating color:', err);
+    res.status(500).json({ error: 'Server error, please try again later' });
+  }
+});
 
 
 module.exports = router;
