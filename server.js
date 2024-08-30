@@ -90,7 +90,6 @@ app.post('/profile-picture', upload.single('profilePicture'), authMiddleware, as
   }
 });
 
-// Comments Route
 app.post('/comments', authMiddleware, async (req, res) => {
   try {
     const { comment, username } = req.body;  
@@ -103,19 +102,39 @@ app.post('/comments', authMiddleware, async (req, res) => {
       return res.status(400).json({ message: 'Username is required' });
     }
 
+    // Fetch the user's profile to get the color settings
+    const user = await User.findOne({ userName: username });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
     const newComment = new Comment({
       username,
       comment: comment.trim(),
+      commentColor: user.commentColor, // Use the user's comment color
+      borderColor: user.borderColor,   // Use the user's border color
+      usernameColor: user.usernameColor, // Use the user's username color
     });
 
     await newComment.save();
+
+    // Emit the new comment via Socket.IO to update all clients in real-time
+    io.emit('new-comment', {
+      username,
+      comment: newComment.comment,
+      commentColor: newComment.commentColor,
+      borderColor: newComment.borderColor,
+      usernameColor: newComment.usernameColor,
+      createdAt: newComment.createdAt,
+    });
 
     res.status(201).json({ message: 'Comment saved successfully' });
   } catch (err) {
     console.error('Error saving comment:', err);
     res.status(500).json({ error: 'Server error, please try again later' });
   }
-}); 
+});
+
 
 app.post('/report', authMiddleware, async (req, res) => {
   try {

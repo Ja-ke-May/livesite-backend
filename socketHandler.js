@@ -311,11 +311,35 @@ const handleSocketConnection = (io) => {
       callback(exists);
     });
 
-    socket.on("new-comment", (commentData) => {
-      console.log(`New comment from ${commentData.username}: ${commentData.comment}`);
-      lastActivity.set(socket.id, Date.now());
-      io.emit('new-comment', commentData);
-      io.emit('update-online-users', onlineUsers.size);
+    socket.on("new-comment", async (commentData) => {
+      try {
+        const username = commentData.username;
+
+        // Fetch the user's color preferences from the database
+        const user = await User.findOne({ userName: username });
+
+        if (!user) {
+          console.error(`User ${username} not found for comment.`);
+          return;
+        }
+
+        // Include the user's color settings in the comment data
+        const commentWithColors = {
+          username: commentData.username,
+          comment: commentData.comment,
+          commentColor: user.commentColor,
+          borderColor: user.borderColor,
+          usernameColor: user.usernameColor,
+          createdAt: new Date(),
+        };
+
+        // Emit the comment with colors to all clients
+        io.emit('new-comment', commentWithColors);
+
+        console.log(`New comment from ${username} with colors:`, commentWithColors);
+      } catch (error) {
+        console.error('Error handling new comment:', error);
+      }
     });
 
     socket.on("go-live", () => {

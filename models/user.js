@@ -73,6 +73,22 @@ const userSchema = new mongoose.Schema({
     type: Number,
     default: 0  
   },
+  commentColor: {
+    type: String,
+    default: '#ffffff' 
+  },
+  borderColor: {
+    type: String,
+    default: '#000110'  
+  },
+  usernameColor: {
+    type: String,
+    default: '#ffffff' 
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
 });
 
 const User = mongoose.model('User', userSchema);
