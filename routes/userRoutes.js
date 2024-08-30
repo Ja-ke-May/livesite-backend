@@ -508,15 +508,25 @@ router.put('/comment/color', authMiddleware, async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
+    let activityMessage = '';
+
     // Update the user's color based on the color type
     if (colorType === 'commentColor') {
       user.commentColor = color;
+      activityMessage = `${user.userName} changed their comment color to ${color}`;
     } else if (colorType === 'borderColor') {
       user.borderColor = color;
+      activityMessage = `${user.userName} changed their border color to ${color}`;
     } else if (colorType === 'usernameColor') {
       user.usernameColor = color;
+      activityMessage = `${user.userName} changed their username color to ${color}`;
     } else {
       return res.status(400).json({ message: 'Invalid color type' });
+    }
+
+    // Add to recent activity
+    if (activityMessage) {
+      user.recentActivity.push(activityMessage);
     }
 
     await user.save();
@@ -527,6 +537,7 @@ router.put('/comment/color', authMiddleware, async (req, res) => {
     res.status(500).json({ error: 'Server error, please try again later' });
   }
 });
+
 
 
 module.exports = router;

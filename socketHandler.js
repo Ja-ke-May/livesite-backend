@@ -83,6 +83,8 @@ const recordLiveDuration = async (username) => {
         user.longestLiveDuration = durationInSeconds;
       }
 
+      user.recentActivity.push(`Went live for ${durationInSeconds} seconds on ${new Date(startTime).toLocaleString()}`);
+
       // Save the updated user document
       await user.save();
       console.log(`Updated live duration for user ${username}. Total: ${user.totalLiveDuration} seconds, Longest: ${user.longestLiveDuration} seconds.`);
@@ -296,7 +298,7 @@ const handleSocketConnection = (io) => {
         console.log(`Emitted 'go-live' to client: ${socket.id}`);
       }
 
-      updateUpNext(io);
+      updateUpNext(io)
     });
 
     socket.on("check-username", (username, callback) => {
