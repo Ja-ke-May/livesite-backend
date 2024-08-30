@@ -116,10 +116,9 @@ const stopLiveStream = async (username, io) => {
 
   await recordLiveDuration(username); 
 
-  updateUpNext(io);
   notifyNextUserInQueue(io);
   stopTimer(username);
-  
+  updateUpNext(io);
 };
 
 const updateUpNext = (io) => {
@@ -202,6 +201,7 @@ const handleSocketConnection = (io) => {
         console.log(`User registered: ${username} with socket ID: ${socket.id}`);
       }
       io.emit('update-online-users', onlineUsers.size);
+      updateUpNext(io);
     });
 
     socket.emit('current-position', slidePosition);
@@ -429,11 +429,10 @@ const handleSocketConnection = (io) => {
       if (currentStreamer === username) {
         liveUsers.delete(username); // Remove from live users
         currentStreamer = null;
-        updateUpNext(io);
         notifyNextUserInQueue(io);
         io.emit('main-feed', null);
         stopTimer(username);
-        
+        updateUpNext(io);
       }
     });
 
