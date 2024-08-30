@@ -143,16 +143,6 @@ app.post('/comments', authMiddleware, async (req, res) => {
 
     await newComment.save();
 
-    // Emit the new comment via Socket.IO to update all clients in real-time
-    io.emit('new-comment', {
-      username,
-      comment: newComment.comment,
-      commentColor: newComment.commentColor,
-      borderColor: newComment.borderColor,
-      usernameColor: newComment.usernameColor,
-      createdAt: newComment.createdAt,
-    });
-
     res.status(201).json({ message: 'Comment saved and emitted successfully' });
   } catch (err) {
     console.error('Error saving and emitting comment:', err);
