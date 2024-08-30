@@ -83,7 +83,8 @@ const recordLiveDuration = async (username) => {
         user.longestLiveDuration = durationInSeconds;
       }
 
-      user.recentActivity.push(`Went live for ${durationInSeconds} seconds on ${new Date(startTime).toLocaleString()}`);
+      user.recentActivity.push(`Went live for ${durationInSeconds} seconds on ${new Date(startTime).toLocaleString('en-GB', { timeZone: 'Europe/London' })}`);
+
 
       // Save the updated user document
       await user.save();
