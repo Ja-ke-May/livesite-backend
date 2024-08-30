@@ -493,7 +493,7 @@ router.post('/profile/live-duration', authMiddleware, async (req, res) => {
   }
 });
 
-router.put('/profile/color', authenticateToken, async (req, res) => {
+router.put('/profile/color', authMiddleware, async (req, res) => {
   const { username, colorType, colorValue } = req.body;
 
   try {
