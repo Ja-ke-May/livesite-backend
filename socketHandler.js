@@ -466,11 +466,7 @@ const handleSocketConnection = (io) => {
           if (username === currentStreamer) {
             console.log(`Current live streamer ${username} has disconnected.`);
             await stopLiveStream(username, io);
-          } else {
-            // Otherwise, just record their live duration if applicable
-            await recordLiveDuration(username);
-            console.log(`Recorded live duration for disconnected user ${username}`);
-          }
+          } 
         }
       } catch (error) {
         console.error(`Error handling disconnection for ${username}:`, error);
