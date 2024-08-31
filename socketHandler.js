@@ -65,8 +65,10 @@ const recordLiveDuration = async (username) => {
   if (startTime) {
     const duration = Date.now() - startTime; // Calculate duration in milliseconds
     const durationInSeconds = duration / 1000; // Convert to seconds
+    const sessionTime = new Date(startTime).toLocaleString('en-GB', { timeZone: 'Europe/London' });
+
     console.log(`User ${username} was live for ${durationInSeconds} seconds.`);
-    
+
     try {
       // Fetch the user from the database
       const user = await User.findOne({ userName: username });
@@ -75,16 +77,25 @@ const recordLiveDuration = async (username) => {
         return;
       }
 
+      // Check if there's already a session with the same timestamp
+      const existingSession = user.recentActivity.find(activity => activity.includes(`on ${sessionTime}`));
+      if (existingSession) {
+        console.log(`Duplicate session detected for ${username} at ${sessionTime}. Skipping record.`);
+        return; // Skip recording this duplicate session
+      }
+
       // Update the total live duration
       user.totalLiveDuration += durationInSeconds;
+
+      let newActivityEntry = `Went live for ${durationInSeconds} seconds on ${sessionTime}`;
 
       // Update the longest live duration if this session is longer
       if (durationInSeconds > user.longestLiveDuration) {
         user.longestLiveDuration = durationInSeconds;
+        newActivityEntry += " with a new Longest Time Live!";
       }
 
-      user.recentActivity.push(`Went live for ${durationInSeconds} seconds on ${new Date(startTime).toLocaleString('en-GB', { timeZone: 'Europe/London' })}`);
-
+      user.recentActivity.push(newActivityEntry);
 
       // Save the updated user document
       await user.save();
@@ -98,6 +109,7 @@ const recordLiveDuration = async (username) => {
     console.error(`No start time found for user ${username}.`);
   }
 };
+
 
 
 const stopLiveStream = async (username, io) => {
