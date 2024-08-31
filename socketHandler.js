@@ -447,43 +447,41 @@ const handleSocketConnection = (io) => {
     socket.on("disconnect", async () => {
       const username = onlineUsers.get(socket.id);
       console.log(`Client disconnected: ${socket.id} (${username || 'unregistered user'})`);
-
+    
+      // Remove the user from tracking maps
       onlineUsers.delete(socket.id);
       lastActivity.delete(socket.id);
-
       io.emit('update-online-users', onlineUsers.size);
-
+    
       try {
         if (username) {
-          await recordLiveDuration(username);
-
+          // Remove the user from the live queue if present
           const queueIndex = liveQueue.indexOf(socket.id);
           if (queueIndex !== -1) {
             liveQueue.splice(queueIndex, 1);
             console.log(`Removed socket ID ${socket.id} from live queue.`);
           }
-
+    
+          // If the user was the current live streamer, stop their stream
           if (username === currentStreamer) {
             console.log(`Current live streamer ${username} has disconnected.`);
-            liveUsers.delete(username);
-            currentStreamer = null;
-
-            stopTimer(username);
-            io.emit('main-feed', null);
-
-            notifyNextUserInQueue(io);
+            await stopLiveStream(username, io);
           } else {
-            console.log(`Disconnected user ${username} was not the live streamer, no impact on the live stream.`);
+            // Otherwise, just record their live duration if applicable
+            await recordLiveDuration(username);
+            console.log(`Recorded live duration for disconnected user ${username}`);
           }
         }
       } catch (error) {
         console.error(`Error handling disconnection for ${username}:`, error);
       }
-
+    
+      // Clean up the activity checker interval and notify other users
       clearInterval(activityChecker);
       socket.broadcast.emit("peer-disconnected", socket.id);
       notifyNextUserInQueue(io);
     });
+    
 
   });
 };
