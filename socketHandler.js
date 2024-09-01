@@ -10,7 +10,7 @@ const liveStartTime = new Map();
 
 const timers = {}; // Store timers for the live user
 
-const inactivityTimeout = 3600000; // 1 hour
+const inactivityTimeout = 3600; // 1 hour
 
 let slidePosition = 50;
 let slidePositionAmount = 5;
@@ -190,9 +190,8 @@ const handleSocketConnection = (io) => {
     const activityChecker = setInterval(() => {
       const now = Date.now();
       const last = lastActivity.get(socket.id);
-      const username = onlineUsers.get(socket.id);
 
-      if (username && last && now - last > inactivityTimeout) {
+      if (last && now - last > inactivityTimeout) {
         console.log(`Client ${socket.id} inactive for too long, disconnecting...`);
         socket.disconnect(true);
         clearInterval(activityChecker);
