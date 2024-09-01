@@ -10,7 +10,7 @@ const liveStartTime = new Map();
 
 const timers = {}; // Store timers for the live user
 
-const inactivityTimeout = 3600; // 1 hour
+const inactivityTimeout = 3600000; // 1 hour
 
 let slidePosition = 50;
 let slidePositionAmount = 5;
@@ -190,8 +190,9 @@ const handleSocketConnection = (io) => {
     const activityChecker = setInterval(() => {
       const now = Date.now();
       const last = lastActivity.get(socket.id);
+      const username = onlineUsers.get(socket.id);
 
-      if (last && now - last > inactivityTimeout) {
+      if (!username && last && now - last > inactivityTimeout) {
         console.log(`Client ${socket.id} inactive for too long, disconnecting...`);
         socket.disconnect(true);
         clearInterval(activityChecker);
@@ -199,7 +200,11 @@ const handleSocketConnection = (io) => {
     }, inactivityTimeout / 2);
 
     socket.on("register-user", (username) => {
-      
+      if (!username) {
+        console.error(`Username not provided for socket ID: ${socket.id}`);
+        socket.emit('registration-error', 'Username is required.');
+        return; // Prevent further actions if no username is provided
+      }
       onlineUsers.set(socket.id, username);
       lastActivity.set(socket.id, Date.now());
       console.log(`User registered: ${username} with socket ID: ${socket.id}`);
