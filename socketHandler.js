@@ -180,6 +180,11 @@ const notifyNextUserInQueue = (io) => {
   }
 };
 
+const updateOnlineUsersCount = () => {
+  io.emit('update-online-users', onlineUsers.size); 
+};
+
+
 const handleSocketConnection = (io) => {
   io.on("connection", (socket) => {
     console.log(`New client connected: ${socket.id}`);
@@ -187,10 +192,7 @@ const handleSocketConnection = (io) => {
     onlineUsers.set(socket.id, null);
     lastActivity.set(socket.id, Date.now());
 
-    const updateOnlineUsersCount = () => {
-      io.emit('update-online-users', onlineUsers.size); 
-    };
-
+   
     updateOnlineUsersCount();
 
     const activityChecker = setInterval(() => {
