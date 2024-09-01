@@ -187,6 +187,12 @@ const handleSocketConnection = (io) => {
     onlineUsers.set(socket.id, null);
     lastActivity.set(socket.id, Date.now());
 
+    const updateOnlineUsersCount = () => {
+      io.emit('update-online-users', onlineUsers.size); 
+    };
+
+    updateOnlineUsersCount();
+
     const activityChecker = setInterval(() => {
       const now = Date.now();
       const last = lastActivity.get(socket.id);
@@ -207,8 +213,10 @@ const handleSocketConnection = (io) => {
       }
       onlineUsers.set(socket.id, username);
       lastActivity.set(socket.id, Date.now());
+      
       console.log(`User registered: ${username} with socket ID: ${socket.id}`);
-      io.emit('update-online-users', onlineUsers.size);
+
+      updateOnlineUsersCount();
       updateUpNext(io);
     });
 
@@ -451,7 +459,7 @@ const handleSocketConnection = (io) => {
   // Remove the user from tracking maps
   onlineUsers.delete(socket.id);
   lastActivity.delete(socket.id);
-  io.emit('update-online-users', onlineUsers.size);
+  updateOnlineUsersCount(); 
 
   try {
     if (username) {
@@ -481,7 +489,7 @@ const handleSocketConnection = (io) => {
   notifyNextUserInQueue(io);
 });
 
-
+updateOnlineUsersCount();
   });
 };
 
