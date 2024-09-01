@@ -383,8 +383,8 @@ const handleSocketConnection = (io) => {
       slidePosition = 50;
       slidePositionAmount = 5;
     
-      socket.emit('current-position', slidePosition);
-      socket.emit('current-slide-amount', slidePositionAmount);
+      io.emit('current-position', slidePosition);
+      io.emit('current-slide-amount', slidePositionAmount);
     
       const username = onlineUsers.get(socket.id);
       if (!username) {
