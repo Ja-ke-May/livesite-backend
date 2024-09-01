@@ -192,7 +192,7 @@ const handleSocketConnection = (io) => {
       const last = lastActivity.get(socket.id);
       const username = onlineUsers.get(socket.id);
 
-      if (!username && last && now - last > inactivityTimeout) {
+      if (username && last && now - last > inactivityTimeout) {
         console.log(`Client ${socket.id} inactive for too long, disconnecting...`);
         socket.disconnect(true);
         clearInterval(activityChecker);
