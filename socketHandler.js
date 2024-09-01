@@ -202,7 +202,7 @@ const handleSocketConnection = (io) => {
     socket.on("register-user", (username) => {
       if (!username) {
         console.error(`Username not provided for socket ID: ${socket.id}`);
-        socket.emit('registration-error', 'Username is required.');
+        onlineUsers.set(socket.id, 'guest');
         return; // Prevent further actions if no username is provided
       }
       onlineUsers.set(socket.id, username);
