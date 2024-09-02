@@ -11,8 +11,7 @@ const multer = require('multer');
 const userRoutes = require('./routes/userRoutes');
 const { handleSocketConnection } = require('./socketHandler'); 
 const handleStripeWebhook = require('./stripeWebhook');
-const bodyParser = require('body-parser');
-const authMiddleware = require('./middleware/authMiddleware');
+
 
 const app = express();
 const server = http.createServer(app);
@@ -24,6 +23,8 @@ console.log('Comment model:', Comment);
 
 app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), handleStripeWebhook);
 
+const bodyParser = require('body-parser');
+const authMiddleware = require('./middleware/authMiddleware');
 
 dotenv.config();
 
