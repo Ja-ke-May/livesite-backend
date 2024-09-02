@@ -381,6 +381,7 @@ const handleSocketConnection = (io) => {
     socket.on("go-live", () => {
       io.emit('main-feed', null);
       io.emit('update-online-users', onlineUsers.size);
+      io.emit("queue-length-update", liveQueue.length);
     
       slidePosition = 50;
       slidePositionAmount = 5;
@@ -477,6 +478,7 @@ const handleSocketConnection = (io) => {
   onlineUsers.delete(socket.id);
   lastActivity.delete(socket.id);
   updateOnlineUsersCount(); 
+  io.emit("queue-length-update", liveQueue.length);
 
   try {
     if (username) {
