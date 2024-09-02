@@ -21,7 +21,13 @@
   const Comment = require('./models/comment');
   console.log('Comment model:', Comment);
 
-  app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), handleStripeWebhook);
+  app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), (req, res) => {
+    const sig = req.headers['stripe-signature'];
+    console.log('Received raw body:', req.body.toString());
+    console.log('Received signature:', sig);
+    handleStripeWebhook(req, res);
+});
+
 
   const bodyParser = require('body-parser');
   const authMiddleware = require('./middleware/authMiddleware');
