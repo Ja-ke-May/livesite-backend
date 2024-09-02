@@ -1,5 +1,4 @@
 const Stripe = require('stripe');
-const getRawBody = require('raw-body');
 const User = require('./models/user');
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
@@ -40,8 +39,7 @@ const handleStripeWebhook = async (req, res) => {
     let event;
 
     try {
-        const rawBody = req.body;
-        event = stripe.webhooks.constructEvent(rawBody, sig, endpointSecret);
+        event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
     } catch (err) {
         console.error(`Webhook Error: ${err.message}`);
         return res.status(400).send(`Webhook Error: ${err.message}`);
