@@ -7,6 +7,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
 
 const endpointSecret = process.env.WEBHOOK_SECRET;
 
+// Function to calculate tokens based on the line items in the payment
 const calculateTokens = (lineItems) => {
     let totalTokens = 0;
     lineItems.data.forEach(item => {
@@ -39,6 +40,7 @@ const handleStripeWebhook = async (req, res) => {
     let event;
 
     try {
+        // Verify the event by constructing it with the raw body, signature, and webhook secret
         event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
     } catch (err) {
         console.error(`Webhook Error: ${err.message}`);
@@ -47,6 +49,16 @@ const handleStripeWebhook = async (req, res) => {
 
     if (event.type === 'checkout.session.completed') {
         const session = event.data.object;
+
+        // Retrieve the userName from the client_reference_id parameter
+        const userName = session.client_reference_id;
+
+        if (!userName) {
+            console.error('No userName found in the session client_reference_id');
+            return res.status(400).send('UserName is required');
+        }
+
+        // Retrieve session details, including line items
         const sessionWithLineItems = await stripe.checkout.sessions.retrieve(session.id, {
             expand: ['line_items'],
         });
@@ -57,22 +69,23 @@ const handleStripeWebhook = async (req, res) => {
             return res.status(500).send('Internal Server Error');
         }
 
+        // Calculate the total number of tokens purchased
         const totalTokens = calculateTokens(lineItems);
-        const { email } = sessionWithLineItems.customer_details;
 
         try {
+            // Find the user by userName and update their tokens and last purchase amount
             const user = await User.findOneAndUpdate(
-                { email: email }, 
+                { userName: userName }, 
                 { $inc: { tokens: totalTokens }, $set: { lastPurchaseAmount: session.amount_total / 100 } },
                 { new: true }
             );
 
             if (!user) {
-                console.error(`User with email ${email} not found.`);
+                console.error(`User with userName ${userName} not found.`);
                 return res.status(404).send('User not found');
             }
 
-            console.log(`Successfully updated user ${email} with ${totalTokens} tokens.`);
+            console.log(`Successfully updated user ${userName} with ${totalTokens} tokens.`);
             res.status(200).send('Purchase processed successfully');
         } catch (error) {
             console.error('Error updating user after purchase:', error);
