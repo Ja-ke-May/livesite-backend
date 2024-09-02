@@ -24,8 +24,8 @@ const userSchema = new mongoose.Schema({
     default: 1000 
   },
   purchases: {
-    type: [String], 
-    default: [] 
+    type: [purchaseSchema],
+    default: [],
   },
   profilePicture: {
     type: String, 

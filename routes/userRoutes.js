@@ -538,6 +538,33 @@ router.put('/comment/color', authMiddleware, async (req, res) => {
   }
 });
 
+router.post('/update-purchase', async (req, res) => {
+  const { username, tokens, amountSpent, currency, description } = req.body;
 
+  try {
+      const user = await User.findOne({ userName: username });
+      if (!user) {
+          return res.status(404).json({ message: 'User not found' });
+      }
+
+      user.tokens += tokens;
+
+      const purchaseDetails = {
+          date: new Date(),
+          tokens,
+          amountSpent,
+          currency,
+          description
+      };
+      user.purchases.push(purchaseDetails);
+
+      await user.save();
+
+      res.json({ message: 'Purchase updated successfully', user });
+  } catch (error) {
+      console.error('Error updating purchase:', error);
+      res.status(500).json({ message: 'Server error' });
+  }
+});
 
 module.exports = router;
