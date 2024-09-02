@@ -12,6 +12,7 @@ const multer = require('multer');
 const authMiddleware = require('./middleware/authMiddleware');
 const userRoutes = require('./routes/userRoutes');
 const { handleSocketConnection } = require('./socketHandler'); 
+const handleStripeWebhook = require('./stripeWebhook');
 
 const User = require('./models/user');
 const Report = require('./models/report');
@@ -136,9 +137,9 @@ app.post('/comments', authMiddleware, async (req, res) => {
     const newComment = new Comment({
       username,
       comment: comment.trim(),
-      commentColor: user.commentColor, // Use the user's comment color
-      borderColor: user.borderColor,   // Use the user's border color
-      usernameColor: user.usernameColor, // Use the user's username color
+      commentColor: user.commentColor, 
+      borderColor: user.borderColor,   
+      usernameColor: user.usernameColor, 
     });
 
     await newComment.save();
@@ -150,11 +151,10 @@ app.post('/comments', authMiddleware, async (req, res) => {
   }
 });
 
+app.post('/api/stripe/webhook', handleStripeWebhook);
 
-// Use Routes
 app.use('/', userRoutes);
 
-// Initialize Socket.IO
 handleSocketConnection(io);
 
 server.listen(port, () => {
