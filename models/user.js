@@ -24,8 +24,16 @@ const userSchema = new mongoose.Schema({
     default: 1000 
   },
   purchases: {
-    type: [String], 
-    default: [] 
+    type: [
+      {
+        date: Date,
+        tokens: Number,
+        amountSpent: Number,
+        currency: String,
+        description: String,
+      }
+    ],
+    default: [],
   },
   profilePicture: {
     type: String, 
