@@ -326,6 +326,8 @@ const handleSocketConnection = (io) => {
       liveQueue.forEach((socketId, index) => {
         io.to(socketId).emit("queue-position-update", index + 1);
       });
+
+      io.emit("queue-length-update", liveQueue.length);
       
       // If this is the first user in the queue and no one is streaming, prompt them to go live
       if (liveQueue.length === 1 && !currentStreamer) {
