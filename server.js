@@ -5,19 +5,22 @@ const socketIo = require('socket.io');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const cors = require('cors');
-const bodyParser = require('body-parser');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const multer = require('multer');
-const authMiddleware = require('./middleware/authMiddleware');
 const userRoutes = require('./routes/userRoutes');
 const { handleSocketConnection } = require('./socketHandler'); 
 const handleStripeWebhook = require('./stripeWebhook');
+const bodyParser = require('body-parser');
+const authMiddleware = require('./middleware/authMiddleware');
 
 const User = require('./models/user');
 const Report = require('./models/report');
 const Comment = require('./models/comment');
 console.log('Comment model:', Comment);
+
+app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), handleStripeWebhook);
+
 
 dotenv.config();
 
@@ -150,8 +153,6 @@ app.post('/comments', authMiddleware, async (req, res) => {
     res.status(500).json({ error: 'Server error, please try again later' });
   }
 });
-
-app.post('/api/stripe/webhook', handleStripeWebhook);
 
 app.use('/', userRoutes);
 

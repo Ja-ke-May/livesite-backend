@@ -40,7 +40,7 @@ const handleStripeWebhook = async (req, res) => {
     let event;
 
     try {
-        const rawBody = await getRawBody(req);
+        const rawBody = req.body;
         event = stripe.webhooks.constructEvent(rawBody, sig, endpointSecret);
     } catch (err) {
         console.error(`Webhook Error: ${err.message}`);
