@@ -14,6 +14,9 @@ const handleStripeWebhook = require('./stripeWebhook');
 const bodyParser = require('body-parser');
 const authMiddleware = require('./middleware/authMiddleware');
 
+const app = express();
+const server = http.createServer(app);
+
 const User = require('./models/user');
 const Report = require('./models/report');
 const Comment = require('./models/comment');
@@ -24,8 +27,8 @@ app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), handl
 
 dotenv.config();
 
-const app = express();
-const server = http.createServer(app);
+
+
 
 // Initialize Socket.IO with CORS configuration
 const io = socketIo(server, {
