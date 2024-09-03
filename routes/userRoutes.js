@@ -44,7 +44,7 @@ router.post('/profile-picture', upload.single('profilePicture'), authMiddleware,
 
 router.post('/signup', async (req, res) => {
   try {
-    const { userName, email, password, dob } = req.body;
+    const { userName, email, password, dob, marketingConsent } = req.body;
 
     if (!userName || !email || !password || !dob) {
       return res.status(400).json({ message: 'All fields are required' });
@@ -67,6 +67,7 @@ router.post('/signup', async (req, res) => {
       email,
       password: hashedPassword,
       dob,
+      marketingConsent: marketingConsent || false, 
     });
 
     await user.save();
@@ -77,6 +78,7 @@ router.post('/signup', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
 
 router.post('/login', async (req, res) => {
   try {

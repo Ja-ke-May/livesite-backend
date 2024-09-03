@@ -11,6 +11,10 @@ const userSchema = new mongoose.Schema({
     required: [true, 'Email is required'],
     unique: true
   },
+  marketingConsent: { 
+    type: Boolean, 
+    default: false 
+  },
   password: {
     type: String,
     required: true
