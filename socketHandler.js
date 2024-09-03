@@ -6,8 +6,6 @@ const liveUsers = new Map(); // Track live users and their corresponding socket 
 const onlineUsers = new Map();
 const lastActivity = new Map();
 
-const onlineViewers = new Set();
-
 const liveStartTime = new Map();
 
 const timers = {}; // Store timers for the live user
@@ -18,8 +16,6 @@ let slidePosition = 50;
 let slidePositionAmount = 5;
 
 const User = require('./models/user');
-
-
 
 const startTimer = (username, io, stopLiveStream, additionalTime = 0) => {
   if (timers[username] && timers[username].interval) {
@@ -192,7 +188,7 @@ const handleSocketConnection = (io) => {
     lastActivity.set(socket.id, Date.now());
 
     const updateOnlineUsersCount = () => {
-      io.emit('update-online-users', onlineViewers.size); 
+      io.emit('update-online-users', onlineUsers.size); 
     };
 
     updateOnlineUsersCount();
@@ -209,23 +205,15 @@ const handleSocketConnection = (io) => {
       }
     }, inactivityTimeout / 2);
 
-    socket.on("register-user", (username, userId) => {
-      if (!username || !userId) {
-        console.error(`Username or user ID not provided for socket ID: ${socket.id}`);
+    socket.on("register-user", (username) => {
+      if (!username) {
+        console.error(`Username not provided for socket ID: ${socket.id}`);
         onlineUsers.set(socket.id, 'guest');
-        const guestId = `guest_${socket.id}`;
-        onlineViewers.add(guestId);
-        updateOnlineUsersCount();
-        return;
+        return; // Prevent further actions if no username is provided
       }
-
-      onlineUsers.set(socket.id, userId);
+      onlineUsers.set(socket.id, username);
       lastActivity.set(socket.id, Date.now());
-
-      // Check if this user ID is already in the online viewers set
-      if (!onlineViewers.has(userId)) {
-        onlineViewers.add(userId);  // Add unique user ID to the set
-      }
+      
       console.log(`User registered: ${username} with socket ID: ${socket.id}`);
 
       updateOnlineUsersCount();
@@ -288,7 +276,7 @@ const handleSocketConnection = (io) => {
 
     socket.on("join-queue", ({ username, isFastPass }) => {
       lastActivity.set(socket.id, Date.now());
-      io.emit('update-online-users', onlineViewers.size);
+      io.emit('update-online-users', onlineUsers.size);
       
       if (liveQueue.includes(socket.id)) {
         console.log(`User ${username} is already in the queue or currently live.`);
@@ -392,7 +380,7 @@ const handleSocketConnection = (io) => {
 
     socket.on("go-live", () => {
       io.emit('main-feed', null);
-      io.emit('update-online-users', onlineViewers.size);
+      io.emit('update-online-users', onlineUsers.size);
       io.emit("queue-length-update", liveQueue.length);
     
       slidePosition = 50;
@@ -485,11 +473,6 @@ const handleSocketConnection = (io) => {
     socket.on("disconnect", async () => {
   const username = onlineUsers.get(socket.id);
   console.log(`Client disconnected: ${socket.id} (${username || 'unregistered user'})`);
-
-  
-   if (username && !Array.from(onlineUsers.values()).includes(username)) {
-    onlineViewers.delete(username);
-  }
 
   // Remove the user from tracking maps
   onlineUsers.delete(socket.id);
