@@ -72,11 +72,23 @@ const handleStripeWebhook = async (req, res) => {
         // Calculate the total number of tokens purchased
         const totalTokens = calculateTokens(lineItems);
 
+        const newPurchase = {
+            date: new Date(),
+            tokens: totalTokens,
+            amountSpent: session.amount_total / 100, 
+            currency: session.currency.toUpperCase(),
+            description: 'Token Purchase'
+        };
+
         try {
             // Find the user by userName and update their tokens and last purchase amount
             const user = await User.findOneAndUpdate(
-                { userName: userName }, 
-                { $inc: { tokens: totalTokens }, $set: { lastPurchaseAmount: session.amount_total / 100 } },
+                { userName: userName },
+                { 
+                    $inc: { tokens: totalTokens }, 
+                    $set: { lastPurchaseAmount: newPurchase.amountSpent }, 
+                    $push: { purchases: newPurchase } 
+                },
                 { new: true }
             );
 
