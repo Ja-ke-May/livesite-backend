@@ -45,12 +45,7 @@ async function sendBlockNotificationEmail(user, blockDuration) {
             <div style="display: flex; justify-content: center; align-items: stretch; max-width: 200px; margin: 0 auto; gap: 10px;">
               <!-- M takes the left half -->
               <div style="width: 50%; text-align: center; display: flex; justify-content: center; align-items: center;">
-                <p style="font-size: 50px; font-weight: 900; color: white; margin: 0;">M</p>
-              </div>
-              <!-- Y and E in a vertical column on the right, aligned to top and bottom -->
-              <div style="width: 50%; display: flex; flex-direction: column; justify-content: space-between; align-items: center; gap: 10px;">
-                <p style="font-size: 24px; font-weight: 900; color: white; margin: 0;">Y</p>
-                <p style="font-size: 24px; font-weight: 900; color: white; margin: 0;">E</p>
+                <p style="font-size: 50px; font-weight: 900; color: white; margin: 0;">MyMe.Live</p>
               </div>
             </div>
           </a>
