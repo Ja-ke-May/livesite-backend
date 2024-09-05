@@ -76,7 +76,7 @@ async function sendThankYouEmail(user, purchaseDetails) {
     to: user.email,
     subject: 'Thank You for Your Purchase!',
     html: `
-      <div style="font-family: Arial, sans-serif; background-color: #f4f4f4; color: black; padding: 30px; border-radius: 10px; max-width: 600px; margin: 0 auto; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);">
+      <div style="font-family: Arial, sans-serif; background-color: #000110; color: black; padding: 30px; border-radius: 10px; max-width: 600px; margin: 0 auto; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);">
         <h1 style="text-align: center; color: yellow; font-size: 24px; margin-bottom: 20px;">Thank You for Your Purchase!</h1>
         <p style="font-size: 16px; color: black; line-height: 1.6;">Dear <span style="font-weight: bold;">${user.userName}</span>,</p>
         <p style="font-size: 16px; color: black; line-height: 1.6;">Thank you for purchasing tokens on <span style="color: yellow; font-weight: bold;">MyMe.Live</span>. Your support means a lot to us!</p>
@@ -85,18 +85,23 @@ async function sendThankYouEmail(user, purchaseDetails) {
         <p style="font-size: 16px; color: black; line-height: 1.6;">Your tokens have been added to your account, and you can now use them to support your favorite creators.</p>
 
         <div style="text-align: center; margin-top: 30px;">
-          <a href="${process.env.FRONTEND_URL}/profile" 
+          <a href="${process.env.FRONTEND_URL}/" 
              style="background-color: #4CAF50; color: white; padding: 15px 30px; text-align: center; text-decoration: none; display: inline-block; border-radius: 5px; font-weight: bold; font-size: 18px;">
-            View Your Profile
+            Go To MyMe
           </a>
         </div>
         
         <p style="font-size: 16px; color: black; margin-top: 30px;">Best regards,</p>
         <p style="font-size: 16px; color: black; font-weight: bold;">MyMe Team</p>
         
-        <div style="text-align: center; margin-top: 30px;">
-          <a href="${process.env.FRONTEND_URL}" style="text-decoration: none; color: black; font-weight: bold;">
-            MYME.LIVE
+        <div style="text-align: center; margin-top: 50px;">
+          <a href="${process.env.FRONTEND_URL}" style="text-decoration: none;">
+            <div style="display: flex; justify-content: center; align-items: stretch; max-width: 200px; margin: 0 auto; gap: 10px;">
+              <!-- M takes the left half -->
+              <div style="width: 50%; text-align: center; display: flex; justify-content: center; align-items: center;">
+                <p style="font-size: 50px; font-weight: 900; color: white; margin: 0;">MyMe.Live</p>
+              </div>
+            </div>
           </a>
         </div>
       </div>
