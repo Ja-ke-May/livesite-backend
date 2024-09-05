@@ -102,7 +102,8 @@ router.post('/login', async (req, res) => {
 
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET,);
 
-    console.log('User logging in:', user.userName, 'isAdmin:', user.isAdmin);
+    console.log('Sending login response:', { token, username: user.userName, isAdmin: user.isAdmin });
+
 
     res.json({ message: 'Login successful', token, username: user.userName, isAdmin: user.isAdmin }); // Return the username
   } catch (err) {
