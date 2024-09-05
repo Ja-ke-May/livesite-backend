@@ -58,15 +58,15 @@ async function sendActivationEmail(user, activationToken) {
   <p style="font-size: 16px; color: white; margin-top: 30px;">Best regards,</p>
   <p style="font-size: 16px; color: white; font-weight: bold;">Jacob May</p>
   
-   <div style="text-align: center; margin-top: 50px;">
+  <div style="text-align: center; margin-top: 50px;">
           <a href="${process.env.FRONTEND_URL}" style="text-decoration: none;">
-            <div style="display: flex; justify-content: center; align-items: center; max-width: 200px; margin: 0 auto;">
+            <div style="display: flex; justify-content: center; align-items: stretch; max-width: 200px; margin: 0 auto; gap: 10px;">
               <!-- M takes the left half -->
-              <div style="width: 50%; text-align: center;">
+              <div style="width: 50%; text-align: center; display: flex; justify-content: center; align-items: center;">
                 <p style="font-size: 50px; font-weight: 900; color: white; margin: 0;">M</p>
               </div>
               <!-- Y and E in a vertical column on the right, aligned to top and bottom -->
-              <div style="width: 50%; display: flex; flex-direction: column; justify-content: space-between; align-items: center;">
+              <div style="width: 50%; display: flex; flex-direction: column; justify-content: space-between; align-items: center; gap: 10px;">
                 <p style="font-size: 24px; font-weight: 900; color: white; margin: 0;">Y</p>
                 <p style="font-size: 24px; font-weight: 900; color: white; margin: 0;">E</p>
               </div>
