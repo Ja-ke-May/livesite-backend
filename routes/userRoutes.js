@@ -149,24 +149,33 @@ router.post('/signup', async (req, res) => {
 router.get('/api/activate', async (req, res) => {
   const { token } = req.query;
 
+  console.log("Received token:", token); // Log the token received in the request
   try {
+    const currentTime = Date.now();
+    console.log("Current time (in ms):", currentTime); // Log current time
+
+    // Check if a user exists with the provided token and that the token has not expired
     const user = await User.findOne({
       activationToken: token,
-      activationExpires: { $gt: Date.now() } 
+      activationExpires: { $gt: currentTime },  // Ensure token has not expired
     });
 
     if (!user) {
+      console.log("No user found or token has expired.");
       return res.status(400).json({ message: 'Invalid or expired activation link' });
     }
 
+    console.log("User found:", user); // Log the user details if found
+
+    // Activate the user
     user.isActivated = true;
-    user.activationToken = undefined;
-    user.activationExpires = undefined; 
+    user.activationToken = undefined;  // Clear the token after activation
+    user.activationExpires = undefined;  // Clear the expiration after activation
     await user.save();
 
     res.status(200).json({ message: 'Account activated successfully' });
   } catch (err) {
-    console.error('Error activating account', err);
+    console.error('Error activating account:', err);
     res.status(500).json({ error: 'Server error. Please try again.' });
   }
 });
