@@ -41,29 +41,29 @@ async function sendActivationEmail(user, activationToken) {
     to: user.email,
     subject: 'MyMe.Live Account Activation',
     html: `
-   <div style="font-family: Arial, sans-serif; background-color: #000110; color: white; padding: 20px; border-radius: 10px; max-width: 600px; margin: 0 auto;">
-        <h1 style="text-align: center; color: #f9b208;">Activate Your Account</h1>
-        <p style="font-size: 16px; color: white;">Thank you for signing up to <span style="color: #f9b208; font-weight: bold;">MyMe.Live</span>.</p>
-        <p style="font-size: 16px; color: white;">Please click the button below to activate your account:</p>
+   <div style="font-family: Arial, sans-serif; background-color: white; color: #000110; padding: 20px; border-radius: 10px; max-width: 600px; margin: 0 auto;">
+        <h1 style="text-align: center; color: yellow; brightness: 1.25;">Activate Your Account</h1>
+        <p style="font-size: 16px; color: #000110;">Thank you for signing up to <span style="color: yellow; brightness: 1.25; font-weight: bold;">MyMe.Live</span>.</p>
+        <p style="font-size: 16px; color: #000110;">Please click the button below to activate your account:</p>
         <div style="text-align: center; margin: 20px 0;">
           <a href="${activationLink}" 
-             style="background-color: #4CAF50; color: white; padding: 15px 30px; text-align: center; text-decoration: none; display: inline-block; border-radius: 5px; font-weight: bold; font-size: 18px;">
+             style="background-color: #4CAF50; color: #000110; padding: 15px 30px; text-align: center; text-decoration: none; display: inline-block; border-radius: 5px; font-weight: bold; font-size: 18px;">
             Activate Account
           </a>
         </div>
-        <p style="font-size: 16px; color: white;">This link will expire in 24 hours. If you did not sign up for this account, please disregard this email.</p>
+        <p style="font-size: 16px; color: #000110;">This link will expire in 24 hours. If you did not sign up for this account, please disregard this email.</p>
         <br />
-        <p style="font-size: 16px; color: white;">Best regards,</p>
-        <p style="font-size: 16px; color: white; font-weight: bold;">Jacob May</p>
+        <p style="font-size: 16px; color: #000110;">Best regards,</p>
+        <p style="font-size: 16px; color: #000110; font-weight: bold;">Jacob May</p>
         <div style="text-align: center; margin-top: 30px;">
-          <a href="${process.env.FRONTEND_URL}" style="text-decoration: none; color: white; font-weight: bold;">
-            <div style="display: inline-flex; align-items: center; justify-content: center;">
-              <div style="font-size: 40px; font-weight: bold;">M</div>
-              <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
-                <div style="font-size: 20px;">Y</div>
-                <div style="font-size: 20px;">E</div>
-              </div>
-            </div>
+          <a href="${process.env.FRONTEND_URL}" style="text-decoration: none; color: #000110; font-weight: bold;">
+            <div className="flex items-center justify-center">
+        <p className="text-5xl">M</p>
+      </div>
+      <div className="flex flex-col items-center justify-center">
+        <p className="text-xl leading-none">Y</p>
+        <p className="text-xl leading-none">E</p>
+      </div>
           </a>
         </div>
       </div>
