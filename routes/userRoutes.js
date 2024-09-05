@@ -146,7 +146,7 @@ router.post('/signup', async (req, res) => {
 });
 
 
-router.get('/activate', async (req, res) => {
+router.get('/api/activate', async (req, res) => {
   const { token } = req.query;
 
   try {
