@@ -60,13 +60,13 @@ async function sendActivationEmail(user, activationToken) {
   
    <div style="text-align: center; margin-top: 50px;">
           <a href="${process.env.FRONTEND_URL}" style="text-decoration: none;">
-            <div style="display: flex; justify-content: center; align-items: center; max-width: 200px; margin: 0 auto; border: 1px solid white; padding: 10px;">
+            <div style="display: flex; justify-content: center; align-items: center; max-width: 200px; margin: 0 auto;">
               <!-- M takes the left half -->
-              <div style="width: 50%; text-align: center; padding-right: 5px; border-right: 1px solid white;">
+              <div style="width: 50%; text-align: center;">
                 <p style="font-size: 50px; font-weight: 900; color: white; margin: 0;">M</p>
               </div>
-              <!-- Y and E in a vertical column on the right -->
-              <div style="width: 50%; text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+              <!-- Y and E in a vertical column on the right, aligned to top and bottom -->
+              <div style="width: 50%; display: flex; flex-direction: column; justify-content: space-between; align-items: center;">
                 <p style="font-size: 24px; font-weight: 900; color: white; margin: 0;">Y</p>
                 <p style="font-size: 24px; font-weight: 900; color: white; margin: 0;">E</p>
               </div>
