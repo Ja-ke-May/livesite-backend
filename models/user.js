@@ -101,6 +101,14 @@ const userSchema = new mongoose.Schema({
     type: Boolean, 
     default: false,  
   },
+  isBlocked: { 
+    type: Boolean, 
+    default: false 
+  }, 
+  blockExpiryDate: { 
+    type: Date, 
+    default: null 
+  }, 
   createdAt: {
     type: Date,
     default: Date.now,

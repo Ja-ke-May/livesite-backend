@@ -162,6 +162,50 @@
     }
   });
 
+
+// Block user route
+app.post('/block-user', authMiddleware, async (req, res) => {
+  const { username, duration } = req.body;
+  
+  try {
+    if (!req.user.isAdmin) {
+      return res.status(403).json({ message: 'Unauthorized action' });
+    }
+
+    const user = await User.findOne({ userName: username });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    let blockExpiryDate = null;
+    
+    if (duration === '1 day') {
+      blockExpiryDate = new Date();
+      blockExpiryDate.setDate(blockExpiryDate.getDate() + 1);
+    } else if (duration === '1 week') {
+      blockExpiryDate = new Date();
+      blockExpiryDate.setDate(blockExpiryDate.getDate() + 7);
+    } else if (duration === '1 month') {
+      blockExpiryDate = new Date();
+      blockExpiryDate.setMonth(blockExpiryDate.getMonth() + 1);
+    } else if (duration === 'permanent') {
+      blockExpiryDate = null; 
+    } else {
+      return res.status(400).json({ message: 'Invalid block duration' });
+    }
+
+    user.isBlocked = true;
+    user.blockExpiryDate = blockExpiryDate;
+    
+    await user.save();
+
+    res.status(200).json({ message: `User ${username} blocked for ${duration}` });
+  } catch (err) {
+    console.error('Error blocking user:', err);
+    res.status(500).json({ error: 'Server error, please try again later' });
+  }
+});
+
   app.use('/', userRoutes);
 
   handleSocketConnection(io);
