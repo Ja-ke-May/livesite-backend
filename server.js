@@ -156,6 +156,10 @@ cron.schedule('0 * * * *', async () => {
         return res.status(404).json({ message: 'User not found' });
       }
 
+      if (user.isBlocked) {
+        return res.status(403).json({ message: 'You are blocked from commenting.' });
+      }
+
       const newComment = new Comment({
         username,
         comment: comment.trim(),
