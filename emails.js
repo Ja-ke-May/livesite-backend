@@ -38,11 +38,21 @@ async function sendBlockNotificationEmail(user, blockDuration) {
         </div>
         
         <p style="font-size: 16px; color: white; margin-top: 30px;">Best regards,</p>
-        <p style="font-size: 16px; color: white; font-weight: bold;">Jacob May</p>
+        <p style="font-size: 16px; color: white; font-weight: bold;">MyMe Team</p>
         
-        <div style="text-align: center; margin-top: 30px;">
-          <a href="${process.env.FRONTEND_URL}" style="text-decoration: none; color: white; font-weight: bold;">
-            MYME.LIVE
+        <div style="text-align: center; margin-top: 50px;">
+          <a href="${process.env.FRONTEND_URL}" style="text-decoration: none;">
+            <div style="display: flex; justify-content: center; align-items: center; max-width: 200px; margin: 0 auto; border: 1px solid white; padding: 10px;">
+              <!-- M takes the left half -->
+              <div style="width: 50%; text-align: center; padding-right: 5px; border-right: 1px solid white;">
+                <p style="font-size: 50px; font-weight: 900; color: white; margin: 0;">M</p>
+              </div>
+              <!-- Y and E in a vertical column on the right -->
+              <div style="width: 50%; text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+                <p style="font-size: 24px; font-weight: 900; color: white; margin: 0;">Y</p>
+                <p style="font-size: 24px; font-weight: 900; color: white; margin: 0;">E</p>
+              </div>
+            </div>
           </a>
         </div>
       </div>
@@ -58,3 +68,5 @@ async function sendBlockNotificationEmail(user, blockDuration) {
 }
 
 module.exports = { sendBlockNotificationEmail };
+
+
