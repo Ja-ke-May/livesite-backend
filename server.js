@@ -9,7 +9,7 @@
   const rateLimit = require('express-rate-limit');
   const multer = require('multer');
   const userRoutes = require('./routes/userRoutes');
-  const { handleSocketConnection } = require('./socketHandler'); 
+  const { handleSocketConnection, onlineUsers } = require('./socketHandler'); 
   const handleStripeWebhook = require('./stripeWebhook');
 
 
