@@ -1,5 +1,6 @@
 const Stripe = require('stripe');
 const User = require('./models/user');
+const { sendThankYouEmail } = require('./emails')
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
     apiVersion: '2024-06-20',
@@ -97,7 +98,10 @@ const handleStripeWebhook = async (req, res) => {
                 return res.status(404).send('User not found');
             }
 
-            console.log(`Successfully updated user ${userName} with ${totalTokens} tokens.`);
+            console.log(`Successfully updated user ${userName} with ${totalTokens} tokens.`); 
+
+            await sendThankYouEmail(user, newPurchase);
+            
             res.status(200).send('Purchase processed successfully');
         } catch (error) {
             console.error('Error updating user after purchase:', error);

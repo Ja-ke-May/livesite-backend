@@ -62,6 +62,53 @@ async function sendBlockNotificationEmail(user, blockDuration) {
   }
 }
 
-module.exports = { sendBlockNotificationEmail };
 
 
+
+
+
+
+
+// Function to send thank you email
+async function sendThankYouEmail(user, purchaseDetails) {
+  const mailOptions = {
+    from: 'info@myme.live',
+    to: user.email,
+    subject: 'Thank You for Your Purchase!',
+    html: `
+      <div style="font-family: Arial, sans-serif; background-color: #f4f4f4; color: black; padding: 30px; border-radius: 10px; max-width: 600px; margin: 0 auto; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);">
+        <h1 style="text-align: center; color: yellow; font-size: 24px; margin-bottom: 20px;">Thank You for Your Purchase!</h1>
+        <p style="font-size: 16px; color: black; line-height: 1.6;">Dear <span style="font-weight: bold;">${user.userName}</span>,</p>
+        <p style="font-size: 16px; color: black; line-height: 1.6;">Thank you for purchasing tokens on <span style="color: yellow; font-weight: bold;">MyMe.Live</span>. Your support means a lot to us!</p>
+        <p style="font-size: 16px; color: black; line-height: 1.6;">You have purchased <span style="font-weight: bold; color: yellow;">${purchaseDetails.tokens}</span> tokens for a total of <span style="font-weight: bold;">${purchaseDetails.amountSpent} ${purchaseDetails.currency}</span>.</p>
+
+        <p style="font-size: 16px; color: black; line-height: 1.6;">Your tokens have been added to your account, and you can now use them to support your favorite creators.</p>
+
+        <div style="text-align: center; margin-top: 30px;">
+          <a href="${process.env.FRONTEND_URL}/profile" 
+             style="background-color: #4CAF50; color: white; padding: 15px 30px; text-align: center; text-decoration: none; display: inline-block; border-radius: 5px; font-weight: bold; font-size: 18px;">
+            View Your Profile
+          </a>
+        </div>
+        
+        <p style="font-size: 16px; color: black; margin-top: 30px;">Best regards,</p>
+        <p style="font-size: 16px; color: black; font-weight: bold;">MyMe Team</p>
+        
+        <div style="text-align: center; margin-top: 30px;">
+          <a href="${process.env.FRONTEND_URL}" style="text-decoration: none; color: black; font-weight: bold;">
+            MYME.LIVE
+          </a>
+        </div>
+      </div>
+    `
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log('Thank you email sent to', user.email);
+  } catch (err) {
+    console.error('Error sending thank you email:', err);
+  }
+}
+
+module.exports = {  sendBlockNotificationEmail, sendThankYouEmail };
