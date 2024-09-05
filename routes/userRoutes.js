@@ -102,8 +102,6 @@ router.post('/login', async (req, res) => {
 
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET,);
 
-    // { expiresIn: '72h' } 
-    console.log('Backend isAdmin value:', user.isAdmin);
     res.json({ message: 'Login successful', token, username: user.userName, isAdmin: user.isAdmin }); // Return the username
   } catch (err) {
     console.error('Error during login:', err);
