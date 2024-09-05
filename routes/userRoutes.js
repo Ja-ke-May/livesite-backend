@@ -95,6 +95,24 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ message: 'No account with this email' });
     }
 
+     if (user.isBlocked) {
+      const now = new Date();
+
+      if (user.blockExpiryDate && now < user.blockExpiryDate) {
+        return res.status(403).json({ message: `You are blocked until ${user.blockExpiryDate}` });
+      }
+
+      if (!user.blockExpiryDate) {
+        return res.status(403).json({ message: 'You are permanently blocked from this service' });
+      }
+
+      if (user.blockExpiryDate && now >= user.blockExpiryDate) {
+        user.isBlocked = false;
+        user.blockExpiryDate = null;
+        await user.save();
+      }
+    }
+
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(401).json({ message: 'Password incorrect' });

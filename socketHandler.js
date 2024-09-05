@@ -205,11 +205,38 @@ const handleSocketConnection = (io) => {
       }
     }, inactivityTimeout / 2);
 
-    socket.on("register-user", (username) => {
+    socket.on("register-user", async (username) => {
       if (!username) {
         console.error(`Username not provided for socket ID: ${socket.id}`);
         onlineUsers.set(socket.id, 'guest');
         return; // Prevent further actions if no username is provided
+      }
+
+      const user = await User.findOne({ userName: username });
+      if (!user) {
+        console.error(`User not found for socket ID: ${socket.id}`);
+        return;
+      }
+
+      // Check if user is blocked
+      if (user.isBlocked) {
+        const now = new Date();
+        if (user.blockExpiryDate && now < user.blockExpiryDate) {
+          socket.emit('forceLogout', { message: `You are blocked until ${user.blockExpiryDate}` });
+          console.log(`Blocked user ${username} tried to connect. Forcing logout.`);
+          return;
+        } else if (!user.blockExpiryDate) {
+          socket.emit('forceLogout', { message: 'You are permanently blocked.' });
+          console.log(`Permanently blocked user ${username} tried to connect. Forcing logout.`);
+          return;
+        }
+      }
+
+      // If the user is no longer blocked (block expired), reset block status
+      if (user.blockExpiryDate && new Date() >= user.blockExpiryDate) {
+        user.isBlocked = false;
+        user.blockExpiryDate = null;
+        await user.save();
       }
       onlineUsers.set(socket.id, username);
       lastActivity.set(socket.id, Date.now());
@@ -469,6 +496,12 @@ const handleSocketConnection = (io) => {
         updateUpNext(io);
       }
     });
+
+      // Handle forced logout for blocked users
+      socket.on('forceLogout', () => {
+        console.log(`Forcefully logging out socket ID ${socket.id}`);
+        socket.disconnect(true);
+      });
 
     socket.on("disconnect", async () => {
   const username = onlineUsers.get(socket.id);

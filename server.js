@@ -179,26 +179,41 @@ app.post('/block-user', authMiddleware, async (req, res) => {
 
     let blockExpiryDate = null;
     
-    if (duration === '1 day') {
-      blockExpiryDate = new Date();
-      blockExpiryDate.setDate(blockExpiryDate.getDate() + 1);
-    } else if (duration === '1 week') {
-      blockExpiryDate = new Date();
-      blockExpiryDate.setDate(blockExpiryDate.getDate() + 7);
-    } else if (duration === '1 month') {
-      blockExpiryDate = new Date();
-      blockExpiryDate.setMonth(blockExpiryDate.getMonth() + 1);
-    } else if (duration === 'permanent') {
-      blockExpiryDate = null; 
-    } else {
-      return res.status(400).json({ message: 'Invalid block duration' });
+     // Set block expiry based on the selected duration
+     switch (duration) {
+      case '1 day':
+        blockExpiryDate = new Date();
+        blockExpiryDate.setDate(blockExpiryDate.getDate() + 1);
+        break;
+      case '1 week':
+        blockExpiryDate = new Date();
+        blockExpiryDate.setDate(blockExpiryDate.getDate() + 7);
+        break;
+      case '1 month':
+        blockExpiryDate = new Date();
+        blockExpiryDate.setMonth(blockExpiryDate.getMonth() + 1);
+        break;
+      case 'permanent':
+        blockExpiryDate = null; // Permanent block
+        break;
+      default:
+        return res.status(400).json({ message: 'Invalid block duration' });
     }
 
+    // Update user block status
     user.isBlocked = true;
     user.blockExpiryDate = blockExpiryDate;
     
     await user.save();
 
+      // Forcefully log out all sockets connected with the blocked username
+    for (const [socketId, onlineUsername] of onlineUsers.entries()) {
+      if (onlineUsername === username) {
+        io.to(socketId).emit('forceLogout', { message: 'You have been blocked.' });
+        io.sockets.sockets.get(socketId).disconnect(true);
+        console.log(`Socket ${socketId} for user ${username} forcefully logged out.`);
+      }
+    }
     res.status(200).json({ message: `User ${username} blocked for ${duration}` });
   } catch (err) {
     console.error('Error blocking user:', err);
