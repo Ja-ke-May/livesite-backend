@@ -10,6 +10,7 @@
   const multer = require('multer');
   const userRoutes = require('./routes/userRoutes');
   const { handleSocketConnection, onlineUsers } = require('./socketHandler'); 
+  const { sendBlockNotificationEmail } = require('./emails')
   const handleStripeWebhook = require('./stripeWebhook');
   const cron = require('node-cron');
 
@@ -215,6 +216,8 @@ app.post('/block-user', authMiddleware, async (req, res) => {
     user.blockExpiryDate = blockExpiryDate;
     
     await user.save();
+
+    await sendBlockNotificationEmail(user, duration);
 
       // Forcefully log out all sockets connected with the blocked username
     for (const [socketId, onlineUsername] of onlineUsers.entries()) {
