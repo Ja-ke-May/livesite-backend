@@ -41,26 +41,29 @@ async function sendActivationEmail(user, activationToken) {
     to: user.email,
     subject: 'MyMe.Live Account Activation',
     html: `
-   <div style="font-family: Arial, sans-serif; background-color: #000110; color: white; padding: 20px; border-radius: 5px; max-width: 600px; margin: 0 auto;">
-        <h1 style="text-align: center; color: yellow; brightness: 1.25;">Activate Your Account</h1>
-        <p style="font-size: 16px; color: white;">Thank you for signing up to <span style="color: yellow; brightness: 1.25; font-weight: bold;">MyMe.Live</span>.</p>
-        <p style="font-size: 16px; color: white;">Please click the button below to activate your account:</p>
-        <div style="text-align: center; margin: 20px 0;">
-          <a href="${activationLink}" 
-             style="background-color: #4CAF50; color: white; padding: 15px 30px; text-align: center; text-decoration: none; display: inline-block; border-radius: 5px; font-weight: bold; font-size: 18px;">
-            Activate Account
-          </a>
-        </div>
-        <p style="font-size: 16px; color: white;">This link will expire in 24 hours. If you did not sign up for this account, please disregard this email.</p>
-        <br />
-        <p style="font-size: 16px; color: white;">Best regards,</p>
-        <p style="font-size: 16px; color: white; font-weight: bold;">Jacob May</p>
-        <div style="text-align: center; margin-top: 30px;">
-          <a href="${process.env.FRONTEND_URL}" style="text-decoration: none; color: white; font-weight: bold;">
-            <p>MYME.LIVE</p>
-          </a>
-        </div>
-      </div>
+  <div style="font-family: Arial, sans-serif; background-color: #000110; color: white; padding: 30px; border-radius: 10px; max-width: 600px; margin: 0 auto; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);">
+  <h1 style="text-align: center; color: yellow; font-size: 24px; margin-bottom: 20px;">Activate Your Account</h1>
+  <p style="font-size: 16px; color: white; line-height: 1.6;">Thank you for signing up to <span style="color: yellow; font-weight: bold;">MyMe.Live</span>. We are excited to have you on board!</p>
+  <p style="font-size: 16px; color: white; line-height: 1.6;">Please click the button below to activate your account:</p>
+  
+  <div style="text-align: center; margin: 30px 0;">
+    <a href="${activationLink}" 
+       style="background-color: #4CAF50; color: white; padding: 15px 30px; text-align: center; text-decoration: none; display: inline-block; border-radius: 5px; font-weight: bold; font-size: 18px;">
+      Activate Account
+    </a>
+  </div>
+  
+  <p style="font-size: 16px; color: white; line-height: 1.6;">This link will expire in 24 hours. If you did not sign up for this account, please disregard this email.</p>
+  
+  <p style="font-size: 16px; color: white; margin-top: 30px;">Best regards,</p>
+  <p style="font-size: 16px; color: white; font-weight: bold;">Jacob May</p>
+  
+  <div style="text-align: center; margin-top: 30px;">
+    <a href="${process.env.FRONTEND_URL}" style="text-decoration: none; color: white; font-weight: bold;">
+      MYME.LIVE
+    </a>
+  </div>
+</div>
   `
 };
 
