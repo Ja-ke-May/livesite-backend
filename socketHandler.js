@@ -181,8 +181,21 @@ const notifyNextUserInQueue = (io) => {
 };
 
 const handleSocketConnection = (io) => {
-  io.on("connection", (socket) => {
+  io.on("connection", async (socket) => {
     console.log(`New client connected: ${socket.id}`);
+
+    const username = onlineUsers.get(socket.id);
+
+  if (username) {
+    const user = await User.findOne({ userName: username });
+
+    // If the user is blocked, immediately disconnect them
+    if (user && user.isBlocked) {
+      socket.emit('forceLogout', { message: 'You are blocked.' });
+      socket.disconnect(true);
+      return;
+    }
+  }
 
     onlineUsers.set(socket.id, null);
     lastActivity.set(socket.id, Date.now());
