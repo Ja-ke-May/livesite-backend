@@ -184,13 +184,15 @@ router.post('/login', async (req, res) => {
     const normalizedEmail = email.toLowerCase();
     const user = await User.findOne({ email: { $regex: new RegExp(`^${normalizedEmail}$`, 'i') } });
 
-    if (!user.isActivated) {
-      return res.status(401).json({ message: 'Account not activated. Please check your email to activate your account.' });
-    }
+   
     
 
     if (!user) {
       return res.status(401).json({ message: 'No account with this email' });
+    }
+
+    if (!user.isActivated) {
+      return res.status(401).json({ message: 'Account not activated. Please check your email to activate your account.' });
     }
 
      if (user.isBlocked) {
