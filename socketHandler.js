@@ -272,6 +272,22 @@ const handleSocketConnection = (io) => {
     });
 
     socket.on("vote", async (newPosition) => {
+
+      const username = onlineUsers.get(socket.id);
+
+  if (!username) {
+    console.error(`Username for socket ID ${socket.id} not found. Cannot process vote.`);
+    return;
+  }
+
+  const user = await User.findOne({ userName: username });
+
+  if (user && user.isBlocked) {
+    console.log(`Blocked user ${username} attempted to vote.`);
+    socket.emit('vote-error', { message: 'You are blocked from voting.' });
+    return;
+  }
+
       slidePosition = newPosition;
       lastActivity.set(socket.id, Date.now());
       io.emit('vote-update', slidePosition);
