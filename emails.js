@@ -28,12 +28,12 @@ async function sendBlockNotificationEmail(user, blockDuration) {
         <p style="font-size: 16px; color: white; line-height: 1.6;">Unfortunately, your account has been blocked due to a violation of our policies.</p>
         <p style="font-size: 16px; color: white; line-height: 1.6;">${blockMessage}</p>
 
-        <p style="font-size: 16px; color: white; line-height: 1.6;">Please contact our support team if you believe this block is unjustified or if you have any questions.</p>
+        <p style="font-size: 16px; color: white; line-height: 1.6;">Please contact us if you believe this block is unjustified or if you have any questions.</p>
 
         <div style="text-align: center; margin-top: 30px;">
           <a href="${process.env.FRONTEND_URL}/contact" 
              style="background-color: #4CAF50; color: white; padding: 15px 30px; text-align: center; text-decoration: none; display: inline-block; border-radius: 5px; font-weight: bold; font-size: 18px;">
-            Contact Support
+            Contact
           </a>
         </div>
         
