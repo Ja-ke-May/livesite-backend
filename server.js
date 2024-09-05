@@ -11,6 +11,7 @@
   const userRoutes = require('./routes/userRoutes');
   const { handleSocketConnection, onlineUsers } = require('./socketHandler'); 
   const handleStripeWebhook = require('./stripeWebhook');
+  const cron = require('node-cron');
 
 
   const app = express();
@@ -33,7 +34,16 @@
   dotenv.config();
 
 
-
+// Delete unactivated accounts every hour
+cron.schedule('0 * * * *', async () => {
+  try {
+    const now = new Date();
+    await User.deleteMany({ isActivated: false, activationExpires: { $lt: now } });
+    console.log('Deleted expired unactivated accounts');
+  } catch (err) {
+    console.error('Error deleting unactivated accounts', err);
+  }
+});
 
   // Initialize Socket.IO with CORS configuration
   const io = socketIo(server, {

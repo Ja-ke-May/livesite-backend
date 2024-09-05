@@ -4,6 +4,8 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const authMiddleware = require('../middleware/authMiddleware');
 const multer = require('multer');
+const crypto = require('crypto');
+
 
 const router = express.Router();
 const storage = multer.memoryStorage();
@@ -17,6 +19,65 @@ const fileFilter = (req, file, cb) => {
 };
 
 const upload = multer({ storage, fileFilter });
+
+const nodemailer = require('nodemailer');
+
+// Create transport for Nodemailer using 123 Reg settings
+const transporter = nodemailer.createTransport({
+  host: 'smtp.123-reg.co.uk', // 123 Reg SMTP host
+  port: 465, // 465 for SSL or 587 for TLS
+  secure: true, // Set to 'true' for SSL on port 465, 'false' for TLS on port 587
+  auth: {
+    user: 'info@myme.live', 
+    pass: process.env.EMAIL_PASSWORD, 
+  }
+});
+
+// Function to send an email
+async function sendActivationEmail(user, activationToken) {
+  const activationLink = `${process.env.FRONTEND_URL}/activate?token=${activationToken}`;
+  const mailOptions = {
+    from: 'info@myme.live',
+    to: user.email,
+    subject: 'MyMe.Live Account Activation',
+    html: `
+   <div style="font-family: Arial, sans-serif; background-color: #000110; color: white; padding: 20px; border-radius: 10px; max-width: 600px; margin: 0 auto;">
+        <h1 style="text-align: center; color: #f9b208;">Activate Your Account</h1>
+        <p style="font-size: 16px; color: white;">Thank you for signing up to <span style="color: #f9b208; font-weight: bold;">MyMe.Live</span>.</p>
+        <p style="font-size: 16px; color: white;">Please click the button below to activate your account:</p>
+        <div style="text-align: center; margin: 20px 0;">
+          <a href="${activationLink}" 
+             style="background-color: #4CAF50; color: white; padding: 15px 30px; text-align: center; text-decoration: none; display: inline-block; border-radius: 5px; font-weight: bold; font-size: 18px;">
+            Activate Account
+          </a>
+        </div>
+        <p style="font-size: 16px; color: white;">This link will expire in 24 hours. If you did not sign up for this account, please disregard this email.</p>
+        <br />
+        <p style="font-size: 16px; color: white;">Best regards,</p>
+        <p style="font-size: 16px; color: white; font-weight: bold;">Jacob May</p>
+        <div style="text-align: center; margin-top: 30px;">
+          <a href="${process.env.FRONTEND_URL}" style="text-decoration: none; color: white; font-weight: bold;">
+            <div style="display: inline-flex; align-items: center; justify-content: center;">
+              <div style="font-size: 40px; font-weight: bold;">M</div>
+              <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                <div style="font-size: 20px;">Y</div>
+                <div style="font-size: 20px;">E</div>
+              </div>
+            </div>
+          </a>
+        </div>
+      </div>
+  `
+};
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log('Activation email sent to', user.email);
+  } catch (err) {
+    console.error('Error sending activation email:', err);
+  }
+}
+
 
 router.post('/profile-picture', upload.single('profilePicture'), authMiddleware, async (req, res) => {
   try {
@@ -62,22 +123,59 @@ router.post('/signup', async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Generate activation token
+    const activationToken = crypto.randomBytes(20).toString('hex');
+    const activationExpires = Date.now() + 24 * 60 * 60 * 1000; // Expires in 24 hours
+
+    // Create new user
     const user = new User({
       userName,
       email,
       password: hashedPassword,
       dob,
-      marketingConsent: marketingConsent || false, 
+      marketingConsent: marketingConsent || false,
+      activationToken,
+      activationExpires,
     });
 
     await user.save();
 
-    res.status(201).json({ message: 'User created successfully' });
+    // Send activation email
+    await sendActivationEmail(user, activationToken);
+
+    res.status(201).json({ message: 'User created successfully. Please check your email to activate your account.' });
   } catch (err) {
     console.error('Error during signup:', err);
     res.status(500).json({ error: err.message });
   }
 });
+
+
+router.get('/activate', async (req, res) => {
+  const { token } = req.query;
+
+  try {
+    const user = await User.findOne({
+      activationToken: token,
+      activationExpires: { $gt: Date.now() } 
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid or expired activation link' });
+    }
+
+    user.isActivated = true;
+    user.activationToken = undefined;
+    user.activationExpires = undefined; 
+    await user.save();
+
+    res.status(200).json({ message: 'Account activated successfully' });
+  } catch (err) {
+    console.error('Error activating account', err);
+    res.status(500).json({ error: 'Server error. Please try again.' });
+  }
+});
+
 
 
 router.post('/login', async (req, res) => {
@@ -90,6 +188,11 @@ router.post('/login', async (req, res) => {
 
     const normalizedEmail = email.toLowerCase();
     const user = await User.findOne({ email: { $regex: new RegExp(`^${normalizedEmail}$`, 'i') } });
+
+    if (!user.isActivated) {
+      return res.status(401).json({ message: 'Account not activated. Please check your email to activate your account.' });
+    }
+    
 
     if (!user) {
       return res.status(401).json({ message: 'No account with this email' });

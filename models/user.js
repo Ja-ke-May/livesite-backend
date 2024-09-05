@@ -15,6 +15,16 @@ const userSchema = new mongoose.Schema({
     type: Boolean, 
     default: false 
   },
+  isActivated: { 
+    type: Boolean, 
+    default: false 
+  },
+  activationToken: { 
+    type: String 
+  },
+  activationExpires: { 
+    type: Date 
+  },
   password: {
     type: String,
     required: true

@@ -17,6 +17,10 @@ const authMiddleware = async (req, res, next) => {
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
+
+     if (!user.isActivated) {
+      return res.status(403).json({ message: 'Account is not activated. Please check your email to activate your account.' });
+    }
     
     req.user.isAdmin = user.isAdmin; 
     next();
