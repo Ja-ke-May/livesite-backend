@@ -707,7 +707,7 @@ router.post('/update-purchase', async (req, res) => {
 });
 
 // Forgot password route with reset email
-router.post('/forgot-password', authMiddleware, async (req, res) => {
+router.post('/forgot-password', async (req, res) => {
   const { email } = req.body;
 
   try {
@@ -735,7 +735,7 @@ router.post('/forgot-password', authMiddleware, async (req, res) => {
 });
 
 // Reset password route
-router.post('/reset-password', authMiddleware, async (req, res) => {
+router.post('/reset-password', async (req, res) => {
   const { token, newPassword } = req.body;
 
   try {
