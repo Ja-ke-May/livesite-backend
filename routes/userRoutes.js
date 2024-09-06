@@ -114,12 +114,14 @@ router.post('/signup', async (req, res) => {
       return res.status(400).json({ message: 'All fields are required' });
     }
 
+    const normalizedEmail = email.toLowerCase();
+
     const existingUser = await User.findOne({ userName });
     if (existingUser) {
       return res.status(400).json({ message: 'Username already exists' });
     }
 
-    const existingEmail = await User.findOne({ email });
+    const existingEmail = await User.findOne({ normalizedEmail });
     if (existingEmail) {
       return res.status(400).json({ message: 'Email already exists' });
     }
@@ -133,7 +135,7 @@ router.post('/signup', async (req, res) => {
     // Create new user
     const user = new User({
       userName,
-      email,
+      email: normalizedEmail,,
       password: hashedPassword,
       dob,
       marketingConsent: marketingConsent || false,
@@ -712,7 +714,10 @@ router.post('/forgot-password', async (req, res) => {
 
   try {
     console.log('Received forgot password request for email:', email);
-    const user = await User.findOne({ email });
+
+    const normalizedEmail = email.toLowerCase();
+
+    const user = await User.findOne({ normalizedEmail });
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
