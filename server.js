@@ -50,7 +50,7 @@ cron.schedule('0 * * * *', async () => {
   // Initialize Socket.IO with CORS configuration
   const io = socketIo(server, {
     cors: {
-      origin: process.env.FRONTEND_URL || 'https://livesite-mu.vercel.app',
+      origin: process.env.FRONTEND_URL || 'https://myme.live',
       methods: ["GET", "POST"],
     },
   });
@@ -59,7 +59,7 @@ cron.schedule('0 * * * *', async () => {
 
   // Middleware
   app.use(cors({
-    origin: process.env.FRONTEND_URL || 'https://livesite-mu.vercel.app',
+    origin: process.env.FRONTEND_URL || 'https://myme.live',
     credentials: true,
   }));
 
