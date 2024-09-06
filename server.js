@@ -50,7 +50,7 @@ cron.schedule('0 * * * *', async () => {
   // Initialize Socket.IO with CORS configuration
   const io = socketIo(server, {
     cors: {
-      origin: process.env.FRONTEND_URL || 'https://myme.live',
+      origin: process.env.FRONTEND_URL || 'https://www.myme.live',
       methods: ["GET", "POST"],
     },
   });
@@ -59,7 +59,7 @@ cron.schedule('0 * * * *', async () => {
 
   // Middleware
   app.use(cors({
-    origin: process.env.FRONTEND_URL || 'https://myme.live',
+    origin: process.env.FRONTEND_URL || 'https://www.myme.live',
     credentials: true,
   }));
 
