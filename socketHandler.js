@@ -436,7 +436,7 @@ const handleSocketConnection = (io) => {
 
     socket.on('send-audio', (audioBase64) => {
       if (audioBase64) {
-        io.emit('receive-audio', audioBase64);
+        socket.broadcast.emit('receive-audio', audioBase64);
       } else {
         console.error('Received malformed audio data.');
       }
