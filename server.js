@@ -10,7 +10,7 @@
   const multer = require('multer');
   const userRoutes = require('./routes/userRoutes');
   const { handleSocketConnection, onlineUsers } = require('./socketHandler'); 
-  const { sendBlockNotificationEmail } = require('./emails')
+  const { sendBlockNotificationEmail, sendResetPasswordEmail } = require('./emails')
   const handleStripeWebhook = require('./stripeWebhook');
   const cron = require('node-cron');
   
@@ -237,7 +237,65 @@ app.post('/block-user', authMiddleware, async (req, res) => {
     console.error('Error blocking user:', err);
     res.status(500).json({ error: 'Server error, please try again later' });
   }
+})
+
+
+// Forgot password route with reset email
+router.post('/forgot-password', async (req, res) => {
+  const { email } = req.body;
+
+  try {
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Generate a reset token and expiration time
+    const resetToken = crypto.randomBytes(20).toString('hex');
+    const resetTokenExpires = Date.now() + 3600000; // 1 hour expiration
+
+    user.resetPasswordToken = resetToken;
+    user.resetPasswordExpires = resetTokenExpires;
+    await user.save();
+
+    // Send the reset email
+    await sendResetPasswordEmail(user, resetToken);
+
+    res.status(200).json({ message: 'Password reset email sent' });
+  } catch (error) {
+    console.error('Error in forgot password route:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
 });
+
+// Reset password route
+router.post('/reset-password', async (req, res) => {
+  const { token, newPassword } = req.body;
+
+  try {
+    const user = await User.findOne({
+      resetPasswordToken: token,
+      resetPasswordExpires: { $gt: Date.now() },
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid or expired reset token' });
+    }
+
+    // Hash the new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    user.password = hashedPassword;
+    user.resetPasswordToken = undefined; // Clear the token after reset
+    user.resetPasswordExpires = undefined;
+
+    await user.save();
+    res.status(200).json({ message: 'Password reset successful' });
+  } catch (error) {
+    console.error('Error in reset password route:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 
   app.use('/', userRoutes);
 
