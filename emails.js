@@ -116,4 +116,54 @@ async function sendThankYouEmail(user, purchaseDetails) {
   }
 }
 
-module.exports = {  sendBlockNotificationEmail, sendThankYouEmail };
+// Function to send reset password email
+async function sendResetPasswordEmail(user, resetToken) {
+  const resetLink = `${process.env.FRONTEND_URL}/resetPassword?token=${resetToken}`;
+  const mailOptions = {
+    from: 'info@myme.live',
+    to: user.email,
+    subject: 'MyMe.Live Password Reset',
+    html: `
+      <div style="font-family: Arial, sans-serif; background-color: #000110; color: white; padding: 30px; border-radius: 10px; max-width: 600px; margin: 0 auto; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);">
+        <h1 style="text-align: center; color: red; font-size: 24px; margin-bottom: 20px;">Password Reset Request</h1>
+        <p style="font-size: 16px; color: white; line-height: 1.6;">Dear <span style="color: yellow; font-weight: bold;">${user.userName}</span>,</p>
+        <p style="font-size: 16px; color: white; line-height: 1.6;">We received a request to reset your password. If you made this request, click the link below to reset your password:</p>
+
+        <div style="text-align: center; margin-top: 30px;">
+          <a href="${resetLink}" 
+             style="background-color: red; color: white; padding: 15px 30px; text-align: center; text-decoration: none; display: inline-block; border-radius: 5px; font-weight: bold; font-size: 18px;">
+            Reset My Password
+          </a>
+        </div>
+        
+        <p style="font-size: 16px; color: white; line-height: 1.6; margin-top: 20px;">If you didn't request this, please ignore this email.</p>
+        <p style="font-size: 16px; color: white; margin-top: 30px;">Best regards,</p>
+        <p style="font-size: 16px; color: white; font-weight: bold;">MyMe Team</p>
+
+         <div style="text-align: center; margin-top: 50px;">
+          <a href="${process.env.FRONTEND_URL}" style="text-decoration: none;">
+            <div style="display: flex; justify-content: center; align-items: stretch; max-width: 200px; margin: 0 auto; gap: 10px;">
+              <!-- M takes the left half -->
+              <div style="width: 50%; text-align: center; display: flex; justify-content: center; align-items: center;">
+                <p style="font-size: 50px; font-weight: 900; color: white; margin: 0;">MyMe.Live</p>
+              </div>
+            </div>
+          </a>
+        </div>
+      </div>
+    `,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log('Password reset email sent to', user.email);
+  } catch (err) {
+    console.error('Error sending reset password email:', err);
+  }
+}
+
+module.exports = {  sendBlockNotificationEmail, sendThankYouEmail, sendResetPasswordEmail };
+
+
+
+
