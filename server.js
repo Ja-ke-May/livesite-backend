@@ -10,7 +10,7 @@
   const multer = require('multer');
   const userRoutes = require('./routes/userRoutes');
   const { handleSocketConnection, onlineUsers } = require('./socketHandler'); 
-  const { sendBlockNotificationEmail, sendResetPasswordEmail } = require('./emails')
+  const { sendBlockNotificationEmail } = require('./emails')
   const handleStripeWebhook = require('./stripeWebhook');
   const cron = require('node-cron');
   
