@@ -434,6 +434,15 @@ const handleSocketConnection = (io) => {
       }
     });
 
+    socket.on('send-audio', (audioBase64) => {
+      if (audioBase64) {
+        io.emit('receive-audio', audioBase64);
+      } else {
+        console.error('Received malformed audio data.');
+      }
+    });
+    
+
     socket.on("go-live", () => {
       io.emit('main-feed', null);
       io.emit('update-online-users', onlineUsers.size);
