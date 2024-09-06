@@ -710,6 +710,7 @@ router.post('/forgot-password', async (req, res) => {
   const { email } = req.body;
 
   try {
+    console.log('Received forgot password request for email:', email);
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
