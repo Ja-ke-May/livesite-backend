@@ -5,6 +5,7 @@ const jwt = require('jsonwebtoken');
 const authMiddleware = require('../middleware/authMiddleware');
 const multer = require('multer');
 const crypto = require('crypto');
+const { sendResetPasswordEmail } = require('../emails')
 
 const router = express.Router();
 const storage = multer.memoryStorage();
