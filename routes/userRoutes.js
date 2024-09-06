@@ -135,7 +135,7 @@ router.post('/signup', async (req, res) => {
     // Create new user
     const user = new User({
       userName,
-      email: normalizedEmail,,
+      email: normalizedEmail,
       password: hashedPassword,
       dob,
       marketingConsent: marketingConsent || false,
