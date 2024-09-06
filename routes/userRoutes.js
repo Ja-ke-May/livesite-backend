@@ -761,3 +761,5 @@ router.post('/reset-password', authMiddleware, async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 });
+
+module.exports = router;
