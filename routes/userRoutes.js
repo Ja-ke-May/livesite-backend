@@ -7,6 +7,8 @@ const multer = require('multer');
 const crypto = require('crypto');
 const { sendResetPasswordEmail } = require('../emails')
 
+const UserLinkAd = require('../models/userLinkAds');
+
 const router = express.Router();
 const storage = multer.memoryStorage();
 const fileFilter = (req, file, cb) => {
@@ -771,5 +773,82 @@ router.post('/reset-password', async (req, res) => {
   }
 });
 
+router.post('/ads/link', authMiddleware, async (req, res) => {
+  try {
+    const { text, url, imageUrl } = req.body;
+    const userId = req.user.userId;
+
+    // Validate inputs
+    if (!text || !url) {
+      return res.status(400).json({ message: 'Text and URL are required' });
+    }
+
+    if (!imageUrl || !/^data:image\/(jpeg|png|gif);base64,/.test(imageUrl)) {
+      return res.status(400).json({ message: 'Invalid or missing image. Must be base64 encoded' });
+    }
+
+    // Check the active ad count before allowing the creation of a new ad
+const activeAdsCount = await UserLinkAd.countDocuments({
+  status: 'active',
+  displayEnd: { $gt: Date.now() }
+});
+
+if (activeAdsCount >= 20) {
+  return res.status(400).json({ message: 'Ad space full, please try again later' });
+}
+
+
+    // Create the new UserLinkAd object
+    const newAd = new UserLinkAd({
+      userId,
+      link: {
+        text,
+        url,
+        imageUrl,  
+      },
+      tokensSpent: 1000,  
+      displayStart: Date.now(),
+      displayEnd: Date.now() + 7 * 24 * 60 * 60 * 1000,  
+      status: 'active',
+    });
+
+    await newAd.save();
+    res.status(201).json({ message: 'Ad added successfully', ad: newAd });
+  } catch (error) {
+    console.error('Error adding user link ad:', error);
+    res.status(500).json({ error: 'Server error, please try again later' });
+  }
+});
+
+router.get('/ads/active', authMiddleware, async (req, res) => {
+  try {
+    // Find all active ads where the displayEnd is in the future
+    const activeAds = await UserLinkAd.find({
+      status: 'active',
+      displayEnd: { $gt: Date.now() }
+    }).sort({ createdAt: -1 }).limit(20); // Limit the result to 20 active ads
+
+    res.status(200).json({ ads: activeAds });
+  } catch (error) {
+    console.error('Error fetching active ads:', error);
+    res.status(500).json({ error: 'Failed to fetch active ads' });
+  }
+});
+
+
+router.get('/ads/active-count', authMiddleware, async (req, res) => {
+  try {
+    // Count all active ads where the displayEnd is in the future
+    const activeAdsCount = await UserLinkAd.countDocuments({
+      status: 'active',
+      displayEnd: { $gt: Date.now() } // Only count ads that haven't expired
+    });
+
+    res.status(200).json({ activeAdCount: activeAdsCount });
+  } catch (error) {
+    console.error('Error fetching active ads count:', error);
+    res.status(500).json({ error: 'Server error, please try again later' });
+  }
+});
 
 module.exports = router;
