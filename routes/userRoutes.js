@@ -292,8 +292,11 @@ router.put('/profile/username', authMiddleware, async (req, res) => {
       return res.status(400).json({ message: 'Username is required' });
     }
 
-    const existingUser = await User.findOne({ userName });
-    if (existingUser) {
+    const existingUser = await User.findOne({
+      userName: { $regex: new RegExp(`^${userName}$`, 'i') }
+    });
+    
+    if (existingUser && existingUser._id.toString() !== req.user.userId.toString()) {
       return res.status(400).json({ message: 'Username already taken' });
     }
 
