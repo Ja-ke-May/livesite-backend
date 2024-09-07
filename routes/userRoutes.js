@@ -254,7 +254,9 @@ router.post('/login', async (req, res) => {
 router.get('/check-username/:username', async (req, res) => {
   try {
     const { username } = req.params;
-    const existingUser = await User.findOne({ userName: username });
+    const existingUser = await User.findOne({
+      userName: { $regex: new RegExp(`^${username}$`, 'i') }
+    });
 
     if (existingUser) {
       return res.status(200).json({ available: false });
