@@ -773,11 +773,14 @@ router.post('/reset-password', async (req, res) => {
   }
 });
 
-
-router.post('/ads/send-link/:linkId', authMiddleware, async (req, res) => {
+app.post('/ads/send-link', authMiddleware, async (req, res) => {
   try {
-    const { linkId } = req.params;
+    const { link } = req.body; // Expect the full link object in the request body
     const userId = req.user.userId;
+
+    if (!link || !link.text || !link.url || !link.imageUrl) {
+      return res.status(400).json({ message: 'Incomplete link data' });
+    }
 
     // Fetch the user by userId
     const user = await User.findById(userId);
@@ -785,20 +788,14 @@ router.post('/ads/send-link/:linkId', authMiddleware, async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Find the specific link by linkId
-    const link = user.links.id(linkId);
-    if (!link) {
-      return res.status(404).json({ message: 'Link not found' });
-    }
-
     // Check if an entry already exists in UserAds for this user
     let userAd = await UserAds.findOne({ username: user.userName });
 
     if (!userAd) {
-      // Create a new UserAd document if it doesn't exist
+      // Create a new UserAds document if it doesn't exist
       userAd = new UserAds({
         username: user.userName,
-        links: [link] // Add the link to the UserAds document
+        links: [link] // Add the full link object to the UserAds document
       });
     } else {
       // Check if the user already has 20 links
@@ -819,6 +816,7 @@ router.post('/ads/send-link/:linkId', authMiddleware, async (req, res) => {
     res.status(500).json({ error: 'Server error, please try again later.' });
   }
 });
+
 
 router.get('/ads/count', async (req, res) => {
   try {

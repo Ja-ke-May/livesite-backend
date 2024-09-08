@@ -27,14 +27,10 @@ const userAdsSchema = new mongoose.Schema({
         }
       }
     ],
-    validate: [arrayLimit, '{PATH} exceeds the limit of 20'], // Validate that there are no more than 20 links
   }
 });
 
-// Custom validator to ensure only 20 link objects can be stored
-function arrayLimit(val) {
-  return val.length <= 20;
-}
+
 
 const UserAds = mongoose.model('UserAds', userAdsSchema);
 
