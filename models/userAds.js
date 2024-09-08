@@ -17,13 +17,13 @@ const userAdsSchema = new mongoose.Schema({
           required: true,
         },
         imageUrl: {
-          type: String, // Base64 string for the image
+          type: String,
           required: true,
         },
         createdAt: {
           type: Date,
           default: Date.now,
-          expires: '60s', // TTL (Time-to-Live) index for automatic removal after 7 days 7d
+          expires: '7d', // TTL (Time-to-Live) index for automatic removal after 7 days 7d
         }
       }
     ],
