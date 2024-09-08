@@ -252,7 +252,7 @@ app.post('/block-user', authMiddleware, async (req, res) => {
   }
 })
 
-app.get('/ads', authMiddleware, async (req, res) => {
+app.get('/ads', async (req, res) => {
   try {
     const ads = await UserAds.aggregate([
       { $unwind: '$links' }, 
