@@ -22,7 +22,7 @@
   const User = require('./models/user');
   const Report = require('./models/report');
   const Comment = require('./models/comment');
-  console.log('Comment model:', Comment);
+  const UserAds = require('./models/userAds');
 
   app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), (req, res) => {
     const sig = req.headers['stripe-signature'];
@@ -44,6 +44,19 @@ cron.schedule('0 * * * *', async () => {
     console.log('Deleted expired unactivated accounts');
   } catch (err) {
     console.error('Error deleting unactivated accounts', err);
+  }
+});
+
+cron.schedule('0 0 * * *', async () => {
+  try {
+    const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000); // 7 days ago
+    await UserAds.updateMany(
+      { "links.createdAt": { $lte: oneWeekAgo } },
+      { $pull: { links: { createdAt: { $lte: oneWeekAgo } } } }
+    );
+    console.log('Old ads removed successfully');
+  } catch (err) {
+    console.error('Error removing old ads:', err);
   }
 });
 
@@ -239,7 +252,19 @@ app.post('/block-user', authMiddleware, async (req, res) => {
   }
 })
 
+app.get('/ads', authMiddleware, async (req, res) => {
+  try {
+    const ads = await UserAds.aggregate([
+      { $unwind: '$links' }, 
+      { $sort: { 'links.createdAt': 1 } }, 
+      { $project: { _id: 0, 'links.text': 1, 'links.url': 1, 'links.imageUrl': 1, 'links.createdAt': 1 } }, 
+    ]);
 
+    res.json({ ads });
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching ads', error });
+  }
+});
 
 
   app.use('/', userRoutes);

@@ -1,5 +1,6 @@
 const express = require('express');
 const User = require('../models/user');
+const UserAds = require('../models/userAds');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const authMiddleware = require('../middleware/authMiddleware');
@@ -772,5 +773,60 @@ router.post('/reset-password', async (req, res) => {
   }
 });
 
+
+router.post('/ads/send-link/:linkId', authMiddleware, async (req, res) => {
+  try {
+    const { linkId } = req.params;
+    const userId = req.user.userId;
+
+    // Fetch the user by userId
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Find the specific link by linkId
+    const link = user.links.id(linkId);
+    if (!link) {
+      return res.status(404).json({ message: 'Link not found' });
+    }
+
+    // Check if an entry already exists in UserAds for this user
+    let userAd = await UserAds.findOne({ username: user.userName });
+
+    if (!userAd) {
+      // Create a new UserAd document if it doesn't exist
+      userAd = new UserAds({
+        username: user.userName,
+        links: [link] // Add the link to the UserAds document
+      });
+    } else {
+      // Check if the user already has 20 links
+      if (userAd.links.length >= 20) {
+        return res.status(400).json({ message: 'Maximum of 20 links reached in ads.' });
+      }
+
+      // Add the new link to the existing UserAds document
+      userAd.links.push(link);
+    }
+
+    // Save the UserAds document
+    await userAd.save();
+
+    res.status(200).json({ message: 'Link successfully sent to ads.', userAd });
+  } catch (err) {
+    console.error('Error sending link to ads:', err);
+    res.status(500).json({ error: 'Server error, please try again later.' });
+  }
+});
+
+router.get('/ads/count', async (req, res) => {
+  try {
+    const adsCount = await UserAds.countDocuments();
+    res.json({ count: adsCount });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch ads count' });
+  }
+});
 
 module.exports = router;
