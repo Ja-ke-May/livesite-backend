@@ -773,7 +773,7 @@ router.post('/reset-password', async (req, res) => {
   }
 });
 
-app.post('/ads/send-link', authMiddleware, async (req, res) => {
+router.post('/ads/send-link', authMiddleware, async (req, res) => {
   try {
     const { link } = req.body; // Expect the full link object in the request body
     const userId = req.user.userId;
