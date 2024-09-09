@@ -47,14 +47,19 @@ cron.schedule('0 * * * *', async () => {
   }
 });
 
-cron.schedule('0 0 * * *', async () => {
+const cron = require('node-cron');
+
+cron.schedule('*/2 * * * *', async () => {  // Runs every 2 minutes
   try {
-    const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000); // 7 days ago
+    const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000); // 2 minutes ago
+
+    // Pull (remove) links where the 'createdAt' is older than 2 minutes
     await UserAds.updateMany(
-      { "links.createdAt": { $lte: oneWeekAgo } },
-      { $pull: { links: { createdAt: { $lte: oneWeekAgo } } } }
+      { "links.createdAt": { $lte: twoMinutesAgo } }, // Find documents with links older than 2 minutes
+      { $pull: { links: { createdAt: { $lte: twoMinutesAgo } } } } // Remove those links
     );
-    console.log('Old ads removed successfully');
+
+    console.log('Old ads (older than 2 minutes) removed successfully');
   } catch (err) {
     console.error('Error removing old ads:', err);
   }
