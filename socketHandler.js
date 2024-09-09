@@ -1,16 +1,15 @@
 const liveQueue = [];
 let currentStreamer = null;
-const liveUsers = new Map(); // Track live users and their corresponding socket IDs
+const liveUsers = new Map(); 
 
-// Online users tracking
 const onlineUsers = new Map();
 const lastActivity = new Map();
 
 const liveStartTime = new Map();
 
-const timers = {}; // Store timers for the live user
+const timers = {}; 
 
-const inactivityTimeout = 3600000; // 1 hour
+const inactivityTimeout = 3600000; 
 
 let slidePosition = 50;
 let slidePositionAmount = 5;
@@ -38,7 +37,7 @@ const startTimer = (username, io, stopLiveStream, additionalTime = 0) => {
         clearInterval(timers[username].interval);
         delete timers[username];
         io.emit("timer-end", username);
-        stopLiveStream(username, io);  // End the live stream when time runs out
+        stopLiveStream(username, io); 
       }
     }
   }, 1000);
@@ -61,31 +60,29 @@ const addTime = (username, io) => {
 const recordLiveDuration = async (username) => {
   const startTime = liveStartTime.get(username);
   if (startTime) {
-    const duration = Date.now() - startTime; // Calculate duration in milliseconds
-    const durationInSeconds = duration / 1000; // Convert to seconds
+    const duration = Date.now() - startTime; 
+    const durationInSeconds = duration / 1000; 
     const sessionTime = new Date(startTime).toLocaleString('en-GB', { timeZone: 'Europe/London' });
 
 
     try {
-      // Fetch the user from the database
       const user = await User.findOne({ userName: username });
       if (!user) {
         console.error(`User ${username} not found in database.`);
         return;
       }
 
-      // Check if there's already a session with the same timestamp
       const existingSession = user.recentActivity.find(activity => activity.includes(`on ${sessionTime}`));
       if (existingSession) {
-        return; // Skip recording this duplicate session
+        return; 
       }
 
-      // Update the total live duration
+      
       user.totalLiveDuration += durationInSeconds;
 
       let newActivityEntry = `Went live for ${durationInSeconds} seconds on ${sessionTime}`;
 
-      // Update the longest live duration if this session is longer
+      
       if (durationInSeconds > user.longestLiveDuration) {
         user.longestLiveDuration = durationInSeconds;
         newActivityEntry += " with a new Longest Time Live!";
@@ -93,14 +90,14 @@ const recordLiveDuration = async (username) => {
 
       user.recentActivity.push(newActivityEntry);
 
-      // Save the updated user document
+      
       await user.save();
       
     } catch (err) {
       console.error(`Error updating live duration for user ${username}:`, err);
     }
 
-    liveStartTime.delete(username); // Clean up the start time
+    liveStartTime.delete(username); 
   } else {
     console.error(`No start time found for user ${username}.`);
   }
@@ -113,9 +110,9 @@ const stopLiveStream = async (username, io) => {
 
   
   io.to(liveUsers.get(username)).emit('reset-state');
-  io.emit('main-feed', null); // Notify all clients that the stream has ended
+  io.emit('main-feed', null); 
   
-  liveUsers.delete(username); // Remove from live users
+  liveUsers.delete(username); 
   currentStreamer = null;
 
   const queueIndex = liveQueue.findIndex(socketId => onlineUsers.get(socketId) === username);
@@ -149,8 +146,8 @@ const notifyNextUserInQueue = (io) => {
 
     if (!nextUsername) {
       console.error(`Username for client ID ${nextClient} not found, removing from queue.`);
-      liveQueue.shift(); // Remove the user from the queue
-      notifyNextUserInQueue(io); // Try notifying the next user in queue
+      liveQueue.shift();
+      notifyNextUserInQueue(io); 
       return;
     }
 

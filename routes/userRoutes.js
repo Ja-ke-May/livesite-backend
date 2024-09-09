@@ -723,10 +723,15 @@ router.post('/reset-password', async (req, res) => {
   }
 });
 
-
 router.get('/ads/count', async (req, res) => {
   try {
-    const adsCount = await UserAds.countDocuments();
+    const result = await UserAds.aggregate([
+      { $project: { linksCount: { $size: "$links" } } }, 
+      { $group: { _id: null, totalLinksCount: { $sum: "$linksCount" } } } 
+    ]);
+
+    const adsCount = result.length > 0 ? result[0].totalLinksCount : 0; 
+
     res.json({ count: adsCount });
   } catch (error) {
     res.status(500).json({ message: 'Failed to fetch ads count' });
