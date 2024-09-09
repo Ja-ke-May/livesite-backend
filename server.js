@@ -265,26 +265,30 @@ app.post('/ads/send-link', authMiddleware, async (req, res) => {
       return res.status(400).json({ message: 'Incomplete link data' });
     }
 
-    
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    
+    const totalLinksCountResult = await UserAds.aggregate([
+      { $project: { linksCount: { $size: "$links" } } }, 
+      { $group: { _id: null, totalLinks: { $sum: "$linksCount" } } } 
+    ]);
+    const totalLinksCount = totalLinksCountResult.length > 0 ? totalLinksCountResult[0].totalLinks : 0;
+
+    const MAX_GLOBAL_LINKS = 15; 
+    if (totalLinksCount >= MAX_GLOBAL_LINKS) {
+      return res.status(400).json({ message: 'Maximum of 15 links reached globally.' });
+    }
+
     let userAd = await UserAds.findOne({ username: user.userName });
 
     if (!userAd) {
-     
       userAd = new UserAds({
         username: user.userName,
         links: [link] 
       });
     } else {
-      if (userAd.links.length >= 20) {
-        return res.status(400).json({ message: 'Maximum of 20 links reached in ads.' });
-      }
-
       userAd.links.push(link);
     }
 
@@ -296,7 +300,6 @@ app.post('/ads/send-link', authMiddleware, async (req, res) => {
     res.status(500).json({ error: 'Server error, please try again later.' });
   }
 });
-
 
   app.use('/', userRoutes);
 
