@@ -47,21 +47,22 @@ cron.schedule('0 * * * *', async () => {
   }
 });
 
-cron.schedule('*/2 * * * *', async () => {  // Runs every 2 minutes
+// delete ads ever 12h older than 7d
+cron.schedule('0 */12 * * *', async () => {  
   try {
-    const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000); // 2 minutes ago
+    const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000); 
 
-    // Pull (remove) links where the 'createdAt' is older than 2 minutes
     await UserAds.updateMany(
-      { "links.createdAt": { $lte: twoMinutesAgo } }, // Find documents with links older than 2 minutes
-      { $pull: { links: { createdAt: { $lte: twoMinutesAgo } } } } // Remove those links
+      { "links.createdAt": { $lte: oneWeekAgo } }, 
+      { $pull: { links: { createdAt: { $lte: oneWeekAgo } } } } 
     );
 
-    console.log('Old ads (older than 2 minutes) removed successfully');
+    console.log('Old ads removed successfully');
   } catch (err) {
     console.error('Error removing old ads:', err);
   }
 });
+
 
   const io = socketIo(server, {
     cors: {
