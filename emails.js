@@ -1,17 +1,15 @@
 const nodemailer = require('nodemailer');
 
-// Create transport for Nodemailer using 123 Reg settings
 const transporter = nodemailer.createTransport({
-  host: 'smtp.123-reg.co.uk', // 123 Reg SMTP host
-  port: 465, // 465 for SSL or 587 for TLS
-  secure: true, // Set to 'true' for SSL on port 465, 'false' for TLS on port 587
+  host: 'smtp.123-reg.co.uk', 
+  port: 465, 
+  secure: true, 
   auth: {
     user: 'info@myme.live', 
     pass: process.env.EMAIL_PASSWORD, 
   }
 });
 
-// Function to send block notification email
 async function sendBlockNotificationEmail(user, blockDuration) {
   const blockMessage = blockDuration === 'permanent'
     ? 'Your account has been permanently blocked.'
@@ -63,13 +61,6 @@ async function sendBlockNotificationEmail(user, blockDuration) {
 }
 
 
-
-
-
-
-
-
-// Function to send thank you email
 async function sendThankYouEmail(user, purchaseDetails) {
   const mailOptions = {
     from: 'info@myme.live',
@@ -116,7 +107,6 @@ async function sendThankYouEmail(user, purchaseDetails) {
   }
 }
 
-// Function to send reset password email
 async function sendResetPasswordEmail(user, resetToken) {
   const resetLink = `${process.env.FRONTEND_URL}/resetPassword?token=${resetToken}`;
   const mailOptions = {

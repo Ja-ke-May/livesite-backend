@@ -24,18 +24,16 @@ const upload = multer({ storage, fileFilter });
 
 const nodemailer = require('nodemailer');
 
-// Create transport for Nodemailer using 123 Reg settings
 const transporter = nodemailer.createTransport({
-  host: 'smtp.123-reg.co.uk', // 123 Reg SMTP host
-  port: 465, // 465 for SSL or 587 for TLS
-  secure: true, // Set to 'true' for SSL on port 465, 'false' for TLS on port 587
+  host: 'smtp.123-reg.co.uk', 
+  port: 465, 
+  secure: true, 
   auth: {
     user: 'info@myme.live', 
     pass: process.env.EMAIL_PASSWORD, 
   }
 });
 
-// Function to send an email
 async function sendActivationEmail(user, activationToken) {
   const activationLink = `${process.env.FRONTEND_URL}/activate?token=${activationToken}`;
   const mailOptions = {
@@ -77,7 +75,6 @@ async function sendActivationEmail(user, activationToken) {
 
   try {
     await transporter.sendMail(mailOptions);
-    console.log('Activation email sent to', user.email);
   } catch (err) {
     console.error('Error sending activation email:', err);
   }
@@ -130,11 +127,9 @@ router.post('/signup', async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Generate activation token
     const activationToken = crypto.randomBytes(20).toString('hex');
-    const activationExpires = Date.now() + 24 * 60 * 60 * 1000; // Expires in 24 hours
+    const activationExpires = Date.now() + 24 * 60 * 60 * 1000; 
 
-    // Create new user
     const user = new User({
       userName,
       email: normalizedEmail,
@@ -148,7 +143,6 @@ router.post('/signup', async (req, res) => {
 
     await user.save();
 
-    // Send activation email
     await sendActivationEmail(user, activationToken);
 
     res.status(201).json({ message: 'User created successfully. Please check your email to activate your account.' });
@@ -162,28 +156,23 @@ router.post('/signup', async (req, res) => {
 router.get('/activate', async (req, res) => {
   const { token } = req.query;
 
-  console.log("Received token:", token); // Log the token received in the request
   try {
     const currentTime = Date.now();
-    console.log("Current time (in ms):", currentTime); // Log current time
+    
 
-    // Check if a user exists with the provided token and that the token has not expired
     const user = await User.findOne({
       activationToken: token,
-      activationExpires: { $gt: currentTime },  // Ensure token has not expired
+      activationExpires: { $gt: currentTime },  
     });
 
     if (!user) {
-      console.log("No user found or token has expired.");
       return res.status(400).json({ message: 'Invalid or expired activation link' });
     }
 
-    console.log("User found:", user); // Log the user details if found
 
-    // Activate the user
     user.isActivated = true;
-    user.activationToken = undefined;  // Clear the token after activation
-    user.activationExpires = undefined;  // Clear the expiration after activation
+    user.activationToken = undefined;  
+    user.activationExpires = undefined;  
     await user.save();
 
     res.status(200).json({ message: 'Account activated successfully' });
@@ -242,7 +231,6 @@ router.post('/login', async (req, res) => {
 
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET,);
 
-    console.log('Sending login response:', { token, username: user.userName, isAdmin: user.isAdmin });
 
 
     res.json({ message: 'Login successful', token, username: user.userName, isAdmin: user.isAdmin }); // Return the username
@@ -270,7 +258,7 @@ router.get('/check-username/:username', async (req, res) => {
   }
 });
 
-// Fetch user profile
+
 router.get('/profile/:username', authMiddleware, async (req, res) => {
   try {
     const { username } = req.params;
@@ -285,7 +273,7 @@ router.get('/profile/:username', authMiddleware, async (req, res) => {
   }
 });
 
-// Update username
+
 router.put('/profile/username', authMiddleware, async (req, res) => {
   try {
     const { userName } = req.body;
@@ -309,7 +297,7 @@ router.put('/profile/username', authMiddleware, async (req, res) => {
 
     const now = new Date();
     if (user.lastUsernameChange) {
-      const oneDay = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+      const oneDay = 24 * 60 * 60 * 1000; 
       const lastChange = new Date(user.lastUsernameChange);
       if (now - lastChange < oneDay) {
         return res.status(403).json({ message: 'You can only change your username once per day' });
@@ -406,7 +394,6 @@ router.post('/supporters/toggle', authMiddleware, async (req, res) => {
   }
 });
 
-// Add a new link
 router.post('/profile/link', upload.single('image'), authMiddleware, async (req, res) => {
   try {
     const { text, url } = req.body;
@@ -432,31 +419,26 @@ router.post('/profile/link', upload.single('image'), authMiddleware, async (req,
   }
 });
 
-// Delete a link
 router.delete('/profile/link/:linkId', authMiddleware, async (req, res) => {
   try {
     const { linkId } = req.params;
     const userId = req.user.userId;
 
-    console.log(`Attempting to delete link with ID: ${linkId} for user: ${userId}`);
 
     const user = await User.findById(userId);
 
     if (!user) {
-      console.log(`User not found: ${userId}`);
       return res.status(404).json({ message: 'User not found' });
     }
 
     const linkIndex = user.links.findIndex(link => link._id.toString() === linkId);
     if (linkIndex === -1) {
-      console.log(`Link not found: ${linkId}`);
       return res.status(404).json({ message: 'Link not found' });
     }
 
-    user.links.splice(linkIndex, 1); // Remove the link
+    user.links.splice(linkIndex, 1);
     await user.save();
 
-    console.log(`Link deleted successfully: ${linkId}`);
     res.json(user.links);
   } catch (err) {
     console.error('Error deleting link:', err);
@@ -464,7 +446,6 @@ router.delete('/profile/link/:linkId', authMiddleware, async (req, res) => {
   }
 });
 
-// Fetch recent activity
 router.get('/recent-activity/:username', authMiddleware, async (req, res) => {
   try {
     const { username } = req.params;
@@ -483,11 +464,9 @@ router.get('/recent-activity/:username', authMiddleware, async (req, res) => {
 
 router.post('/send-tokens', authMiddleware, async (req, res) => {
   try {
-    console.log("Request body:", req.body);
     const { recipientUsername, tokenAmount } = req.body;
 
     if (!recipientUsername || !tokenAmount || tokenAmount <= 0) {
-      console.log("Validation failed:", { sender, recipientUsername, tokenAmount });
       return res.status(400).json({ message: 'Recipient username and a valid token amount are required' });
     }
 
@@ -495,22 +474,18 @@ router.post('/send-tokens', authMiddleware, async (req, res) => {
     const recipient = await User.findOne({ userName: recipientUsername });
 
     if (!sender) {
-      console.log("Sender not found:", req.user.userId);
       return res.status(404).json({ message: 'Sender not found' });
     }
     if (!recipient) {
-      console.log("Recipient not found:", sender,  recipientUsername);
       return res.status(404).json({ message: 'Recipient not found' });
     }
 
     if (sender.userName === recipient.userName) {
-      console.log("Sender and recipient are the same:", sender.userName);
       return res.status(400).json({ message: 'You cannot send tokens to yourself' });
     }
     
 
     if (sender.tokens < tokenAmount) {
-      console.log("Insufficient tokens:", sender.tokens, tokenAmount);
       return res.status(400).json({ message: 'Insufficient tokens' });
     }
 
@@ -530,7 +505,6 @@ router.post('/send-tokens', authMiddleware, async (req, res) => {
   }
 });
 
-// Deduct tokens
 router.post('/deduct-tokens', authMiddleware, async (req, res) => {
   try {
     const { amount } = req.body;
@@ -561,7 +535,6 @@ router.post('/deduct-tokens', authMiddleware, async (req, res) => {
   }
 });
 
-// Award tokens to a user
 router.post('/award-tokens', authMiddleware, async (req, res) => {
   try {
     const { username, amount } = req.body;
@@ -588,48 +561,33 @@ router.post('/award-tokens', authMiddleware, async (req, res) => {
   }
 });
 
-// Update live duration
 router.post('/profile/live-duration', authMiddleware, async (req, res) => {
   try {
     const { username, liveDuration } = req.body;
 
-    // Log the incoming request data
-    console.log('Received request to update live duration:', { username, liveDuration });
+
 
     if (!username || !liveDuration || liveDuration < 0) {
-      console.log('Invalid data received:', { username, liveDuration });
       return res.status(400).json({ message: 'Username and a valid live duration are required' });
     }
 
     const user = await User.findOne({ userName: username });
 
     if (!user) {
-      console.log('User not found:', username);
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Log the current durations before updating
-    console.log('Current user durations:', {
-      totalLiveDuration: user.totalLiveDuration,
-      longestLiveDuration: user.longestLiveDuration,
-    });
+   
 
-    // Update total live duration
     user.totalLiveDuration = (user.totalLiveDuration || 0) + liveDuration;
 
-    // Check and update the longest live duration
     if (liveDuration > user.longestLiveDuration) {
       user.longestLiveDuration = liveDuration;
     }
 
     await user.save();
 
-    // Log the updated durations after saving
-    console.log('Updated user durations:', {
-      totalLiveDuration: user.totalLiveDuration,
-      longestLiveDuration: user.longestLiveDuration,
-    });
-
+  
     res.json({ 
       message: `Successfully updated live duration for ${username}`, 
       totalLiveDuration: user.totalLiveDuration,
@@ -649,7 +607,6 @@ router.put('/comment/color', authMiddleware, async (req, res) => {
       return res.status(400).json({ message: 'Username, color type, and color are required' });
     }
 
-    // Find the user by username
     const user = await User.findOne({ userName: username });
 
     if (!user) {
@@ -658,7 +615,6 @@ router.put('/comment/color', authMiddleware, async (req, res) => {
 
     let activityMessage = '';
 
-    // Update the user's color based on the color type
     if (colorType === 'commentColor') {
       user.commentColor = color;
       activityMessage = `${user.userName} changed their comment color to ${color}`;
@@ -672,7 +628,6 @@ router.put('/comment/color', authMiddleware, async (req, res) => {
       return res.status(400).json({ message: 'Invalid color type' });
     }
 
-    // Add to recent activity
     if (activityMessage) {
       user.recentActivity.push(activityMessage);
     }
@@ -715,27 +670,24 @@ router.post('/update-purchase', async (req, res) => {
   }
 });
 
-// Forgot password route with reset email
 router.post('/forgot-password', async (req, res) => {
   const { email } = req.body;
 
   try {
-    console.log('Received forgot password request for email:', email);
 
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Generate a reset token and expiration time
     const resetToken = crypto.randomBytes(20).toString('hex');
-    const resetTokenExpires = Date.now() + 3600000; // 1 hour expiration
+    const resetTokenExpires = Date.now() + 3600000;
 
     user.resetPasswordToken = resetToken;
     user.resetPasswordExpires = resetTokenExpires;
     await user.save();
 
-    // Send the reset email
+   
     await sendResetPasswordEmail(user, resetToken);
 
     res.status(200).json({ message: 'Password reset email sent' });
@@ -745,7 +697,6 @@ router.post('/forgot-password', async (req, res) => {
   }
 });
 
-// Reset password route
 router.post('/reset-password', async (req, res) => {
   const { token, newPassword } = req.body;
 
@@ -759,10 +710,9 @@ router.post('/reset-password', async (req, res) => {
       return res.status(400).json({ message: 'Invalid or expired reset token' });
     }
 
-    // Hash the new password
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     user.password = hashedPassword;
-    user.resetPasswordToken = undefined; // Clear the token after reset
+    user.resetPasswordToken = undefined; 
     user.resetPasswordExpires = undefined;
 
     await user.save();

@@ -60,7 +60,6 @@ cron.schedule('0 0 * * *', async () => {
   }
 });
 
-  // Initialize Socket.IO with CORS configuration
   const io = socketIo(server, {
     cors: {
       origin: process.env.FRONTEND_URL || 'https://www.myme.live',
@@ -70,7 +69,6 @@ cron.schedule('0 0 * * *', async () => {
 
   const port = process.env.PORT || 5000;
 
-  // Middleware
   app.use(cors({
     origin: process.env.FRONTEND_URL || 'https://www.myme.live',
     credentials: true,
@@ -79,19 +77,16 @@ cron.schedule('0 0 * * *', async () => {
   app.use(helmet());
   app.use(bodyParser.json({ limit: '10mb' }));
 
-  // Rate Limiting
   const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 10000, // limit each IP to 10000 requests per windowMs
+    windowMs: 15 * 60 * 1000, 
+    max: 10000, 
   });
   app.use(limiter);
 
-  // Database Connection
   mongoose.connect(process.env.MONGODB_URI)
     .then(() => console.log('Connected to MongoDB'))
     .catch(err => console.error('Could not connect to MongoDB', err));
 
-  // Multer setup with file type and size validation
   const storage = multer.memoryStorage();
   const upload = multer({
     storage,
@@ -105,7 +100,6 @@ cron.schedule('0 0 * * *', async () => {
     limits: { fileSize: 1024 * 1024 * 10 }, 
   });
 
-  // Routes
   app.post('/profile-picture', upload.single('profilePicture'), authMiddleware, async (req, res) => {
     try {
       if (!req.file) {
@@ -164,7 +158,6 @@ cron.schedule('0 0 * * *', async () => {
         return res.status(400).json({ message: 'Username is required' });
       }
 
-      // Fetch the user's profile to get the color settings
       const user = await User.findOne({ userName: username });
       if (!user) {
         return res.status(404).json({ message: 'User not found' });
@@ -192,7 +185,6 @@ cron.schedule('0 0 * * *', async () => {
   });
 
 
-// Block user route
 app.post('/block-user', authMiddleware, async (req, res) => {
   const { username, duration } = req.body;
   
@@ -208,7 +200,6 @@ app.post('/block-user', authMiddleware, async (req, res) => {
 
     let blockExpiryDate = null;
     
-     // Set block expiry based on the selected duration
      switch (duration) {
       case '1 day':
         blockExpiryDate = new Date();
@@ -223,13 +214,12 @@ app.post('/block-user', authMiddleware, async (req, res) => {
         blockExpiryDate.setMonth(blockExpiryDate.getMonth() + 1);
         break;
       case 'permanent':
-        blockExpiryDate = null; // Permanent block
+        blockExpiryDate = null; 
         break;
       default:
         return res.status(400).json({ message: 'Invalid block duration' });
     }
 
-    // Update user block status
     user.isBlocked = true;
     user.blockExpiryDate = blockExpiryDate;
     
@@ -237,7 +227,6 @@ app.post('/block-user', authMiddleware, async (req, res) => {
 
     await sendBlockNotificationEmail(user, duration);
 
-      // Forcefully log out all sockets connected with the blocked username
     for (const [socketId, onlineUsername] of onlineUsers.entries()) {
       if (onlineUsername === username) {
         io.to(socketId).emit('forceLogout', { message: 'You have been blocked.' });
@@ -269,39 +258,36 @@ app.get('/ads', async (req, res) => {
 
 app.post('/ads/send-link', authMiddleware, async (req, res) => {
   try {
-    const { link } = req.body; // Expect the full link object in the request body
+    const { link } = req.body; 
     const userId = req.user.userId;
 
     if (!link || !link.text || !link.url || !link.imageUrl) {
       return res.status(400).json({ message: 'Incomplete link data' });
     }
 
-    // Fetch the user by userId
+    
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Check if an entry already exists in UserAds for this user
+    
     let userAd = await UserAds.findOne({ username: user.userName });
 
     if (!userAd) {
-      // Create a new UserAds document if it doesn't exist
+     
       userAd = new UserAds({
         username: user.userName,
-        links: [link] // Add the full link object to the UserAds document
+        links: [link] 
       });
     } else {
-      // Check if the user already has 20 links
       if (userAd.links.length >= 20) {
         return res.status(400).json({ message: 'Maximum of 20 links reached in ads.' });
       }
 
-      // Add the new link to the existing UserAds document
       userAd.links.push(link);
     }
 
-    // Save the UserAds document
     await userAd.save();
 
     res.status(200).json({ message: 'Link successfully sent to ads.', userAd });
@@ -317,5 +303,5 @@ app.post('/ads/send-link', authMiddleware, async (req, res) => {
   handleSocketConnection(io);
 
   server.listen(port, () => {
-    console.log(`Server is running on port ${port}`);
+    
   });

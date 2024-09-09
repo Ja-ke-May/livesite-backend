@@ -48,7 +48,6 @@ const stopTimer = (username) => {
   if (timers[username]) {
     clearInterval(timers[username].interval);
     delete timers[username];
-    console.log(`Timer stopped for user: ${username}`);
   }
 };
 
@@ -56,7 +55,6 @@ const addTime = (username, io) => {
   if (timers[username]) {
     timers[username].currentTime += 60;
     io.emit("timer-update", username, timers[username].currentTime);
-    console.log(`Added time to timer for user: ${username}, new time: ${timers[username].currentTime}`);
   }
 };
 
@@ -67,7 +65,6 @@ const recordLiveDuration = async (username) => {
     const durationInSeconds = duration / 1000; // Convert to seconds
     const sessionTime = new Date(startTime).toLocaleString('en-GB', { timeZone: 'Europe/London' });
 
-    console.log(`User ${username} was live for ${durationInSeconds} seconds.`);
 
     try {
       // Fetch the user from the database
@@ -80,7 +77,6 @@ const recordLiveDuration = async (username) => {
       // Check if there's already a session with the same timestamp
       const existingSession = user.recentActivity.find(activity => activity.includes(`on ${sessionTime}`));
       if (existingSession) {
-        console.log(`Duplicate session detected for ${username} at ${sessionTime}. Skipping record.`);
         return; // Skip recording this duplicate session
       }
 
@@ -99,7 +95,7 @@ const recordLiveDuration = async (username) => {
 
       // Save the updated user document
       await user.save();
-      console.log(`Updated live duration for user ${username}. Total: ${user.totalLiveDuration} seconds, Longest: ${user.longestLiveDuration} seconds.`);
+      
     } catch (err) {
       console.error(`Error updating live duration for user ${username}:`, err);
     }
@@ -115,7 +111,6 @@ const recordLiveDuration = async (username) => {
 const stopLiveStream = async (username, io) => {
   if (currentStreamer !== username) return;
 
-  console.log(`Stopping live stream for user: ${username}`);
   
   io.to(liveUsers.get(username)).emit('reset-state');
   io.emit('main-feed', null); // Notify all clients that the stream has ended
@@ -126,7 +121,6 @@ const stopLiveStream = async (username, io) => {
   const queueIndex = liveQueue.findIndex(socketId => onlineUsers.get(socketId) === username);
   if (queueIndex !== -1) {
     liveQueue.splice(queueIndex, 1);
-    console.log(`Removed ${username} from the queue. Queue after removal: ${liveQueue.join(', ')}`);
   }
 
   await recordLiveDuration(username); 
@@ -145,11 +139,9 @@ const updateUpNext = (io) => {
   }
 
   io.emit('up-next-update', nextUsername);
-  console.log(`upNext updated to: ${nextUsername}`);
 };
 
 const notifyNextUserInQueue = (io) => {
-  console.log("Notifying next user in queue...");
 
   if (liveQueue.length >= 1) {
     const nextClient = liveQueue[0];
@@ -165,7 +157,6 @@ const notifyNextUserInQueue = (io) => {
     liveQueue.forEach((socketId, index) => {
       const userPosition = index + 1;
       io.to(socketId).emit("queue-position-update", userPosition);
-      console.log(`Emitted updated queue position ${userPosition} to socket ID: ${socketId}`);
     });
 
     if (!currentStreamer) {
@@ -175,21 +166,18 @@ const notifyNextUserInQueue = (io) => {
     }
 
   } else {
-    console.log("No one is live, emitting 'no-one-live'");
     io.emit("no-one-live");
   }
 };
 
 const handleSocketConnection = (io) => {
   io.on("connection", async (socket) => {
-    console.log(`New client connected: ${socket.id}`);
 
     const username = onlineUsers.get(socket.id);
 
   if (username) {
     const user = await User.findOne({ userName: username });
 
-    // If the user is blocked, immediately disconnect them
     if (user && user.isBlocked) {
       socket.emit('forceLogout', { message: 'You are blocked.' });
       socket.disconnect(true);
@@ -212,7 +200,6 @@ const handleSocketConnection = (io) => {
       const username = onlineUsers.get(socket.id);
 
       if (!username && last && now - last > inactivityTimeout) {
-        console.log(`Client ${socket.id} inactive for too long, disconnecting...`);
         socket.disconnect(true);
         clearInterval(activityChecker);
       }
@@ -222,7 +209,7 @@ const handleSocketConnection = (io) => {
       if (!username) {
         console.error(`Username not provided for socket ID: ${socket.id}`);
         onlineUsers.set(socket.id, 'guest');
-        return; // Prevent further actions if no username is provided
+        return; 
       }
 
       const user = await User.findOne({ userName: username });
@@ -231,7 +218,6 @@ const handleSocketConnection = (io) => {
         return;
       }
 
-      // Check if user is blocked
       if (user.isBlocked) {
         const now = new Date();
         if (user.blockExpiryDate && now < user.blockExpiryDate) {
@@ -245,7 +231,7 @@ const handleSocketConnection = (io) => {
         }
       }
 
-      // If the user is no longer blocked (block expired), reset block status
+      
       if (user.blockExpiryDate && new Date() >= user.blockExpiryDate) {
         user.isBlocked = false;
         user.blockExpiryDate = null;
@@ -254,7 +240,6 @@ const handleSocketConnection = (io) => {
       onlineUsers.set(socket.id, username);
       lastActivity.set(socket.id, Date.now());
       
-      console.log(`User registered: ${username} with socket ID: ${socket.id}`);
 
       updateOnlineUsersCount();
       updateUpNext(io);
@@ -268,7 +253,6 @@ const handleSocketConnection = (io) => {
       lastActivity.set(socket.id, Date.now());
       io.emit('vote-update', slidePosition);
       io.emit('current-slide-amount', 5);
-      console.log(`Initial vote set by ${socket.id} to ${initialVote}`);
     });
 
     socket.on("vote", async (newPosition) => {
@@ -283,7 +267,6 @@ const handleSocketConnection = (io) => {
   const user = await User.findOne({ userName: username });
 
   if (user && user.isBlocked) {
-    console.log(`Blocked user ${username} attempted to vote.`);
     socket.emit('vote-error', { message: 'You are blocked from voting.' });
     return;
   }
@@ -317,7 +300,6 @@ const handleSocketConnection = (io) => {
 
         slidePosition = 50;
         io.emit('vote-update', slidePosition);
-        console.log(`Slide position reset to 50 due to reaching 100, current slide amount: ${slidePositionAmount}`);
       } else if (slidePosition <= 0) {
         slidePositionAmount = 5;
         io.emit('current-slide-amount', slidePositionAmount);
@@ -327,7 +309,6 @@ const handleSocketConnection = (io) => {
 
     if (currentStreamer) {
       socket.emit("main-feed", currentStreamer);
-      console.log(`Sent main feed to ${socket.id}, current live user: ${currentStreamer}`);
     }
 
     socket.on("join-queue", ({ username, isFastPass }) => {
@@ -335,13 +316,11 @@ const handleSocketConnection = (io) => {
       io.emit('update-online-users', onlineUsers.size);
       
       if (liveQueue.includes(socket.id)) {
-        console.log(`User ${username} is already in the queue or currently live.`);
         socket.emit("queue-error", "Already in queue or currently live.");
         return;
       }
       
       if (username === currentStreamer) {
-        console.log(`Resetting state for user: ${username} before rejoining the queue`);
         stopLiveStream(username, io);
       }
       
@@ -378,14 +357,14 @@ const handleSocketConnection = (io) => {
         console.log(`Client ${socket.id} (${username}) joined the queue. Queue length: ${liveQueue.length}`);
       }
       
-      // Emit queue position updates
+      
       liveQueue.forEach((socketId, index) => {
         io.to(socketId).emit("queue-position-update", index + 1);
       });
 
       io.emit("queue-length-update", liveQueue.length);
       
-      // If this is the first user in the queue and no one is streaming, prompt them to go live
+      
       if (liveQueue.length === 1 && !currentStreamer) {
         io.to(socket.id).emit("go-live-prompt");
         console.log(`Emitted 'go-live' to client: ${socket.id}`);
@@ -407,7 +386,7 @@ const handleSocketConnection = (io) => {
       try {
         const username = commentData.username;
 
-        // Fetch the user's color preferences from the database
+        
         const user = await User.findOne({ userName: username });
 
         if (!user) {
@@ -415,7 +394,7 @@ const handleSocketConnection = (io) => {
           return;
         }
 
-        // Include the user's color settings in the comment data
+        
         const commentWithColors = {
           username: commentData.username,
           comment: commentData.comment,
@@ -425,10 +404,9 @@ const handleSocketConnection = (io) => {
           createdAt: new Date(),
         };
 
-        // Emit the comment with colors to all clients
+        
         io.emit('new-comment', commentWithColors);
 
-        console.log(`New comment from ${username} with colors:`, commentWithColors);
       } catch (error) {
         console.error('Error handling new comment:', error);
       }
@@ -456,14 +434,12 @@ const handleSocketConnection = (io) => {
       }
     
       if (currentStreamer) {
-        console.log(`Current streamer ${currentStreamer} is being replaced by ${username}.`);
         stopLiveStream(currentStreamer, io);
       }
     
       currentStreamer = username;
       liveUsers.set(username, socket.id); 
       liveStartTime.set(username, Date.now());
-      console.log(`Client ${socket.id} (${username}) going live`);
       lastActivity.set(socket.id, Date.now());
       io.emit('main-feed', username);
       io.emit('new-peer', socket.id); 
@@ -476,13 +452,11 @@ const handleSocketConnection = (io) => {
       const liveUserSocketId = liveUsers.get(liveUsername);
       if (liveUserSocketId) {
         io.to(liveUserSocketId).emit("new-peer", socket.id);
-        console.log(`Emitted 'new-peer' to live user socket ID: ${liveUserSocketId}`);
       }
     });
 
     socket.on("offer", (id, offer) => {
       try {
-        console.log(`Emitted 'offer' from ${socket.id} to ${id}`);
         socket.to(id).emit("offer", socket.id, offer);
         lastActivity.set(socket.id, Date.now());
       } catch (error) {
@@ -492,7 +466,6 @@ const handleSocketConnection = (io) => {
 
     socket.on("answer", (id, answer) => {
       try {
-        console.log(`Relaying answer from ${socket.id} to ${id}`);
         socket.to(id).emit("answer", socket.id, answer);
         lastActivity.set(socket.id, Date.now());
       } catch (error) {
@@ -501,7 +474,6 @@ const handleSocketConnection = (io) => {
     });
 
     socket.on("ice-candidate", (id, candidate) => {
-      console.log(`Client ${socket.id} sending ICE candidate to ${id}`);
       socket.to(id).emit("ice-candidate", socket.id, candidate);
       lastActivity.set(socket.id, Date.now());
     });
@@ -512,16 +484,14 @@ const handleSocketConnection = (io) => {
         console.error(`Username for socket ID ${socket.id} not found. Cannot stop live stream.`);
         return;
       }
-      console.log(`Client ${socket.id} (${username}) stopping live`);
 
       const queueIndex = liveQueue.findIndex(socketId => socketId === socket.id);
       if (queueIndex !== -1) {
         liveQueue.splice(queueIndex, 1);
-        console.log(`Removed socket ID ${socket.id} from live queue.`);
       }
 
       if (currentStreamer === username) {
-        liveUsers.delete(username); // Remove from live users
+        liveUsers.delete(username); 
         currentStreamer = null;
         stopTimer(username);
         io.emit('main-feed', null);
@@ -530,17 +500,15 @@ const handleSocketConnection = (io) => {
       }
     });
 
-      // Handle forced logout for blocked users
+     
       socket.on('forceLogout', () => {
-        console.log(`Forcefully logging out socket ID ${socket.id}`);
         socket.disconnect(true);
       });
 
     socket.on("disconnect", async () => {
   const username = onlineUsers.get(socket.id);
-  console.log(`Client disconnected: ${socket.id} (${username || 'unregistered user'})`);
 
-  // Remove the user from tracking maps
+  
   onlineUsers.delete(socket.id);
   lastActivity.delete(socket.id);
   updateOnlineUsersCount(); 
@@ -548,27 +516,24 @@ const handleSocketConnection = (io) => {
 
   try {
     if (username) {
-      // Remove the user from the live queue if present
+      
       const queueIndex = liveQueue.indexOf(socket.id);
       if (queueIndex !== -1) {
         liveQueue.splice(queueIndex, 1);
-        console.log(`Removed socket ID ${socket.id} from live queue.`);
       }
 
-      // If the user was the current live streamer, stop their stream
+      
       if (username === currentStreamer) {
-        console.log(`Current live streamer ${username} has disconnected.`);
         await stopLiveStream(username, io);
       } else {
         await recordLiveDuration(username);
-        console.log(`Recorded live duration for disconnected user ${username}`);
       }
     }
   } catch (error) {
     console.error(`Error handling disconnection for ${username}:`, error);
   }
 
-  // Clean up the activity checker interval and notify other users
+  
   clearInterval(activityChecker);
   socket.broadcast.emit("peer-disconnected", socket.id);
   notifyNextUserInQueue(io);

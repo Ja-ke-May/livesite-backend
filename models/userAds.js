@@ -23,7 +23,7 @@ const userAdsSchema = new mongoose.Schema({
         createdAt: {
           type: Date,
           default: Date.now,
-          expires: '7d', // TTL (Time-to-Live) index for automatic removal after 7 days 7d
+          expires: '7d', 
         }
       }
     ],
