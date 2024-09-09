@@ -47,8 +47,6 @@ cron.schedule('0 * * * *', async () => {
   }
 });
 
-const cron = require('node-cron');
-
 cron.schedule('*/2 * * * *', async () => {  // Runs every 2 minutes
   try {
     const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000); // 2 minutes ago
