@@ -14,27 +14,7 @@ const inactivityTimeout = 3600000;
 let slidePosition = 50;
 let slidePositionAmount = 5;
 
-const audioQueues = new Map();  
-const processingAudioQueues = new Map();
-
 const User = require('./models/user');
-
-const processAudioQueue = (socket, username) => {
-  const userAudioQueue = audioQueues.get(username);
-  if (userAudioQueue && userAudioQueue.length > 0) {
-    processingAudioQueues.set(username, true);
-
-    const audioData = userAudioQueue.shift();
-    socket.broadcast.emit('receive-audio', audioData);
-
-    setTimeout(() => {
-      processAudioQueue(socket, username);  
-    }, 1000); 
-  } else {
-    processingAudioQueues.set(username, false);
-  }
-};
-
 
 const startTimer = (username, io, stopLiveStream, additionalTime = 0) => {
   if (timers[username] && timers[username].interval) {
@@ -430,15 +410,7 @@ const handleSocketConnection = (io) => {
     });
 
     socket.on('send-audio', (audioBase64) => {
-      const username = onlineUsers.get(socket.id);
-      if (!audioQueues.has(username)) {
-        audioQueues.set(username, []);
-      }
-      audioQueues.get(username).push(audioBase64);
-    
-      if (!processingAudioQueues.get(username)) {
-        processAudioQueue(socket, username);
-      }
+      socket.broadcast.emit('receive-audio', audioBase64);
     });
 
     socket.on("go-live", () => {
