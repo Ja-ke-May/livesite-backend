@@ -99,7 +99,7 @@ const recordLiveDuration = async (username) => {
 
     liveStartTime.delete(username); 
   } else {
-    console.error(`No start time found for user ${username}.`);
+    
   }
 };
 
