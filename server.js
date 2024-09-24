@@ -259,17 +259,16 @@ app.get('/ads', async (req, res) => {
   }
 });
 
-app.delete('/ads', async (req, res) => {
-  try {
-    // Delete all ads by clearing the "links" array for all documents in the UserAds collection
-    await UserAds.updateMany({}, { $set: { links: [] } });
+// app.delete('/ads', async (req, res) => {
+//   try {
+//     await UserAds.updateMany({}, { $set: { links: [] } });
 
-    res.status(200).json({ message: 'All ads have been successfully deleted.' });
-  } catch (err) {
-    console.error('Error deleting ads:', err);
-    res.status(500).json({ error: 'Server error, please try again later.' });
-  }
-});
+//     res.status(200).json({ message: 'All ads have been successfully deleted.' });
+//   } catch (err) {
+//     console.error('Error deleting ads:', err);
+//     res.status(500).json({ error: 'Server error, please try again later.' });
+//   }
+// });
 
 
 
