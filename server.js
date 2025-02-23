@@ -68,7 +68,6 @@ cron.schedule('0 */12 * * *', async () => {
 });
 
 
-
   const io = socketIo(server, {
     cors: {
       origin: process.env.FRONTEND_URL || 'https://www.myme.live',
