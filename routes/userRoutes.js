@@ -56,7 +56,7 @@ async function sendActivationEmail(user, activationToken) {
   <p style="font-size: 16px; color: white; line-height: 1.6;">This link will expire in 24 hours. If you did not sign up for this account, please disregard this email.</p>
   
   <p style="font-size: 16px; color: white; margin-top: 30px;">Best regards,</p>
-  <p style="font-size: 16px; color: white; font-weight: bold;">Jacob</p>
+  <p style="font-size: 16px; color: white; font-weight: bold;">MyMe Team</p>
   
   <div style="text-align: center; margin-top: 50px;">
           <a href="${process.env.FRONTEND_URL}" style="text-decoration: none;">
