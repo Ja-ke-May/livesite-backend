@@ -47,7 +47,7 @@ cron.schedule('0 * * * *', async () => {
   }
 });
 
-cron.schedule('*/5 * * * *', async () => {
+cron.schedule('*/15 * * * *', async () => {
   try {
     const now = new Date();
     const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
