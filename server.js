@@ -47,26 +47,25 @@ cron.schedule('0 * * * *', async () => {
   }
 });
 
-cron.schedule('0 */12 * * *', async () => {  
+cron.schedule('0 * * * *', async () => {
   try {
-    const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000); 
+    const now = new Date();
+    const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
-    // Remove all ads older than 7 days
     const result = await UserAds.updateMany(
       {}, 
-      { $pull: { links: { createdAt: { $lt: oneWeekAgo } } } } 
+      { $pull: { links: { createdAt: { $lt: twentyFourHoursAgo } } } }
     );
 
     if (result.modifiedCount > 0) {
-      console.log(`Removed ${result.modifiedCount} expired ads successfully.`);
+      console.log(`Removed expired links older than 24 hours: ${result.modifiedCount}`);
     } else {
-      console.log('No expired ads found.');
+      console.log('No expired links found.');
     }
   } catch (err) {
-    console.error('Error removing expired ads:', err);
+    console.error('Error removing expired links:', err);
   }
 });
-
 
   const io = socketIo(server, {
     cors: {
