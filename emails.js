@@ -163,7 +163,6 @@ async function sendPurchaseNotificationToAdmin(purchaseDetails) {
         <p><strong>User:</strong> ${purchaseDetails.username}</p>
         <p><strong>Item:</strong> ${purchaseDetails.itemName}</p>
         <p><strong>Tokens:</strong> ${purchaseDetails.price}</p>
-        <p><strong>Username:</strong> ${purchaseDetails.username}</p>
         <p><strong>Purchase Date:</strong> ${new Date(purchaseDetails.purchaseDate).toLocaleString()}</p>
         <p>Check the admin panel for more details.</p>
       </div>
