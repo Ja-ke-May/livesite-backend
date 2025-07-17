@@ -6,7 +6,7 @@ const jwt = require('jsonwebtoken');
 const authMiddleware = require('../middleware/authMiddleware');
 const multer = require('multer');
 const crypto = require('crypto');
-const { sendResetPasswordEmail } = require('../emails')
+const { sendResetPasswordEmail, sendPurchaseNotificationToAdmin } = require('../emails')
 
 
 const router = express.Router();
@@ -735,6 +735,18 @@ router.get('/ads/count', async (req, res) => {
     res.json({ count: adsCount });
   } catch (error) {
     res.status(500).json({ message: 'Failed to fetch ads count' });
+  }
+});
+
+router.post('/send-purchase-email', async (req, res) => {
+  const purchaseDetails = req.body;
+
+  try {
+    await sendPurchaseNotificationToAdmin(purchaseDetails);
+    res.status(200).json({ message: 'Purchase notification email sent' });
+  } catch (error) {
+    console.error('Error sending purchase notification:', error);
+    res.status(500).json({ message: 'Failed to send purchase email' });
   }
 });
 

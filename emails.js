@@ -152,7 +152,33 @@ async function sendResetPasswordEmail(user, resetToken) {
   }
 }
 
-module.exports = {  sendBlockNotificationEmail, sendThankYouEmail, sendResetPasswordEmail };
+async function sendPurchaseNotificationToAdmin(purchaseDetails) {
+  const mailOptions = {
+    from: 'info@myme.live',
+    to: 'info@myme.live',  // your own email
+    subject: `New BritGames Purchase: ${purchaseDetails.userName}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; padding: 20px;">
+        <h2>New BritGames Purchase</h2>
+        <p><strong>User:</strong> ${purchaseDetails.userName}</p>
+        <p><strong>Amount:</strong> ${purchaseDetails.amount} ${purchaseDetails.currency}</p>
+        <p><strong>Tokens:</strong> ${purchaseDetails.tokens}</p>
+        <p><strong>Purchase Date:</strong> ${new Date().toLocaleString()}</p>
+        <p>Check the admin panel for more details.</p>
+      </div>
+    `,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log('Purchase notification email sent to admin');
+  } catch (err) {
+    console.error('Error sending purchase notification email:', err);
+  }
+}
+
+
+module.exports = {  sendBlockNotificationEmail, sendThankYouEmail, sendResetPasswordEmail, sendPurchaseNotificationToAdmin };
 
 
 
