@@ -155,15 +155,15 @@ async function sendResetPasswordEmail(user, resetToken) {
 async function sendPurchaseNotificationToAdmin(purchaseDetails) {
   const mailOptions = {
     from: 'info@myme.live',
-    to: 'info@myme.live',  // your own email
-    subject: `New BritGames Purchase: ${purchaseDetails.userName}`,
+    to: 'info@myme.live',
+    subject: `New BritGames Purchase: ${purchaseDetails.username}`,
     html: `
       <div style="font-family: Arial, sans-serif; padding: 20px;">
         <h2>New BritGames Purchase</h2>
-        <p><strong>User:</strong> ${purchaseDetails.userName}</p>
-        <p><strong>Amount:</strong> ${purchaseDetails.amount} ${purchaseDetails.currency}</p>
-        <p><strong>Tokens:</strong> ${purchaseDetails.tokens}</p>
-        <p><strong>Purchase Date:</strong> ${new Date().toLocaleString()}</p>
+        <p><strong>User:</strong> ${purchaseDetails.username}</p>
+        <p><strong>Item:</strong> ${purchaseDetails.itemName}</p>
+        <p><strong>Tokens:</strong> ${purchaseDetails.price}</p>
+        <p><strong>Purchase Date:</strong> ${new Date(purchaseDetails.purchaseDate).toLocaleString()}</p>
         <p>Check the admin panel for more details.</p>
       </div>
     `,
@@ -176,6 +176,7 @@ async function sendPurchaseNotificationToAdmin(purchaseDetails) {
     console.error('Error sending purchase notification email:', err);
   }
 }
+
 
 
 module.exports = {  sendBlockNotificationEmail, sendThankYouEmail, sendResetPasswordEmail, sendPurchaseNotificationToAdmin };
