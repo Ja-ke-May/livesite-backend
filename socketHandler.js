@@ -14,6 +14,8 @@ const inactivityTimeout = 3600000;
 let slidePosition = 50;
 let slidePositionAmount = 5;
 
+let luxuryScaleIndex = 5; 
+
 
 const User = require('./models/user');
 
@@ -193,6 +195,20 @@ const handleSocketConnection = (io) => {
     updateOnlineUsersCount(); 
 
 
+socket.on("luxury-vote", (direction) => {
+  const username = onlineUsers.get(socket.id);
+  if (!username) return;
+
+  // Calculate new index
+  if (direction === "up") {
+    luxuryScaleIndex = Math.max(0, luxuryScaleIndex - 1);
+  } else if (direction === "down") {
+    luxuryScaleIndex = Math.min(5, luxuryScaleIndex + 1);
+  }
+
+  // Broadcast to all users
+  io.emit("luxury-scale-update", luxuryScaleIndex);
+});
 
 
 
