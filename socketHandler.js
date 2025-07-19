@@ -14,6 +14,9 @@ const inactivityTimeout = 3600000;
 let slidePosition = 50;
 let slidePositionAmount = 5;
 
+let currentLuxuryIndex = 5; 
+
+
 const User = require('./models/user');
 
 const startTimer = (username, io, stopLiveStream, additionalTime = 0) => {
@@ -189,7 +192,24 @@ const handleSocketConnection = (io) => {
       io.emit('update-online-users', onlineUsers.size); 
     };
 
-    updateOnlineUsersCount();
+    updateOnlineUsersCount(); 
+
+
+
+// Send current dot position to new client
+socket.emit("dotPositionUpdate", currentLuxuryIndex);
+
+socket.on("dotPositionUpdate", (newIndex) => {
+  if (typeof newIndex === 'number' && newIndex >= 0 && newIndex <= 5) {
+    currentLuxuryIndex = newIndex;
+    io.emit("dotPositionUpdate", currentLuxuryIndex);
+  }
+});
+
+
+
+
+
 
     const activityChecker = setInterval(() => {
       const now = Date.now();
