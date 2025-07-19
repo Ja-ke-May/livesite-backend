@@ -196,8 +196,6 @@ const handleSocketConnection = (io) => {
 
 
 socket.on("luxury-vote", (direction) => {
-  const username = onlineUsers.get(socket.id);
-  if (!username) return;
 
   // Calculate new index
   if (direction === "up") {
