@@ -14,8 +14,6 @@ const inactivityTimeout = 3600000;
 let slidePosition = 50;
 let slidePositionAmount = 5;
 
-let currentLuxuryIndex = 5; 
-
 
 const User = require('./models/user');
 
@@ -195,22 +193,6 @@ const handleSocketConnection = (io) => {
     updateOnlineUsersCount(); 
 
 
-
-// Send current dot position to new client
-socket.on("dotPositionUpdate", (newIndex) => {
-  if (
-    typeof newIndex === 'number' &&
-    newIndex >= 0 &&
-    newIndex <= 5 &&
-    newIndex !== currentLuxuryIndex
-  ) {
-    currentLuxuryIndex = newIndex;
-    console.log(`🔄 Updating luxury index to ${newIndex}`);
-    io.emit("dotPositionUpdate", currentLuxuryIndex);
-  } else {
-    console.log(`⚠️ Ignoring redundant or invalid update: ${newIndex}`);
-  }
-});
 
 
 
