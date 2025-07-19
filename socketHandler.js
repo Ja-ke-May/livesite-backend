@@ -197,16 +197,20 @@ const handleSocketConnection = (io) => {
 
 
 // Send current dot position to new client
-socket.emit("dotPositionUpdate", currentLuxuryIndex);
-
 socket.on("dotPositionUpdate", (newIndex) => {
-  if (typeof newIndex === 'number' && newIndex >= 0 && newIndex <= 5) {
+  if (
+    typeof newIndex === 'number' &&
+    newIndex >= 0 &&
+    newIndex <= 5 &&
+    newIndex !== currentLuxuryIndex
+  ) {
     currentLuxuryIndex = newIndex;
+    console.log(`🔄 Updating luxury index to ${newIndex}`);
     io.emit("dotPositionUpdate", currentLuxuryIndex);
+  } else {
+    console.log(`⚠️ Ignoring redundant or invalid update: ${newIndex}`);
   }
 });
-
-
 
 
 
