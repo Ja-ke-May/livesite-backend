@@ -112,7 +112,7 @@ cron.schedule('*/15 * * * *', async () => {
     limits: { fileSize: 1024 * 1024 * 10 }, 
   });
 
-  app.get('/api/luxury', async (req, res) => {
+  app.get('/luxury', async (req, res) => {
   try {
     let luxury = await Luxury.findOne();
 
