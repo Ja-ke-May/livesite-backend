@@ -14,8 +14,7 @@
   const handleStripeWebhook = require('./stripeWebhook');
   const cron = require('node-cron');
   
-
-
+  
   const app = express();
   const server = http.createServer(app);
 
@@ -24,45 +23,70 @@
   const Comment = require('./models/comment');
   const UserAds = require('./models/userAds');
 
-  const BritGamesLuxury = require('./models/BritGamesLuxury');
+const BritGamesLuxury = require('./models/luxury'); 
 
- //BritGames Luxury
 
-// GET current index
-app.get('/luxury-index', async (req, res) => {
+// Create a new luxury item
+app.post('/api/luxury', async (req, res) => {
   try {
-    let luxury = await BritGamesLuxury.findOne().sort({ time: -1 });
-
-    if (!luxury) {
-      luxury = await BritGamesLuxury.create({ index: 3 });
-    }
-
-    res.json({ index: luxury.index });
-  } catch (error) {
-    console.error('Error fetching luxury index:', error);
+    const { index, votePurchasedBy } = req.body;
+    const luxuryItem = new BritGamesLuxury({ index, votePurchasedBy });
+    await luxuryItem.save();
+    res.status(201).json(luxuryItem);
+  } catch (err) {
+    console.error('Error creating luxury item:', err);
     res.status(500).json({ error: 'Server error' });
   }
 });
 
-// POST vote (up/down)
-app.post('/luxury-index', async (req, res) => {
+// Get all luxury items
+app.get('/api/luxury', async (req, res) => {
   try {
-    const { direction, username } = req.body;
-    let current = await BritGamesLuxury.findOne().sort({ time: -1 });
+    const luxuryItems = await BritGamesLuxury.find();
+    res.json(luxuryItems);
+  } catch (err) {
+    console.error('Error fetching luxury items:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
 
-    let index = current?.index ?? 3;
+// Get one luxury item by ID
+app.get('/api/luxury/:id', async (req, res) => {
+  try {
+    const luxuryItem = await BritGamesLuxury.findById(req.params.id);
+    if (!luxuryItem) return res.status(404).json({ message: 'Not found' });
+    res.json(luxuryItem);
+  } catch (err) {
+    console.error('Error fetching luxury item:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
 
-    if (direction === 'up' && index > 0) index--;
-    else if (direction === 'down' && index < 5) index++;
+// Optional: Update luxury item
+app.put('/api/luxury/:id', async (req, res) => {
+  try {
+    const { index, votePurchasedBy } = req.body;
+    const luxuryItem = await BritGamesLuxury.findByIdAndUpdate(
+      req.params.id,
+      { index, votePurchasedBy },
+      { new: true }
+    );
+    if (!luxuryItem) return res.status(404).json({ message: 'Not found' });
+    res.json(luxuryItem);
+  } catch (err) {
+    console.error('Error updating luxury item:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
 
-    const newVote = await BritGamesLuxury.create({
-      index,
-      votePurchasedBy: username,
-    });
-
-    res.json({ index: newVote.index });
-  } catch (error) {
-    console.error('Error updating luxury index:', error);
+// Optional: Delete luxury item
+app.delete('/api/luxury/:id', async (req, res) => {
+  try {
+    const luxuryItem = await BritGamesLuxury.findByIdAndDelete(req.params.id);
+    if (!luxuryItem) return res.status(404).json({ message: 'Not found' });
+    res.json({ message: 'Deleted successfully' });
+  } catch (err) {
+    console.error('Error deleting luxury item:', err);
     res.status(500).json({ error: 'Server error' });
   }
 });

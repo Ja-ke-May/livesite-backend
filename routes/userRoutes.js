@@ -81,7 +81,6 @@ async function sendActivationEmail(user, activationToken) {
 }
 
 
-
 router.post('/profile-picture', upload.single('profilePicture'), authMiddleware, async (req, res) => {
   try {
     if (!req.file) {
