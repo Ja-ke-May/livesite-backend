@@ -9,6 +9,9 @@ const crypto = require('crypto');
 const { sendResetPasswordEmail, sendPurchaseNotificationToAdmin } = require('../emails')
 
 
+const BritGamesLuxury = require('./models/BritGamesLuxury');
+
+
 const router = express.Router();
 const storage = multer.memoryStorage();
 const fileFilter = (req, file, cb) => {
@@ -79,6 +82,47 @@ async function sendActivationEmail(user, activationToken) {
     console.error('Error sending activation email:', err);
   }
 }
+
+//BritGames Luxury
+
+// GET current index
+router.get('/luxury-index', async (req, res) => {
+  try {
+    let luxury = await BritGamesLuxury.findOne().sort({ time: -1 });
+
+    if (!luxury) {
+      luxury = await BritGamesLuxury.create({ index: 3 });
+    }
+
+    res.json({ index: luxury.index });
+  } catch (error) {
+    console.error('Error fetching luxury index:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// POST vote (up/down)
+router.post('/luxury-index', async (req, res) => {
+  try {
+    const { direction, username } = req.body;
+    let current = await BritGamesLuxury.findOne().sort({ time: -1 });
+
+    let index = current?.index ?? 3;
+
+    if (direction === 'up' && index > 0) index--;
+    else if (direction === 'down' && index < 5) index++;
+
+    const newVote = await BritGamesLuxury.create({
+      index,
+      votePurchasedBy: username,
+    });
+
+    res.json({ index: newVote.index });
+  } catch (error) {
+    console.error('Error updating luxury index:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
 
 
 router.post('/profile-picture', upload.single('profilePicture'), authMiddleware, async (req, res) => {

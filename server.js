@@ -24,6 +24,9 @@
   const Comment = require('./models/comment');
   const UserAds = require('./models/userAds');
 
+const luxuryRoutes = require('./routes/luxuryRoutes');
+app.use('/', luxuryRoutes);  
+
   app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), (req, res) => {
     const sig = req.headers['stripe-signature'];
     handleStripeWebhook(req, res);
