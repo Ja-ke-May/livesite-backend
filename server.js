@@ -24,7 +24,7 @@
   const UserAds = require('./models/userAds');
 
 
-const Luxury = require('./models/luxury');
+const Luxury = require('./models/Luxury');
 
 
 
