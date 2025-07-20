@@ -80,18 +80,6 @@ app.get('/api/luxury', async (req, res) => {
 
 
 
-// Optional: Delete luxury item
-app.delete('/api/luxury/:id', async (req, res) => {
-  try {
-    const luxuryItem = await BritGamesLuxury.findByIdAndDelete(req.params.id);
-    if (!luxuryItem) return res.status(404).json({ message: 'Not found' });
-    res.json({ message: 'Deleted successfully' });
-  } catch (err) {
-    console.error('Error deleting luxury item:', err);
-    res.status(500).json({ error: 'Server error' });
-  }
-});
-
 
   app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), (req, res) => {
     const sig = req.headers['stripe-signature'];
