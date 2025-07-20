@@ -23,7 +23,8 @@
   const Comment = require('./models/comment');
   const UserAds = require('./models/userAds');
 
-const BritGamesLuxury = require('./models/Luxury'); 
+
+const Luxury = require('./models/luxury');
 
 
 
@@ -111,51 +112,21 @@ cron.schedule('*/15 * * * *', async () => {
     limits: { fileSize: 1024 * 1024 * 10 }, 
   });
 
-  
-// Create a new luxury item
-app.post('/api/luxury/vote', async (req, res) => {
+  app.get('/api/luxury', async (req, res) => {
   try {
-    const { voteType, userId } = req.body; 
+    let luxury = await Luxury.findOne();
 
-    if (!['upvote', 'downvote'].includes(voteType)) {
-      return res.status(400).json({ message: 'Invalid vote type' });
-    }
-
-    let luxury = await BritGamesLuxury.findOne();
     if (!luxury) {
-      luxury = new BritGamesLuxury();
+      luxury = new Luxury(); 
+      await luxury.save();
     }
 
-    if (voteType === 'upvote') {
-      luxury.index = Math.min(luxury.index + 1, 5);
-    } else if (voteType === 'downvote') {
-      luxury.index = Math.max(luxury.index - 1, 0);
-    }
-
-    luxury.votePurchasedBy = userId; 
-    luxury.time = new Date();
-
-    await luxury.save();
-
-    res.json({ message: 'Vote registered', index: luxury.index });
-  } catch (err) {
-    console.error('Error processing vote purchase:', err);
-    res.status(500).json({ error: 'Server error' });
-  }
-});
-
-// Get all luxury items
-app.get('/api/luxury', async (req, res) => {
-  try {
-    const luxury = await BritGamesLuxury.findOne();
-    res.json({ index: luxury ? luxury.index : 5 }); 
+    res.json({ index: luxury.index });
   } catch (err) {
     console.error('Error fetching luxury index:', err);
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ error: 'Failed to fetch luxury index' });
   }
 });
-
-
 
 
   app.post('/profile-picture', upload.single('profilePicture'), authMiddleware, async (req, res) => {
