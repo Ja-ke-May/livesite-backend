@@ -15,4 +15,4 @@ const luxurySchema = new mongoose.Schema({
   },
 });
 
-module.exports = mongoose.model('BritGamesLuxury', luxurySchema);
+module.exports = mongoose.model('Luxury', luxurySchema);
