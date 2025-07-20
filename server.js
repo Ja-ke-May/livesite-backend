@@ -23,41 +23,33 @@
   const Comment = require('./models/comment');
   const UserAds = require('./models/userAds');
 
-const BritGamesLuxury = require('./models/luxury'); 
+const BritGamesLuxury = require('./models/Luxury'); 
 
 
 // Create a new luxury item
 app.post('/api/luxury/vote', authMiddleware, async (req, res) => {
   try {
-    const { voteType, userId } = req.body; // voteType = 'upvote' or 'downvote'
+    const { voteType, userId } = req.body; 
 
     if (!['upvote', 'downvote'].includes(voteType)) {
       return res.status(400).json({ message: 'Invalid vote type' });
     }
 
-    // Find the single luxury document (assuming there's only one)
-    // or you can add a filter if you have multiple
     let luxury = await BritGamesLuxury.findOne();
     if (!luxury) {
-      // If not found, create with default index 5
       luxury = new BritGamesLuxury();
     }
 
-    // Update the index based on voteType, clamp between 0 and 5
     if (voteType === 'upvote') {
       luxury.index = Math.min(luxury.index + 1, 5);
     } else if (voteType === 'downvote') {
       luxury.index = Math.max(luxury.index - 1, 0);
     }
 
-    // Record who purchased the vote (optional)
     luxury.votePurchasedBy = userId; 
     luxury.time = new Date();
 
     await luxury.save();
-
-    // Emit event to all connected clients about the update
-    io.emit('luxuryIndexUpdated', { index: luxury.index });
 
     res.json({ message: 'Vote registered', index: luxury.index });
   } catch (err) {
@@ -70,7 +62,7 @@ app.post('/api/luxury/vote', authMiddleware, async (req, res) => {
 app.get('/api/luxury', async (req, res) => {
   try {
     const luxury = await BritGamesLuxury.findOne();
-    res.json({ index: luxury ? luxury.index : 5 }); // default 5 if none found
+    res.json({ index: luxury ? luxury.index : 5 }); 
   } catch (err) {
     console.error('Error fetching luxury index:', err);
     res.status(500).json({ error: 'Server error' });
