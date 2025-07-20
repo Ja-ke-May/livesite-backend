@@ -24,8 +24,49 @@
   const Comment = require('./models/comment');
   const UserAds = require('./models/userAds');
 
-const luxuryRoutes = require('./routes/luxuryRoutes');
-app.use('/', luxuryRoutes);  
+  const BritGamesLuxury = require('./models/BritGamesLuxury');
+
+ //BritGames Luxury
+
+// GET current index
+app.get('/luxury-index', async (req, res) => {
+  try {
+    let luxury = await BritGamesLuxury.findOne().sort({ time: -1 });
+
+    if (!luxury) {
+      luxury = await BritGamesLuxury.create({ index: 3 });
+    }
+
+    res.json({ index: luxury.index });
+  } catch (error) {
+    console.error('Error fetching luxury index:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// POST vote (up/down)
+app.post('/luxury-index', async (req, res) => {
+  try {
+    const { direction, username } = req.body;
+    let current = await BritGamesLuxury.findOne().sort({ time: -1 });
+
+    let index = current?.index ?? 3;
+
+    if (direction === 'up' && index > 0) index--;
+    else if (direction === 'down' && index < 5) index++;
+
+    const newVote = await BritGamesLuxury.create({
+      index,
+      votePurchasedBy: username,
+    });
+
+    res.json({ index: newVote.index });
+  } catch (error) {
+    console.error('Error updating luxury index:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 
   app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), (req, res) => {
     const sig = req.headers['stripe-signature'];
