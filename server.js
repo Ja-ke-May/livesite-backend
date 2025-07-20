@@ -128,6 +128,36 @@ cron.schedule('*/15 * * * *', async () => {
   }
 });
 
+app.post('/luxury/update', async (req, res) => {
+  try {
+    const { direction } = req.body;
+
+    if (!['upvote', 'downvote'].includes(direction)) {
+      return res.status(400).json({ error: 'Invalid direction' });
+    }
+
+    let luxury = await Luxury.findOne();
+    if (!luxury) {
+      luxury = new Luxury();
+    }
+
+    if (direction === 'upvote' && luxury.index > 0) {
+      luxury.index -= 1; 
+    } else if (direction === 'downvote' && luxury.index < 5) {
+      luxury.index += 1;
+    }
+
+    await luxury.save();
+
+    res.json({ index: luxury.index });
+  } catch (err) {
+    console.error('Error updating luxury index:', err);
+    res.status(500).json({ error: 'Failed to update luxury index' });
+  }
+});
+
+
+
 
   app.post('/profile-picture', upload.single('profilePicture'), authMiddleware, async (req, res) => {
     try {
