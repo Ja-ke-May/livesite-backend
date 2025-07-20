@@ -27,7 +27,7 @@ const BritGamesLuxury = require('./models/Luxury');
 
 
 // Create a new luxury item
-app.post('/api/luxury/vote', authMiddleware, async (req, res) => {
+app.post('/api/luxury/vote', async (req, res) => {
   try {
     const { voteType, userId } = req.body; 
 
