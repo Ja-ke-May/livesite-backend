@@ -40,6 +40,10 @@ router.post('/get-token', async (req, res) => {
         }
       }
     );
+
+    console.log('Xsolla response:', response.data);
+
+    
     const token = response.data.token;
     const paymentUrl = `https://sandbox-secure.xsolla.com/paystation3/?access_token=${token}`;
     res.json({ paymentUrl });
