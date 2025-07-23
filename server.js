@@ -29,7 +29,6 @@ app.use('/api/xsolla', xsollaRoutes);
 const Luxury = require('./models/Luxury');
 
 
-app.post('/api/xsolla/webhook', express.json(), require('./xsollaWebhook'));
 
 
   const bodyParser = require('body-parser');
@@ -108,6 +107,9 @@ cron.schedule('*/15 * * * *', async () => {
     },
     limits: { fileSize: 1024 * 1024 * 10 }, 
   });
+
+  
+app.post('/api/xsolla/webhook', express.json(), require('./xsollaWebhook'));
 
   app.get('/luxury', async (req, res) => {
   try {
