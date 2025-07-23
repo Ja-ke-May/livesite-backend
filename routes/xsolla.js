@@ -25,7 +25,8 @@ router.post('/get-token', async (req, res) => {
       currency: "GBP",
       language: "en",
       external_id: `order_${Date.now()}`,
-      return_url: "https://myme.live/shop"
+      return_url: "https://myme.live/shop", 
+      project_id: process.env.XSOLLA_PROJECT_ID
     }
   };
 
@@ -43,7 +44,7 @@ router.post('/get-token', async (req, res) => {
 
     console.log('Xsolla response:', response.data);
 
-    
+
     const token = response.data.token;
     const paymentUrl = `https://sandbox-secure.xsolla.com/paystation3/?access_token=${token}`;
     res.json({ paymentUrl });
