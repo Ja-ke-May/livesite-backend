@@ -45,7 +45,7 @@ router.post('/get-token', async (req, res) => {
 
 
     const token = response.data.token;
-    const paymentUrl = `https://secure.xsolla.com/paystation3/?access_token=${token}`;
+    const paymentUrl = `https://sandbox-secure.xsolla.com/paystation3/?access_token=${token}`;
     res.json({ paymentUrl });
   } catch (err) {
     console.error('Xsolla token error:', err.response?.data || err.message);
