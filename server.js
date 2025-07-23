@@ -13,7 +13,6 @@
   const { sendBlockNotificationEmail } = require('./emails')
   const cron = require('node-cron');
   const xsollaRoutes = require('./routes/xsolla');
-app.use('/api/xsolla', xsollaRoutes);
 
   
   
@@ -107,6 +106,8 @@ cron.schedule('*/15 * * * *', async () => {
     },
     limits: { fileSize: 1024 * 1024 * 10 }, 
   });
+
+  app.use('/api/xsolla', xsollaRoutes);
 
   
 app.post('/api/xsolla/webhook', express.json(), require('./xsollaWebhook'));
