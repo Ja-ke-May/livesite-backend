@@ -11,8 +11,10 @@
   const userRoutes = require('./routes/userRoutes');
   const { handleSocketConnection, onlineUsers } = require('./socketHandler'); 
   const { sendBlockNotificationEmail } = require('./emails')
-  const handleStripeWebhook = require('./stripeWebhook');
   const cron = require('node-cron');
+  const xsollaRoutes = require('./routes/xsolla');
+app.use('/api/xsolla', xsollaRoutes);
+
   
   
   const app = express();
@@ -27,12 +29,7 @@
 const Luxury = require('./models/Luxury');
 
 
-
-
-  app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), (req, res) => {
-    const sig = req.headers['stripe-signature'];
-    handleStripeWebhook(req, res);
-});
+app.post('/api/xsolla/webhook', express.json(), require('./xsollaWebhook'));
 
 
   const bodyParser = require('body-parser');
