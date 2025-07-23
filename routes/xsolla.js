@@ -24,7 +24,6 @@ router.post('/get-token', async (req, res) => {
     settings: {
       currency: "GBP",
       language: "en",
-      external_id: `order_${Date.now()}`,
       return_url: "https://myme.live/shop", 
       project_id: Number(process.env.XSOLLA_PROJECT_ID)
     }
