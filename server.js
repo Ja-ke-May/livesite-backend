@@ -121,19 +121,20 @@ app.post('/api/xsolla/webhook', express.json(), require('./xsollaWebhook'));
       await luxury.save();
     }
 
-    res.json({ index: luxury.index });
+    res.json({ index: luxury.index, tokenGoal: luxury.tokenGoal });
   } catch (err) {
     console.error('Error fetching luxury index:', err);
     res.status(500).json({ error: 'Failed to fetch luxury index' });
   }
 });
 
+
 app.post('/luxury/update', async (req, res) => {
   try {
-    const { direction } = req.body;
+    const { tokens } = req.body;
 
-    if (!['upvote', 'downvote'].includes(direction)) {
-      return res.status(400).json({ error: 'Invalid direction' });
+    if (typeof tokens !== 'number' || tokens <= 0) {
+      return res.status(400).json({ error: 'Invalid token amount' });
     }
 
     let luxury = await Luxury.findOne();
@@ -141,21 +142,20 @@ app.post('/luxury/update', async (req, res) => {
       luxury = new Luxury();
     }
 
-    if (direction === 'upvote' && luxury.index > 0) {
-      luxury.index -= 1; 
-    } else if (direction === 'downvote' && luxury.index < 5) {
-      luxury.index += 1;
+    luxury.tokenGoal += tokens;
+
+    while (luxury.tokenGoal >= 20000 && luxury.index > 0) {
+      luxury.index -= 1;
+      luxury.tokenGoal -= 20000;
     }
 
     await luxury.save();
-
-    res.json({ index: luxury.index });
+    res.json({ index: luxury.index, tokenGoal: luxury.tokenGoal });
   } catch (err) {
     console.error('Error updating luxury index:', err);
     res.status(500).json({ error: 'Failed to update luxury index' });
   }
 });
-
 
 
 

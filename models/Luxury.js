@@ -1,10 +1,15 @@
 const mongoose = require('mongoose');
 
 const luxurySchema = new mongoose.Schema({
-  index: {
-    type: Number,
-    required: true,
-    default: 5, 
+ index: {
+  type: Number,
+  required: true,
+  default: 5,
+  min: 0,
+},
+  tokenGoal: {
+type: Number, 
+default: 0,
   },
 });
 
