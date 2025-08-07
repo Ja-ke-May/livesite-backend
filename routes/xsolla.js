@@ -13,22 +13,22 @@ router.post('/get-token', async (req, res) => {
     return res.status(400).json({ error: 'Missing username or SKU' });
   }
 
-  const payload = {
-    user: {
-      id: { value: username }
-    },
-    purchase: {
-      virtual_items: {
-        items: [{ sku, amount: 1 }]
-      }
-    },
-    settings: {
-      currency: "GBP", 
-      language: "en",
-      return_url: "https://myme.live/shop",
-      project_id: PROJECT_ID
+ const payload = {
+  settings: {
+    currency: "GBP",
+    language: "en",
+    return_url: "https://myme.live/shop"
+  },
+  user: {
+    id: { value: username }
+  },
+  purchase: {
+    virtual_items: {
+      items: [{ sku, amount: 1 }]
     }
-  };
+  }
+};
+
 
   // Log everything we're sending for debug purposes
   console.log('==================');
