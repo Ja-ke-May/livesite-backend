@@ -23,7 +23,7 @@ router.post('/get-token', async (req, res) => {
       }
     },
     settings: {
-      // currency: "GBP", // Consider removing this temporarily if errors persist
+      currency: "GBP", 
       language: "en",
       return_url: "https://myme.live/shop",
       project_id: PROJECT_ID
