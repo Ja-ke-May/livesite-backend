@@ -2,9 +2,8 @@ const express = require('express');
 const axios = require('axios');
 const router = express.Router();
 
-const MERCHANT_ID = process.env.XSOLLA_MERCHANT_ID;
-const API_KEY = process.env.XSOLLA_API_KEY;
-const PROJECT_ID = Number(process.env.XSOLLA_PROJECT_ID);
+const API_KEY = process.env.XSOLLA_API_KEY;         
+const PROJECT_ID = Number(process.env.XSOLLA_PROJECT_ID); 
 
 router.post('/get-token', async (req, res) => {
   const { username, sku } = req.body;
@@ -13,27 +12,25 @@ router.post('/get-token', async (req, res) => {
     return res.status(400).json({ error: 'Missing username or SKU' });
   }
 
- const payload = {
-  settings: {
-    currency: "GBP",
-    language: "en",
-    return_url: "https://myme.live/shop"
-  },
-  user: {
-    id: { value: username }
-  },
-  purchase: {
-    virtual_items: {
-      items: [{ sku, amount: 1 }]
+  const payload = {
+    user: {
+      id: { value: username }
+    },
+    purchase: {
+      virtual_items: {
+        items: [{ sku, amount: 1 }]
+      }
+    },
+    settings: {
+      currency: 'GBP',
+      language: 'en',
+      return_url: 'https://myme.live/shop'
     }
-  }
-};
+  };
 
-
-  // Log everything we're sending for debug purposes
+  // Debug log
   console.log('==================');
   console.log('[Xsolla] Attempting token generation with:');
-  console.log('MERCHANT_ID:', MERCHANT_ID);
   console.log('PROJECT_ID:', PROJECT_ID);
   console.log('Username:', username);
   console.log('SKU:', sku);
@@ -42,11 +39,11 @@ router.post('/get-token', async (req, res) => {
 
   try {
     const response = await axios.post(
-      `https://api.xsolla.com/merchant/v2/merchants/${MERCHANT_ID}/token`,
+      `https://api.xsolla.com/merchant/v2/projects/${PROJECT_ID}/token`,
       payload,
       {
         auth: {
-          username: MERCHANT_ID,
+          username: PROJECT_ID.toString(),
           password: API_KEY
         }
       }
@@ -58,6 +55,7 @@ router.post('/get-token', async (req, res) => {
     const token = response.data.token;
     const paymentUrl = `https://secure.xsolla.com/paystation4/?access_token=${token}`;
     res.json({ paymentUrl });
+
   } catch (err) {
     console.error('[Xsolla] Error getting token:');
 
