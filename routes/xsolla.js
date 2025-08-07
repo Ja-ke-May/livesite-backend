@@ -12,53 +12,33 @@ router.post('/get-token', async (req, res) => {
     return res.status(400).json({ error: 'Missing username or SKU' });
   }
 
-  try {
-    // 1️⃣ Check project status first
-    const projectStatusResp = await axios.get(
-      `https://api.xsolla.com/merchant/v2/projects/${PROJECT_ID}`,
-      {
-        auth: {
-          username: PROJECT_ID.toString(),
-          password: API_KEY
-        }
+  const payload = {
+    user: {
+      id: { value: username }
+    },
+    purchase: {
+      virtual_items: {
+        items: [{ sku, amount: 1 }]
       }
-    );
-
-    const projectMode = projectStatusResp.data.mode || 'unknown';
-    console.log(`[Xsolla] Project mode: ${projectMode}`);
-
-    if (projectMode.toLowerCase() === 'sandbox') {
-      console.warn('[Xsolla] WARNING: Project is still in sandbox mode. Live payments will not work.');
+    },
+    settings: {
+      currency: 'GBP',
+      language: 'en',
+      return_url: 'https://myme.live/shop'
     }
+  };
 
-    // 2️⃣ Prepare payload for token generation
-    const payload = {
-      user: {
-        id: { value: username }
-      },
-      purchase: {
-        virtual_items: {
-          items: [{ sku, amount: 1 }]
-        }
-      },
-      settings: {
-        currency: 'GBP',
-        language: 'en',
-        return_url: 'https://myme.live/shop'
-      }
-    };
+  // Debug log
+  console.log('==================');
+  console.log('[Xsolla] Attempting token generation with:');
+  console.log('PROJECT_ID:', PROJECT_ID);
+  console.log('Username:', username);
+  console.log('SKU:', sku);
+  console.log('Payload:\n', JSON.stringify(payload, null, 2));
+  console.log('==================');
 
-    console.log('==================');
-    console.log('[Xsolla] Attempting token generation with:');
-    console.log('PROJECT_ID:', PROJECT_ID);
-    console.log('Project mode:', projectMode);
-    console.log('Username:', username);
-    console.log('SKU:', sku);
-    console.log('Payload:\n', JSON.stringify(payload, null, 2));
-    console.log('==================');
-
-    // 3️⃣ Request token
-    const tokenResp = await axios.post(
+  try {
+    const response = await axios.post(
       `https://api.xsolla.com/merchant/v2/projects/${PROJECT_ID}/token`,
       payload,
       {
@@ -70,16 +50,14 @@ router.post('/get-token', async (req, res) => {
     );
 
     console.log('[Xsolla] Token generated successfully:');
-    console.log('Response:', tokenResp.data);
+    console.log('Response:', response.data);
 
-    const token = tokenResp.data.token;
+    const token = response.data.token;
     const paymentUrl = `https://secure.xsolla.com/paystation4/?access_token=${token}`;
-
-    // Include project mode in the response for visibility
-    res.json({ projectMode, paymentUrl });
+    res.json({ paymentUrl });
 
   } catch (err) {
-    console.error('[Xsolla] Error:');
+    console.error('[Xsolla] Error getting token:');
 
     if (err.response?.data) {
       console.error('Error data:', JSON.stringify(err.response.data, null, 2));
@@ -87,7 +65,7 @@ router.post('/get-token', async (req, res) => {
       console.error('Error message:', err.message);
     }
 
-    res.status(500).json({ error: 'Failed to get Xsolla token or project status' });
+    res.status(500).json({ error: 'Failed to get Xsolla token' });
   }
 });
 
