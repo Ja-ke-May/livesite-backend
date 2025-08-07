@@ -56,7 +56,7 @@ router.post('/get-token', async (req, res) => {
     console.log('Response:', response.data);
 
     const token = response.data.token;
-    const paymentUrl = `https://secure.xsolla.com/paystation3/?access_token=${token}`;
+    const paymentUrl = `https://secure.xsolla.com/paystation4/?access_token=${token}`;
     res.json({ paymentUrl });
   } catch (err) {
     console.error('[Xsolla] Error getting token:');
