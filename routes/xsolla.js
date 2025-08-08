@@ -3,7 +3,7 @@ const axios = require('axios');
 const router = express.Router();
 
 const API_KEY = process.env.XSOLLA_API_KEY;         
-const PROJECT_ID = Number(process.env.XSOLLA_PROJECT_ID); 
+const PROJECT_ID = process.env.XSOLLA_PROJECT_ID; 
 
 router.post('/get-token', async (req, res) => {
   const { username, sku } = req.body;
