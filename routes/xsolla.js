@@ -22,7 +22,7 @@ router.post('/get-token', async (req, res) => {
       }
     },
     settings: {
-      currency: 'GBP',
+    
       language: 'en',
       return_url: 'https://myme.live/shop'
     }
