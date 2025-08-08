@@ -6,7 +6,7 @@ const API_KEY = process.env.XSOLLA_API_KEY;
 const PROJECT_ID = process.env.XSOLLA_PROJECT_ID; 
 
 router.post('/get-token', async (req, res) => {
-  const { username, sku } = req.body;
+  const { username, sku, sandbox } = req.body; // sandbox param true/false
 
   if (!username || !sku) {
     return res.status(400).json({ error: 'Missing username or SKU' });
@@ -22,11 +22,15 @@ router.post('/get-token', async (req, res) => {
       }
     },
     settings: {
-    
       language: 'en',
       return_url: 'https://myme.live/shop'
     }
   };
+
+  // Add sandbox flag if requested
+  if (sandbox === true) {
+    payload.settings.sandbox = true;
+  }
 
   // Debug log
   console.log('==================');
@@ -34,6 +38,7 @@ router.post('/get-token', async (req, res) => {
   console.log('PROJECT_ID:', PROJECT_ID);
   console.log('Username:', username);
   console.log('SKU:', sku);
+  console.log('Sandbox mode:', sandbox === true);
   console.log('Payload:\n', JSON.stringify(payload, null, 2));
   console.log('==================');
 
@@ -53,7 +58,11 @@ router.post('/get-token', async (req, res) => {
     console.log('Response:', response.data);
 
     const token = response.data.token;
-    const paymentUrl = `https://secure.xsolla.com/paystation4/?access_token=${token}`;
+    const paymentUrlBase = sandbox === true
+      ? 'https://sandbox-secure.xsolla.com/paystation4'
+      : 'https://secure.xsolla.com/paystation4';
+
+    const paymentUrl = `${paymentUrlBase}/?access_token=${token}`;
     res.json({ paymentUrl });
 
   } catch (err) {
