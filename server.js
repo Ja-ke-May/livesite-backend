@@ -131,10 +131,13 @@ app.post('/api/xsolla/webhook', express.json(), require('./xsollaWebhook'));
 
 app.post('/luxury/update', async (req, res) => {
   try {
-    const { tokens } = req.body;
+    const { tokens, index } = req.body;
 
-    if (typeof tokens !== 'number' || tokens <= 0) {
+    if (typeof tokens !== 'number' || tokens < 0) {
       return res.status(400).json({ error: 'Invalid token amount' });
+    }
+    if (typeof index !== 'number' || index < 0) {
+      return res.status(400).json({ error: 'Invalid index' });
     }
 
     let luxury = await Luxury.findOne();
@@ -142,12 +145,8 @@ app.post('/luxury/update', async (req, res) => {
       luxury = new Luxury();
     }
 
-    luxury.tokenGoal += tokens;
-
-    while (luxury.tokenGoal >= 20000 && luxury.index > 0) {
-      luxury.index -= 1;
-      luxury.tokenGoal -= 20000;
-    }
+    luxury.tokenGoal = tokens;
+    luxury.index = index;
 
     await luxury.save();
     res.json({ index: luxury.index, tokenGoal: luxury.tokenGoal });
@@ -156,6 +155,7 @@ app.post('/luxury/update', async (req, res) => {
     res.status(500).json({ error: 'Failed to update luxury index' });
   }
 });
+
 
 
 
