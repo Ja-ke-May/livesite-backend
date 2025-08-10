@@ -273,6 +273,41 @@ router.get('/profile/:username', authMiddleware, async (req, res) => {
   }
 });
 
+// Update user flag route
+router.put('/profile/:username/flag', authMiddleware, async (req, res) => {
+  try {
+    const { username } = req.params;
+    const { flag } = req.body;  // The new flag code (e.g., 'us', 'gb', etc.)
+    const userId = req.user.userId;
+
+    // Validate flag (example: check it's a 2-letter string, you can customize)
+    if (!flag || typeof flag !== 'string' || flag.length !== 2) {
+      return res.status(400).json({ message: 'Invalid flag format' });
+    }
+
+    // Make sure the authenticated user is updating their own flag or is an admin
+    if (req.user.username !== username && !req.user.isAdmin) {
+      return res.status(403).json({ message: 'Unauthorized to update this flag' });
+    }
+
+    // Find the user by username
+    const user = await User.findOne({ userName: username });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Update the flag
+    user.flag = flag.toLowerCase(); // Save flag lowercase for consistency
+    await user.save();
+
+    res.json({ message: 'Flag updated successfully', flag: user.flag });
+  } catch (err) {
+    console.error('Error updating user flag:', err);
+    res.status(500).json({ error: 'Server error, please try again later' });
+  }
+});
+
+
 
 router.put('/profile/username', authMiddleware, async (req, res) => {
   try {
