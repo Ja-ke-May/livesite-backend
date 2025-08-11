@@ -403,6 +403,7 @@ const handleSocketConnection = (io) => {
         
         const commentWithColors = {
           username: commentData.username,
+          flag: user.flag,
           comment: commentData.comment,
           commentColor: user.commentColor,
           borderColor: user.borderColor,
