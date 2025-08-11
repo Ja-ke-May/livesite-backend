@@ -25,7 +25,6 @@
   const UserAds = require('./models/userAds');
 
 
-const Luxury = require('./models/Luxury');
 
 
 
@@ -112,52 +111,7 @@ cron.schedule('*/15 * * * *', async () => {
   
 app.post('/api/xsolla/webhook', express.json(), require('./xsollaWebhook'));
 
-  app.get('/luxury', async (req, res) => {
-  try {
-    let luxury = await Luxury.findOne();
-
-    if (!luxury) {
-      luxury = new Luxury(); 
-      await luxury.save();
-    }
-
-    res.json({ index: luxury.index, tokenGoal: luxury.tokenGoal });
-  } catch (err) {
-    console.error('Error fetching luxury index:', err);
-    res.status(500).json({ error: 'Failed to fetch luxury index' });
-  }
-});
-
-
-app.post('/luxury/update', async (req, res) => {
-  try {
-    const { tokens, index } = req.body;
-
-    if (typeof tokens !== 'number' || tokens < 0) {
-      return res.status(400).json({ error: 'Invalid token amount' });
-    }
-    if (typeof index !== 'number' || index < 0) {
-      return res.status(400).json({ error: 'Invalid index' });
-    }
-
-    let luxury = await Luxury.findOne();
-    if (!luxury) {
-      luxury = new Luxury();
-    }
-
-    luxury.tokenGoal = tokens;
-    luxury.index = index;
-
-    await luxury.save();
-    res.json({ index: luxury.index, tokenGoal: luxury.tokenGoal });
-  } catch (err) {
-    console.error('Error updating luxury index:', err);
-    res.status(500).json({ error: 'Failed to update luxury index' });
-  }
-});
-
-
-
+ 
 
   app.post('/profile-picture', upload.single('profilePicture'), authMiddleware, async (req, res) => {
     try {
