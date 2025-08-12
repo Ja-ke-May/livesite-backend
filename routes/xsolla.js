@@ -92,11 +92,7 @@ router.post('/get-token', async (req, res) => {
     user: {
       id: { value: username },
     },
-    purchase: {
-      virtual_items: {
-        [itemId]: 1,
-      },
-    },
+   purchase: { virtual_items: { [itemId]: 1 } },
   };
 
   console.log('[DEBUG] Payload being sent to Xsolla:', JSON.stringify(payload, null, 2));
