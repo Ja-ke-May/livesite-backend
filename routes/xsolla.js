@@ -42,7 +42,7 @@ const payloadSchema = {
           type: 'object',
           minProperties: 1,
           patternProperties: {
-            '^[0-9]+$': { type: 'integer', minimum: 1 }
+            '^[a-zA-Z0-9_\\-]+$': { type: 'integer', minimum: 1 }
           },
           additionalProperties: false
         }
@@ -79,15 +79,13 @@ router.post('/get-token', async (req, res) => {
     });
   }
 
-  const xsollaItemId = skuMap[sku].item_id;
-
   const payload = {
     user: {
       id: { value: String(username) }
     },
     purchase: {
       virtual_items: {
-        [xsollaItemId]: 1
+        [sku]: 1
       }
     }
   };
