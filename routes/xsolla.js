@@ -29,19 +29,23 @@ router.post('/get-token', async (req, res) => {
   try {
     const payload = {
       user: {
-        id: username
+        id: String(username), // user id as string
       },
       settings: {
         locale: "en",
-        currency: "GBP", 
-          project_id: Number(PROJECT_ID)
+        currency: "GBP",
+        project_id: Number(PROJECT_ID),
       },
       purchase: {
-        virtual_currency: purchase.tokens,
+        virtual_items: [
+          {
+            sku: sku,
+            quantity: 1
+          }
+        ],
         price: purchase.amount,
         currency: "GBP"
-      },
-      
+      }
     };
 
     const authHeader = `Basic ${Buffer.from(`${XSOLLA_MERCHANT_ID}:${MERCHANT_API_KEY}`).toString('base64')}`;
@@ -63,7 +67,6 @@ router.post('/get-token', async (req, res) => {
       return res.status(500).json({ error: 'Failed to get payment token from Xsolla' });
     }
 
-    // Production payment URL
     const paymentUrl = `https://secure.xsolla.com/paystation2/?access_token=${token}`;
 
     return res.json({ paymentUrl });
@@ -73,5 +76,6 @@ router.post('/get-token', async (req, res) => {
     return res.status(500).json({ error: 'Failed to create payment token' });
   }
 });
+
 
 module.exports = router;
