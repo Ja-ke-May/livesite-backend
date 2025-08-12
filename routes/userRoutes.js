@@ -299,9 +299,12 @@ router.put('/profile/:username/flag', authMiddleware, async (req, res) => {
 
   
     user.flag = flag.toLowerCase(); 
+    
+    user.recentActivity.push(`${user.userName} updated their flag`);
     await user.save();
 
-    res.json({ message: 'Flag updated successfully', flag: user.flag });
+    res.json({ message: 'Flag updated successfully', flag: user.flag }); 
+     
   } catch (err) {
     console.error('Error updating user flag:', err);
     res.status(500).json({ error: 'Server error, please try again later' });
