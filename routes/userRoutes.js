@@ -685,13 +685,15 @@ router.get('/notifications/count', authMiddleware, async (req, res) => {
       return res.status(401).json({ message: 'Unauthorized' });
     }
 
-    const notificationCount = user.recentActivity.length;
+    const totalCount = user.recentActivity.length;
+    const seenCount = user.notificationsSeenCount || 0;
+    const newNotifications = totalCount - seenCount;
 
-    user.recentActivity = [];
-
+    // Update seen count to current total
+    user.notificationsSeenCount = totalCount;
     await user.save();
 
-    return res.json({ notificationCount });
+    return res.json({ notificationCount: newNotifications > 0 ? newNotifications : 0 });
   } catch (err) {
     console.error('Error in notifications count:', err);
     return res.status(500).json({ message: 'Server error' });

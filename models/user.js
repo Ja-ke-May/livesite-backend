@@ -83,6 +83,10 @@ const userSchema = new mongoose.Schema({
     type: [String], 
     default: []
   },
+  notificationsSeenCount: {
+  type: Number,
+  default: 0
+},
   strikes: {
     type: Number,
     default: 0
