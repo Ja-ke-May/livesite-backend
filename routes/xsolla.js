@@ -39,17 +39,11 @@ const payloadSchema = {
       type: 'object',
       properties: {
         virtual_items: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              sku: { type: 'string' },
-              quantity: { type: 'integer', minimum: 1 }
-            },
-            required: ['sku', 'quantity'],
-            additionalProperties: false
+          type: 'object',
+          patternProperties: {
+            '^[a-zA-Z0-9_\\-]+$': { type: 'integer', minimum: 1 }
           },
-          minItems: 1
+          minProperties: 1
         }
       },
       required: ['virtual_items'],
@@ -82,13 +76,10 @@ router.post('/get-token', async (req, res) => {
       id: { value: String(username) }
     },
     purchase: {
-      virtual_items: [
-        {
-          sku: sku,
-          quantity: 1
-        }
-      ]
-    }
+  virtual_items: {
+    [sku]: 1
+  }
+}
   };
 
   const valid = validatePayload(payload);
