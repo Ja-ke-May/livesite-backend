@@ -10,11 +10,11 @@ const MERCHANT_ID = process.env.XSOLLA_MERCHANT_ID;
 const OAUTH_ACCESS_TOKEN = process.env.XSOLLA_API_KEY;
 
 const skuMap = {
-  tokens_400: { item_id: 1055102, amount: 0.99, tokens: 400 },
-  tokens_1000: { item_id: 1055103, amount: 19.99, tokens: 1000 },
-  tokens_2000: { item_id: 1055104, amount: 29.99, tokens: 2000 },
-  tokens_4000: { item_id: 1055105, amount: 49.99, tokens: 4000 },
-  tokens_10000: { item_id: 1055106, amount: 99.99, tokens: 10000 },
+  tokens_400: { item_id: tokens_400, amount: 0.99, tokens: 400 },
+  tokens_1000: { item_id: tokens_1000, amount: 19.99, tokens: 1000 },
+  tokens_2000: { item_id: tokens_2000, amount: 29.99, tokens: 2000 },
+  tokens_4000: { item_id: tokens_4000, amount: 49.99, tokens: 4000 },
+  tokens_10000: { item_id: tokens_10000, amount: 99.99, tokens: 10000 },
 };
 
 const payloadSchema = {
