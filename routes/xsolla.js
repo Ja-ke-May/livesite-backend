@@ -97,15 +97,16 @@ router.post('/get-token', async (req, res) => {
 
   try {
     const response = await axios.post(
-      `https://api.xsolla.com/merchant/v2/merchants/${MERCHANT_ID}/projects/${PROJECT_ID}/token`,
-      payload,
-      {
-        headers: {
-          Authorization: `Bearer ${OAUTH_ACCESS_TOKEN}`,
-          'Content-Type': 'application/json',
-        }
-      }
-    );
+  `https://api.xsolla.com/merchant/v2/projects/${PROJECT_ID}/token`,
+  payload,
+  {
+    headers: {
+      Authorization: `Basic ${Buffer.from(`${MERCHANT_ID}:${OAUTH_ACCESS_TOKEN}`).toString('base64')}`,
+      'Content-Type': 'application/json',
+    },
+  }
+);
+
 
     const { token } = response.data;
 
