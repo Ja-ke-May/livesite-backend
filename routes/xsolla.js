@@ -114,7 +114,7 @@ router.post('/get-token', async (req, res) => {
       return res.status(500).json({ error: 'Failed to get payment token from Xsolla' });
     }
 
-    const paymentUrl = `https://secure.xsolla.com/paystation2/?access_token=${token}`;
+    const paymentUrl = `https://secure.xsolla.com/paystation3/?access_token=${token}`;
 
     return res.json({ paymentUrl });
 
