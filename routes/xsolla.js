@@ -39,7 +39,7 @@ const payloadSchema = {
       type: 'object',
       properties: {
         virtual_items: {
-          type: 'array',
+          type: 'object',
   minItems: 1,
   items: {
     type: 'object',
