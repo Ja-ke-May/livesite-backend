@@ -679,26 +679,25 @@ router.put('/comment/color', authMiddleware, async (req, res) => {
 
 router.get('/notifications/count', authMiddleware, async (req, res) => { 
   try {
-    const user = await User.findById(req.user.userId);  // <-- Fetch user document
+    const user = await User.findById(req.user.userId);
 
     if (!user) {
       return res.status(401).json({ message: 'Unauthorized' });
     }
 
-    const unreadCount = user.recentActivity.filter(act => !act.read).length;
+    const notificationCount = user.recentActivity.length;
 
-    user.recentActivity.forEach(act => {
-      act.read = true;
-    });
+    user.recentActivity = [];
 
     await user.save();
 
-    return res.json({ unreadCount });
+    return res.json({ notificationCount });
   } catch (err) {
     console.error('Error in notifications count:', err);
     return res.status(500).json({ message: 'Server error' });
   }
 });
+
 
 router.post('/update-purchase', async (req, res) => {
   const { username, tokens, amountSpent, currency, description } = req.body;

@@ -80,15 +80,9 @@ const userSchema = new mongoose.Schema({
     default: ''
   },
   recentActivity: {
-  type: [
-    {
-      message: String,
-      date: { type: Date, default: Date.now },
-      read: { type: Boolean, default: false }
-    }
-  ],
-  default: []
-},
+    type: [String], 
+    default: []
+  },
   strikes: {
     type: Number,
     default: 0
