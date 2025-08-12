@@ -10,7 +10,7 @@ const PROJECT_ID = Number(process.env.XSOLLA_PROJECT_ID);
 const MERCHANT_ID = process.env.XSOLLA_MERCHANT_ID;
 const OAUTH_ACCESS_TOKEN = process.env.XSOLLA_API_KEY;
 
-// SKU map with item IDs as numbers
+// SKU map
 const skuMap = {
   tokens_400: { item_id: 1055102, amount: 0.99, tokens: 400 },
   tokens_1000: { item_id: 1055103, amount: 19.99, tokens: 1000 },
@@ -19,10 +19,10 @@ const skuMap = {
   tokens_10000: { item_id: 1055106, amount: 99.99, tokens: 10000 },
 };
 
-// Extract numeric string item IDs for schema keys
-const itemIds = Object.values(skuMap).map(item => item.item_id.toString());
+// Use SKU keys for schema validation
+const skuKeys = Object.keys(skuMap);
 
-// Payload schema allowing numeric string keys in virtual_items
+// Payload schema allowing SKU string keys in virtual_items
 const payloadSchema = {
   type: 'object',
   properties: {
@@ -48,8 +48,8 @@ const payloadSchema = {
           type: 'object',
           minProperties: 1,
           additionalProperties: false,
-          properties: itemIds.reduce((acc, id) => {
-            acc[id] = { type: 'integer', minimum: 1 };
+          properties: skuKeys.reduce((acc, sku) => {
+            acc[sku] = { type: 'integer', minimum: 1 };
             return acc;
           }, {})
         }
@@ -86,13 +86,16 @@ router.post('/get-token', async (req, res) => {
     });
   }
 
-  const itemId = skuMap[sku].item_id.toString();
-
+  // Use SKU string as key here instead of numeric item_id
   const payload = {
     user: {
       id: { value: username },
     },
-   purchase: { virtual_items: { [itemId]: 1 } },
+    purchase: {
+      virtual_items: {
+        [sku]: 1,
+      },
+    },
   };
 
   console.log('[DEBUG] Payload being sent to Xsolla:', JSON.stringify(payload, null, 2));
