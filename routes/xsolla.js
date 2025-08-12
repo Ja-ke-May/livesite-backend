@@ -23,7 +23,14 @@ const payloadSchema = {
     user: {
       type: 'object',
       properties: {
-        id: { type: 'string', pattern: '^[a-zA-Z0-9_\\-]+$' }
+        id: {
+          type: 'object',
+          properties: {
+            value: { type: 'string', pattern: '^[a-zA-Z0-9_\\-]+$' }
+          },
+          required: ['value'],
+          additionalProperties: false
+        }
       },
       required: ['id'],
       additionalProperties: false
@@ -37,9 +44,7 @@ const payloadSchema = {
             type: 'object',
             properties: {
               sku: { type: 'string' },
-              quantity: { type: 'integer', minimum: 1 },
-              name: { type: 'string' },
-              description: { type: 'string' }
+              quantity: { type: 'integer', minimum: 1 }
             },
             required: ['sku', 'quantity'],
             additionalProperties: false
@@ -49,12 +54,12 @@ const payloadSchema = {
       },
       required: ['virtual_items'],
       additionalProperties: false
-    },
-    project_id: { type: 'integer' },
+    }
   },
-  required: ['user', 'purchase', 'project_id'],
+  required: ['user', 'purchase'],
   additionalProperties: false
 };
+
 
 const validatePayload = ajv.compile(payloadSchema);
 
@@ -74,21 +79,18 @@ router.post('/get-token', async (req, res) => {
   }
 
   const payload = {
-    user: {
-      id: String(username),
-    },
-    purchase: {
-      virtual_items: [
-        {
-          sku: sku,
-          quantity: 1,
-          name: `Tokens Package: ${skuMap[sku].tokens} tokens`,
-          description: `Purchase of ${skuMap[sku].tokens} tokens`,
-        }
-      ],
-    },
-    project_id: PROJECT_ID,
-  };
+  user: {
+    id: { value: String(username) } 
+  },
+  purchase: {
+    virtual_items: [
+      {
+        sku: sku,
+        quantity: 1
+      }
+    ]
+  }
+};
 
   const valid = validatePayload(payload);
   if (!valid) {
