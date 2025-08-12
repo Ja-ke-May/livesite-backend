@@ -677,19 +677,16 @@ router.put('/comment/color', authMiddleware, async (req, res) => {
   }
 }); 
 
-router.get('/notifications/count', authMiddleware, async (req, res) => {
+router.get('/notifications/count', authMiddleware, async (req, res) => { 
   try {
-    
-    const user = req.user;
+    const user = await User.findById(req.user.userId);  // <-- Fetch user document
 
     if (!user) {
       return res.status(401).json({ message: 'Unauthorized' });
     }
 
-   
     const unreadCount = user.recentActivity.filter(act => !act.read).length;
 
-    
     user.recentActivity.forEach(act => {
       act.read = true;
     });
@@ -702,7 +699,6 @@ router.get('/notifications/count', authMiddleware, async (req, res) => {
     return res.status(500).json({ message: 'Server error' });
   }
 });
-
 
 router.post('/update-purchase', async (req, res) => {
   const { username, tokens, amountSpent, currency, description } = req.body;
