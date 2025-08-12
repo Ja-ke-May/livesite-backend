@@ -1,6 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const axios = require('axios');
+const Ajv = require('ajv');
+
+const ajv = new Ajv({ allErrors: true });
 
 const PROJECT_ID = process.env.XSOLLA_PROJECT_ID;
 const MERCHANT_API_KEY = process.env.XSOLLA_API_KEY;
@@ -14,6 +17,55 @@ const skuMap = {
   tokens_10000: { amount: 99.99, tokens: 10000 },
 };
 
+const payloadSchema = {
+  type: 'object',
+  properties: {
+    user: {
+      type: 'object',
+      properties: {
+        id: { type: 'string', pattern: '^[a-zA-Z0-9_\\-]+$' }
+      },
+      required: ['id'],
+      additionalProperties: false
+    },
+    purchase: {
+      type: 'object',
+      properties: {
+        virtual_items: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              sku: { type: 'string' },
+              quantity: { type: 'integer', minimum: 1 },
+              name: { type: 'string' },
+              description: { type: 'string' }
+            },
+            required: ['sku', 'quantity'],
+            additionalProperties: false
+          },
+          minItems: 1
+        }
+      },
+      required: ['virtual_items'],
+      additionalProperties: false
+    },
+    settings: {
+      type: 'object',
+      properties: {
+        project_id: { type: 'integer' }
+      },
+      required: ['project_id'],
+      additionalProperties: false
+    }
+  },
+  required: ['user', 'purchase', 'settings'],
+  additionalProperties: false
+};
+
+const validatePayload = ajv.compile(payloadSchema);
+
+
 router.post('/get-token', async (req, res) => {
   const { username, sku } = req.body;
 
@@ -25,34 +77,48 @@ router.post('/get-token', async (req, res) => {
     return res.status(400).json({ error: 'Invalid sku' });
   }
 
+  if (!/^[a-zA-Z0-9_\-]+$/.test(username)) {
+    return res.status(400).json({ error: 'Invalid username format (only letters, numbers, underscore, dash allowed)' });
+  }
+
+  const payload = {
+    user: {
+      id: String(username),
+    },
+    purchase: {
+      virtual_items: [
+        {
+          sku: sku,
+          quantity: 1,
+          name: `Tokens Package: ${skuMap[sku].tokens} tokens`,
+          description: `Purchase of ${skuMap[sku].tokens} tokens`,
+        }
+      ],
+    },
+    settings: {
+      project_id: Number(PROJECT_ID),
+    }
+  };
+
+  // Validate payload before sending
+  const valid = validatePayload(payload);
+  if (!valid) {
+    return res.status(400).json({ error: 'Payload validation failed', details: validatePayload.errors });
+  }
+
   try {
-    const payload = {
-      user: {
-        id: String(username),
-      },
-      purchase: {
-        virtual_items: [
-          {
-            sku: sku,
-            quantity: 1,
-          },
-        ],
-      },
-      settings: {
-        project_id: Number(PROJECT_ID),
-      },
-    };
+    const authHeader = `Basic ${Buffer.from(`${XSOLLA_MERCHANT_ID}:${MERCHANT_API_KEY}`).toString('base64')}`;
 
-    const authHeader = `Basic ${Buffer.from(`${MERCHANT_ID}:${MERCHANT_API_KEY}`).toString('base64')}`;
-
-    const url = `https://api.xsolla.com/merchant/merchants/${MERCHANT_ID}/token`;
-
-    const response = await axios.post(url, payload, {
-      headers: {
-        Authorization: authHeader,
-        'Content-Type': 'application/json',
-      },
-    });
+    const response = await axios.post(
+      `https://api.xsolla.com/merchant/v2/merchants/${XSOLLA_MERCHANT_ID}/projects/${PROJECT_ID}/token`,
+      payload,
+      {
+        headers: {
+          Authorization: authHeader,
+          'Content-Type': 'application/json',
+        }
+      }
+    );
 
     const { token } = response.data;
 
