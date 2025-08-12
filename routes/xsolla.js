@@ -107,7 +107,7 @@ router.post('/get-token', async (req, res) => {
   }
 
   try {
-    const authHeader = `Basic ${Buffer.from(`${XSOLLA_MERCHANT_ID}:${MERCHANT_API_KEY}`).toString('base64')}`;
+    const authHeader = `Basic ${Buffer.from(`${MERCHANT_ID}:${MERCHANT_API_KEY}`).toString('base64')}`;
 
     const response = await axios.post(
       `https://api.xsolla.com/merchant/v2/merchants/${MERCHANT_ID}/projects/${PROJECT_ID}/token`,
