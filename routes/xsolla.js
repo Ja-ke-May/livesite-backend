@@ -39,17 +39,8 @@ const payloadSchema = {
       type: 'object',
       properties: {
         virtual_items: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              sku: { type: 'string' },
-              quantity: { type: 'integer', minimum: 1 }
-            },
-            required: ['sku', 'quantity'],
-            additionalProperties: false
-          },
-          minItems: 1
+          type: 'object',
+          additionalProperties: { type: 'integer', minimum: 1 }
         }
       },
       required: ['virtual_items'],
@@ -78,17 +69,14 @@ router.post('/get-token', async (req, res) => {
     return res.status(400).json({ error: 'Invalid username format (only letters, numbers, underscore, dash allowed)' });
   }
 
-  const payload = {
+ const payload = {
   user: {
-    id: { value: String(username) } 
+    id: { value: String(username) }
   },
   purchase: {
-    virtual_items: [
-      {
-        sku: sku,
-        quantity: 1
-      }
-    ]
+    virtual_items: {
+      [sku]: 1
+    }
   }
 };
 
