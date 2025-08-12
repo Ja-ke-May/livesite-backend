@@ -5,9 +5,9 @@ const Ajv = require('ajv');
 
 const ajv = new Ajv({ allErrors: true });
 
-const PROJECT_ID = process.env.XSOLLA_PROJECT_ID;
-const MERCHANT_API_KEY = process.env.XSOLLA_API_KEY;
+const PROJECT_ID = Number(process.env.XSOLLA_PROJECT_ID);
 const MERCHANT_ID = process.env.XSOLLA_MERCHANT_ID;
+const OAUTH_ACCESS_TOKEN = process.env.XSOLLA_OAUTH_ACCESS_TOKEN;
 
 const skuMap = {
   tokens_400: { amount: 0.99, tokens: 400 },
@@ -50,21 +50,13 @@ const payloadSchema = {
       required: ['virtual_items'],
       additionalProperties: false
     },
-    settings: {
-      type: 'object',
-      properties: {
-        project_id: { type: 'integer' }
-      },
-      required: ['project_id'],
-      additionalProperties: false
-    }
+    project_id: { type: 'integer' },
   },
-  required: ['user', 'purchase', 'settings'],
+  required: ['user', 'purchase', 'project_id'],
   additionalProperties: false
 };
 
 const validatePayload = ajv.compile(payloadSchema);
-
 
 router.post('/get-token', async (req, res) => {
   const { username, sku } = req.body;
@@ -95,9 +87,7 @@ router.post('/get-token', async (req, res) => {
         }
       ],
     },
-    settings: {
-      project_id: Number(PROJECT_ID),
-    }
+    project_id: PROJECT_ID,
   };
 
   // Validate payload before sending
@@ -107,14 +97,12 @@ router.post('/get-token', async (req, res) => {
   }
 
   try {
-    const authHeader = `Basic ${Buffer.from(`${MERCHANT_ID}:${MERCHANT_API_KEY}`).toString('base64')}`;
-
     const response = await axios.post(
-      `https://api.xsolla.com/merchant/v2/merchants/${MERCHANT_ID}/projects/${PROJECT_ID}/token`,
+      `https://api.xsolla.com/merchant/v2/merchants/${MERCHANT_ID}/token`,
       payload,
       {
         headers: {
-          Authorization: authHeader,
+          Authorization: `Bearer ${OAUTH_ACCESS_TOKEN}`,
           'Content-Type': 'application/json',
         }
       }
