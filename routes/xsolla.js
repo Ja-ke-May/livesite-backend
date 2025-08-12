@@ -39,12 +39,17 @@ const payloadSchema = {
       type: 'object',
       properties: {
         virtual_items: {
-          type: 'object',
-          minProperties: 1,
-          patternProperties: {
-            '^[a-zA-Z0-9_\\-]+$': { type: 'integer', minimum: 1 }
-          },
-          additionalProperties: false
+          type: 'array',
+  minItems: 1,
+  items: {
+    type: 'object',
+    properties: {
+      sku: { type: 'string', pattern: '^[a-zA-Z0-9_\\-]+$' },
+      quantity: { type: 'integer', minimum: 1 }
+    },
+    required: ['sku', 'quantity'],
+    additionalProperties: false
+  }
         }
       },
       required: ['virtual_items'],
@@ -86,11 +91,15 @@ router.post('/get-token', async (req, res) => {
     id: { value: String(username) }
   },
   purchase: {
-    virtual_items: {
-      [sku]: 1
-    }
+    virtual_items: [
+      {
+        sku: sku,
+        quantity: 1
+      }
+    ]
   }
 };
+
 
 
   console.log('[DEBUG] Payload being sent to Xsolla:', JSON.stringify(payload, null, 2));
