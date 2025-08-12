@@ -2,11 +2,11 @@ const express = require('express');
 const axios = require('axios');
 const router = express.Router();
 
-const API_KEY = process.env.XSOLLA_API_KEY;         
-const PROJECT_ID = process.env.XSOLLA_PROJECT_ID; 
+const API_KEY = process.env.XSOLLA_API_KEY;
+const PROJECT_ID = process.env.XSOLLA_PROJECT_ID;
 
 router.post('/get-token', async (req, res) => {
-  const { username, sku, sandbox } = req.body; // sandbox param true/false
+  const { username, sku } = req.body;
 
   if (!username || !sku) {
     return res.status(400).json({ error: 'Missing username or SKU' });
@@ -27,53 +27,40 @@ router.post('/get-token', async (req, res) => {
     }
   };
 
-  // Add sandbox flag if requested
-  if (sandbox === true) {
-    payload.settings.sandbox = true;
-  }
-
-  // Debug log
   console.log('==================');
-  console.log('[Xsolla] Attempting token generation with:');
+  console.log('[Xsolla CAPI] Attempting token generation with:');
   console.log('PROJECT_ID:', PROJECT_ID);
   console.log('Username:', username);
   console.log('SKU:', sku);
-  console.log('Sandbox mode:', sandbox === true);
   console.log('Payload:\n', JSON.stringify(payload, null, 2));
   console.log('==================');
 
   try {
     const response = await axios.post(
-      `https://api.xsolla.com/merchant/v2/projects/${PROJECT_ID}/token`,
+      `https://api.xsolla.com/api/v2/project/${PROJECT_ID}/payment/token`,
       payload,
       {
         auth: {
-          username: PROJECT_ID.toString(),
-          password: API_KEY
+          username: API_KEY,
+          password: ''
         }
       }
     );
 
-    console.log('[Xsolla] Token generated successfully:');
+    console.log('[Xsolla CAPI] Token generated successfully:');
     console.log('Response:', response.data);
 
     const token = response.data.token;
-    const paymentUrlBase = sandbox === true
-      ? 'https://sandbox-secure.xsolla.com/paystation4'
-      : 'https://secure.xsolla.com/paystation4';
-
-    const paymentUrl = `${paymentUrlBase}/?access_token=${token}`;
+    const paymentUrl = `https://secure.xsolla.com/paystation4/?access_token=${token}`;
     res.json({ paymentUrl });
 
   } catch (err) {
-    console.error('[Xsolla] Error getting token:');
-
+    console.error('[Xsolla CAPI] Error getting token:');
     if (err.response?.data) {
       console.error('Error data:', JSON.stringify(err.response.data, null, 2));
     } else {
       console.error('Error message:', err.message);
     }
-
     res.status(500).json({ error: 'Failed to get Xsolla token' });
   }
 });
