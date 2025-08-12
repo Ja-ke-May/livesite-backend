@@ -17,7 +17,7 @@ const skuMap = {
   tokens_10000: { amount: 99.99, tokens: 10000 },
 };
 
-// Schema updated for object-based virtual_items
+// Schema updated for object-based virtual_items with dynamic SKU keys
 const payloadSchema = {
   type: 'object',
   properties: {
