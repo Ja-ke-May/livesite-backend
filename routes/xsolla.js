@@ -17,7 +17,7 @@ const skuMap = {
   tokens_10000: { amount: 99.99, tokens: 10000 },
 };
 
-// Schema updated for object-based virtual_items with dynamic SKU keys
+// Schema expecting an array of virtual_items, each with sku and quantity
 const payloadSchema = {
   type: 'object',
   properties: {
@@ -40,12 +40,17 @@ const payloadSchema = {
       type: 'object',
       properties: {
         virtual_items: {
-          type: 'object',
-          patternProperties: {
-            '^[a-zA-Z0-9_\\-]+$': { type: 'integer', minimum: 1 }
-          },
-          minProperties: 1,
-          additionalProperties: false
+          type: 'array',
+          minItems: 1,
+          items: {
+            type: 'object',
+            properties: {
+              sku: { type: 'string' },
+              quantity: { type: 'integer', minimum: 1 }
+            },
+            required: ['sku', 'quantity'],
+            additionalProperties: false
+          }
         }
       },
       required: ['virtual_items'],
@@ -85,9 +90,12 @@ router.post('/get-token', async (req, res) => {
       id: { value: String(username) }
     },
     purchase: {
-      virtual_items: {
-        [sku]: 1
-      }
+      virtual_items: [
+        {
+          sku: sku,
+          quantity: 1
+        }
+      ]
     }
   };
 
