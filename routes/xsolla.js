@@ -17,8 +17,7 @@ const skuMap = {
   tokens_10000: { item_id: 1055106, amount: 99.99, tokens: 10000 },
 };
 
-// Extract item_ids as strings for schema keys
-const itemIds = Object.values(skuMap).map(({ item_id }) => item_id.toString());
+const skuKeys = Object.keys(skuMap);
 
 const payloadSchema = {
   type: 'object',
@@ -32,11 +31,11 @@ const payloadSchema = {
             value: { type: 'string', pattern: '^[a-zA-Z0-9_\\-]+$' }
           },
           required: ['value'],
-          additionalProperties: false
-        }
+          additionalProperties: false,
+        },
       },
       required: ['id'],
-      additionalProperties: false
+      additionalProperties: false,
     },
     purchase: {
       type: 'object',
@@ -45,18 +44,18 @@ const payloadSchema = {
           type: 'object',
           minProperties: 1,
           additionalProperties: false,
-          properties: itemIds.reduce((acc, id) => {
-            acc[id] = { type: 'integer', minimum: 1 };
+          properties: skuKeys.reduce((acc, sku) => {
+            acc[sku] = { type: 'integer', minimum: 1 };
             return acc;
-          }, {})
-        }
+          }, {}),
+        },
       },
       required: ['virtual_items'],
-      additionalProperties: false
-    }
+      additionalProperties: false,
+    },
   },
   required: ['user', 'purchase'],
-  additionalProperties: false
+  additionalProperties: false,
 };
 
 const validatePayload = ajv.compile(payloadSchema);
@@ -79,21 +78,19 @@ router.post('/get-token', async (req, res) => {
   if (!/^[a-zA-Z0-9_\-]+$/.test(username)) {
     console.warn('[WARN] Invalid username format:', username);
     return res.status(400).json({
-      error: 'Invalid username format (only letters, numbers, underscore, dash allowed)'
+      error: 'Invalid username format (only letters, numbers, underscore, dash allowed)',
     });
   }
 
-  const itemIdStr = skuMap[sku].item_id.toString();
-
   const payload = {
     user: {
-      id: { value: username }
+      id: { value: username },
     },
     purchase: {
       virtual_items: {
-        [itemIdStr]: 1
-      }
-    }
+        [sku]: 1,
+      },
+    },
   };
 
   console.log('[DEBUG] Payload being sent to Xsolla:', JSON.stringify(payload, null, 2));
@@ -127,7 +124,6 @@ router.post('/get-token', async (req, res) => {
 
     const paymentUrl = `https://secure.xsolla.com/paystation3/?access_token=${token}`;
     return res.json({ paymentUrl });
-
   } catch (error) {
     console.error('[ERROR] Xsolla CAPI error:', error.response?.data || error.message);
     return res.status(500).json({ error: 'Failed to create payment token', details: error.response?.data || error.message });
