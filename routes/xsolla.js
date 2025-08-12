@@ -17,6 +17,7 @@ const skuMap = {
   tokens_10000: { amount: 99.99, tokens: 10000 },
 };
 
+// Schema updated for object-based virtual_items
 const payloadSchema = {
   type: 'object',
   properties: {
@@ -37,24 +38,19 @@ const payloadSchema = {
     },
     purchase: {
       type: 'object',
-  properties: {
-    virtual_items: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          sku: { type: 'string' },
-          quantity: { type: 'integer', minimum: 1 }
-        },
-        required: ['sku', 'quantity'],
-        additionalProperties: false
+      properties: {
+        virtual_items: {
+          type: 'object',
+          patternProperties: {
+            '^[a-zA-Z0-9_\\-]+$': { type: 'integer', minimum: 1 }
+          },
+          minProperties: 1,
+          additionalProperties: false
+        }
       },
-      minItems: 1
+      required: ['virtual_items'],
+      additionalProperties: false
     }
-  },
-  required: ['virtual_items'],
-  additionalProperties: false
-}
   },
   required: ['user', 'purchase'],
   additionalProperties: false
@@ -65,34 +61,41 @@ const validatePayload = ajv.compile(payloadSchema);
 router.post('/get-token', async (req, res) => {
   const { username, sku } = req.body;
 
+  console.log('[DEBUG] Incoming request:', req.body);
+
   if (!username || !sku) {
+    console.warn('[WARN] Missing username or SKU');
     return res.status(400).json({ error: 'Missing username or sku' });
   }
 
   if (!skuMap[sku]) {
+    console.warn('[WARN] Invalid SKU:', sku);
     return res.status(400).json({ error: 'Invalid sku' });
   }
 
   if (!/^[a-zA-Z0-9_\-]+$/.test(username)) {
-    return res.status(400).json({ error: 'Invalid username format (only letters, numbers, underscore, dash allowed)' });
+    console.warn('[WARN] Invalid username format:', username);
+    return res.status(400).json({
+      error: 'Invalid username format (only letters, numbers, underscore, dash allowed)'
+    });
   }
 
   const payload = {
-  user: {
-    id: { value: String(username) }
-  },
-  purchase: {
-    virtual_items: [
-      {
-        sku: sku,
-        quantity: 1
+    user: {
+      id: { value: String(username) }
+    },
+    purchase: {
+      virtual_items: {
+        [sku]: 1
       }
-    ]
-  }
-};
+    }
+  };
+
+  console.log('[DEBUG] Payload being sent to Xsolla:', JSON.stringify(payload, null, 2));
 
   const valid = validatePayload(payload);
   if (!valid) {
+    console.error('[ERROR] Payload validation failed:', validatePayload.errors);
     return res.status(400).json({ error: 'Payload validation failed', details: validatePayload.errors });
   }
 
@@ -108,9 +111,12 @@ router.post('/get-token', async (req, res) => {
       }
     );
 
+    console.log('[DEBUG] Xsolla API response:', response.data);
+
     const { token } = response.data;
 
     if (!token) {
+      console.error('[ERROR] No token in Xsolla response');
       return res.status(500).json({ error: 'Failed to get payment token from Xsolla' });
     }
 
@@ -118,8 +124,8 @@ router.post('/get-token', async (req, res) => {
     return res.json({ paymentUrl });
 
   } catch (error) {
-    console.error('Xsolla CAPI error:', error.response?.data || error.message);
-    return res.status(500).json({ error: 'Failed to create payment token' });
+    console.error('[ERROR] Xsolla CAPI error:', error.response?.data || error.message);
+    return res.status(500).json({ error: 'Failed to create payment token', details: error.response?.data || error.message });
   }
 });
 
