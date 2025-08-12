@@ -33,14 +33,15 @@ router.post('/get-token', async (req, res) => {
       },
       settings: {
         locale: "en",
-        currency: "GBP"
+        currency: "GBP", 
+          project_id: Number(PROJECT_ID)
       },
       purchase: {
         virtual_currency: purchase.tokens,
         price: purchase.amount,
         currency: "GBP"
       },
-      project_id: Number(PROJECT_ID)
+      
     };
 
     const authHeader = `Basic ${Buffer.from(`${XSOLLA_MERCHANT_ID}:${MERCHANT_API_KEY}`).toString('base64')}`;
