@@ -17,6 +17,7 @@ const skuMap = {
   tokens_10000: { item_id: 1055106, amount: 99.99, tokens: 10000 },
 };
 
+// Updated payload schema to match Xsolla API requirements for virtual_items as array
 const payloadSchema = {
   type: 'object',
   properties: {
@@ -39,12 +40,17 @@ const payloadSchema = {
       type: 'object',
       properties: {
         virtual_items: {
-          type: 'object',
-          minProperties: 1,
-          patternProperties: {
-            '^[a-zA-Z0-9_\\-]+$': { type: 'integer', minimum: 1 }
-          },
-          additionalProperties: false
+          type: 'array',
+          minItems: 1,
+          items: {
+            type: 'object',
+            properties: {
+              item_id: { type: 'integer', minimum: 1 },
+              quantity: { type: 'integer', minimum: 1 }
+            },
+            required: ['item_id', 'quantity'],
+            additionalProperties: false
+          }
         }
       },
       required: ['virtual_items'],
@@ -79,14 +85,19 @@ router.post('/get-token', async (req, res) => {
     });
   }
 
+  const xsollaItemId = skuMap[sku].item_id;
+
   const payload = {
     user: {
       id: { value: String(username) }
     },
     purchase: {
-      virtual_items: {
-        [sku]: 1
-      }
+      virtual_items: [
+        {
+          item_id: xsollaItemId,
+          quantity: 1
+        }
+      ]
     }
   };
 
