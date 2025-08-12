@@ -53,7 +53,7 @@ router.post('/get-token', async (req, res) => {
   console.log('==================');
 
   try {
-    const url = `https://api.xsolla.com/api/v2/project/${PROJECT_ID}/admin/payment/token`;
+    const url = `https://api.xsolla.com/api/v2/project/${PROJECT_ID}/payment/token`;
     console.log('[Xsolla] Request URL:', url);
 
     const auth = {
