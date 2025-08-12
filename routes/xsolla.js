@@ -34,7 +34,7 @@ router.post('/get-token', async (req, res) => {
       settings: {
         locale: "en",
         currency: "GBP",
-        project_id: Number(PROJECT_ID),
+        project_id: PROJECT_ID,
       },
       purchase: {
         virtual_items: [
