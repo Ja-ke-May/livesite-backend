@@ -97,7 +97,7 @@ router.post('/get-token', async (req, res) => {
 
   try {
     const response = await axios.post(
-      `https://api.xsolla.com/merchant/v2/merchants/${MERCHANT_ID}/projects/${PROJECT_ID}/token`,
+      `https://api.xsolla.com/merchant/v2/projects/${PROJECT_ID}/token`,
       payload,
       {
         headers: {
