@@ -17,7 +17,6 @@ const skuMap = {
   tokens_10000: { amount: 99.99, tokens: 10000 },
 };
 
-// Schema expecting an array of virtual_items, each with sku and quantity
 const payloadSchema = {
   type: 'object',
   properties: {
@@ -40,17 +39,12 @@ const payloadSchema = {
       type: 'object',
       properties: {
         virtual_items: {
-          type: 'array',
-          minItems: 1,
-          items: {
-            type: 'object',
-            properties: {
-              sku: { type: 'string' },
-              quantity: { type: 'integer', minimum: 1 }
-            },
-            required: ['sku', 'quantity'],
-            additionalProperties: false
-          }
+          type: 'object',
+          minProperties: 1,
+          patternProperties: {
+            '^[a-zA-Z0-9_\\-]+$': { type: 'integer', minimum: 1 }
+          },
+          additionalProperties: false
         }
       },
       required: ['virtual_items'],
@@ -60,6 +54,18 @@ const payloadSchema = {
   required: ['user', 'purchase'],
   additionalProperties: false
 };
+
+const payload = {
+  user: {
+    id: { value: String(username) }
+  },
+  purchase: {
+    virtual_items: {
+      [sku]: 1
+    }
+  }
+};
+
 
 const validatePayload = ajv.compile(payloadSchema);
 
@@ -85,19 +91,7 @@ router.post('/get-token', async (req, res) => {
     });
   }
 
-  const payload = {
-    user: {
-      id: { value: String(username) }
-    },
-    purchase: {
-      virtual_items: [
-        {
-          sku: sku,
-          quantity: 1
-        }
-      ]
-    }
-  };
+  
 
   console.log('[DEBUG] Payload being sent to Xsolla:', JSON.stringify(payload, null, 2));
 
