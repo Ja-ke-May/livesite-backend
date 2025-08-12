@@ -55,16 +55,6 @@ const payloadSchema = {
   additionalProperties: false
 };
 
-const payload = {
-  user: {
-    id: { value: String(username) }
-  },
-  purchase: {
-    virtual_items: {
-      [sku]: 1
-    }
-  }
-};
 
 
 const validatePayload = ajv.compile(payloadSchema);
@@ -91,7 +81,17 @@ router.post('/get-token', async (req, res) => {
     });
   }
 
-  
+  const payload = {
+  user: {
+    id: { value: String(username) }
+  },
+  purchase: {
+    virtual_items: {
+      [sku]: 1
+    }
+  }
+};
+
 
   console.log('[DEBUG] Payload being sent to Xsolla:', JSON.stringify(payload, null, 2));
 
