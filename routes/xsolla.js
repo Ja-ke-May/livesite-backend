@@ -2,7 +2,7 @@ const express = require('express');
 const axios = require('axios');
 const router = express.Router();
 
-const API_KEY = process.env.XSOLLA_API_KEY;         
+const API_KEY = process.env.MYME_API_KEY;         
 const PROJECT_ID = process.env.XSOLLA_PROJECT_ID; 
 
 router.post('/get-token', async (req, res) => {
