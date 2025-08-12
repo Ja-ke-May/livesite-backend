@@ -7,7 +7,7 @@ const ajv = new Ajv({ allErrors: true });
 
 const PROJECT_ID = Number(process.env.XSOLLA_PROJECT_ID);
 const MERCHANT_ID = process.env.XSOLLA_MERCHANT_ID;
-const OAUTH_ACCESS_TOKEN = process.env.XSOLLA_OAUTH_ACCESS_TOKEN;
+const OAUTH_ACCESS_TOKEN = process.env.XSOLLA_API_KEY;
 
 const skuMap = {
   tokens_400: { amount: 0.99, tokens: 400 },
