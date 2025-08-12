@@ -105,6 +105,7 @@ router.post('/profile-picture', upload.single('profilePicture'), authMiddleware,
   }
 });
 
+
 router.post('/signup', async (req, res) => {
   try {
     const { userName, email, password, dob, marketingConsent } = req.body;
@@ -673,6 +674,26 @@ router.put('/comment/color', authMiddleware, async (req, res) => {
   } catch (err) {
     console.error('Error updating color:', err);
     res.status(500).json({ error: 'Server error, please try again later' });
+  }
+}); 
+
+router.get('/notifications/count', getUser, async (req, res) => {
+  try {
+    const user = req.userData;
+
+    // Count unread activities
+    const unreadCount = user.recentActivity.filter(act => !act.read).length;
+
+    // Mark all as read
+    user.recentActivity.forEach(act => {
+      act.read = true;
+    });
+
+    await user.save();
+
+    return res.json({ unreadCount });
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
   }
 });
 
