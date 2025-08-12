@@ -21,40 +21,38 @@ router.post('/get-token', async (req, res) => {
     return res.status(400).json({ error: 'Missing username or sku' });
   }
 
-  const purchase = skuMap[sku];
-  if (!purchase) {
+  // Validate SKU
+  if (!skuMap[sku]) {
     return res.status(400).json({ error: 'Invalid sku' });
   }
 
   try {
     const payload = {
       user: {
-        id: username, 
-      },
-      settings: {
-        project_id: PROJECT_ID,
+        id: String(username), 
       },
       purchase: {
         virtual_items: [
           {
             sku: sku,
-            quantity: 1
+            quantity: 1,
           }
         ],
-        price: purchase.amount,
-        currency: "GBP"
+      },
+      settings: {
+        project_id: Number(PROJECT_ID),
       }
     };
 
     const authHeader = `Basic ${Buffer.from(`${XSOLLA_MERCHANT_ID}:${MERCHANT_API_KEY}`).toString('base64')}`;
 
     const response = await axios.post(
-      `https://api.xsolla.com/merchant/v2/merchants/${XSOLLA_MERCHANT_ID}/token`,
+      `https://api.xsolla.com/merchant/v2/merchants/${XSOLLA_MERCHANT_ID}/projects/${PROJECT_ID}/token`,
       payload,
       {
         headers: {
-          'Authorization': authHeader,
-          'Content-Type': 'application/json'
+          Authorization: authHeader,
+          'Content-Type': 'application/json',
         }
       }
     );
@@ -74,6 +72,5 @@ router.post('/get-token', async (req, res) => {
     return res.status(500).json({ error: 'Failed to create payment token' });
   }
 });
-
 
 module.exports = router;
