@@ -5,10 +5,12 @@ const Ajv = require('ajv');
 
 const ajv = new Ajv({ allErrors: true });
 
+// Env vars
 const PROJECT_ID = Number(process.env.XSOLLA_PROJECT_ID);
 const MERCHANT_ID = process.env.XSOLLA_MERCHANT_ID;
 const OAUTH_ACCESS_TOKEN = process.env.XSOLLA_API_KEY;
 
+// SKU map with item IDs as numbers
 const skuMap = {
   tokens_400: { item_id: 1055102, amount: 0.99, tokens: 400 },
   tokens_1000: { item_id: 1055103, amount: 19.99, tokens: 1000 },
@@ -17,8 +19,10 @@ const skuMap = {
   tokens_10000: { item_id: 1055106, amount: 99.99, tokens: 10000 },
 };
 
-const skuKeys = Object.keys(skuMap);
+// Extract numeric string item IDs for schema keys
+const itemIds = Object.values(skuMap).map(item => item.item_id.toString());
 
+// Payload schema allowing numeric string keys in virtual_items
 const payloadSchema = {
   type: 'object',
   properties: {
@@ -32,7 +36,7 @@ const payloadSchema = {
           },
           required: ['value'],
           additionalProperties: false,
-        },
+        }
       },
       required: ['id'],
       additionalProperties: false,
@@ -44,11 +48,11 @@ const payloadSchema = {
           type: 'object',
           minProperties: 1,
           additionalProperties: false,
-          properties: skuKeys.reduce((acc, sku) => {
-            acc[sku] = { type: 'integer', minimum: 1 };
+          properties: itemIds.reduce((acc, id) => {
+            acc[id] = { type: 'integer', minimum: 1 };
             return acc;
-          }, {}),
-        },
+          }, {})
+        }
       },
       required: ['virtual_items'],
       additionalProperties: false,
@@ -82,13 +86,15 @@ router.post('/get-token', async (req, res) => {
     });
   }
 
+  const itemId = skuMap[sku].item_id.toString();
+
   const payload = {
     user: {
       id: { value: username },
     },
     purchase: {
       virtual_items: {
-        [sku]: 1,
+        [itemId]: 1,
       },
     },
   };
