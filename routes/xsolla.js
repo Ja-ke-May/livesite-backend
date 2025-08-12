@@ -29,11 +29,9 @@ router.post('/get-token', async (req, res) => {
   try {
     const payload = {
       user: {
-        id: String(username), // user id as string
+        id: username, 
       },
       settings: {
-        locale: "en",
-        currency: "GBP",
         project_id: PROJECT_ID,
       },
       purchase: {
