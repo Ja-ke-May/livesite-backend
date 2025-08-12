@@ -17,7 +17,8 @@ const skuMap = {
   tokens_10000: { item_id: 1055106, amount: 99.99, tokens: 10000 },
 };
 
-const skuKeys = Object.keys(skuMap);
+// Extract item_ids as strings for schema keys
+const itemIds = Object.values(skuMap).map(({ item_id }) => item_id.toString());
 
 const payloadSchema = {
   type: 'object',
@@ -44,8 +45,8 @@ const payloadSchema = {
           type: 'object',
           minProperties: 1,
           additionalProperties: false,
-          properties: skuKeys.reduce((acc, sku) => {
-            acc[sku] = { type: 'integer', minimum: 1 };
+          properties: itemIds.reduce((acc, id) => {
+            acc[id] = { type: 'integer', minimum: 1 };
             return acc;
           }, {})
         }
@@ -82,13 +83,15 @@ router.post('/get-token', async (req, res) => {
     });
   }
 
+  const itemIdStr = skuMap[sku].item_id.toString();
+
   const payload = {
     user: {
-      id: { value: String(username) }
+      id: { value: username }
     },
     purchase: {
       virtual_items: {
-        [sku]: 1
+        [itemIdStr]: 1
       }
     }
   };
