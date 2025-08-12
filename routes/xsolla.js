@@ -2,9 +2,9 @@ const express = require('express');
 const router = express.Router();
 const axios = require('axios');
 
-const PROJECT_ID = process.env.XSOLLA_PROJECT_ID; 
+const PROJECT_ID = process.env.XSOLLA_PROJECT_ID;
 const MERCHANT_API_KEY = process.env.XSOLLA_API_KEY;
-const XSOLLA_MERCHANT_ID = process.env.XSOLLA_MERCHANT_ID; 
+const MERCHANT_ID = process.env.XSOLLA_MERCHANT_ID;
 
 const skuMap = {
   tokens_400: { amount: 0.99, tokens: 400 },
@@ -21,7 +21,6 @@ router.post('/get-token', async (req, res) => {
     return res.status(400).json({ error: 'Missing username or sku' });
   }
 
-  // Validate SKU
   if (!skuMap[sku]) {
     return res.status(400).json({ error: 'Invalid sku' });
   }
@@ -29,33 +28,31 @@ router.post('/get-token', async (req, res) => {
   try {
     const payload = {
       user: {
-        id: String(username), 
+        id: String(username),
       },
       purchase: {
         virtual_items: [
           {
             sku: sku,
             quantity: 1,
-          }
+          },
         ],
       },
       settings: {
         project_id: Number(PROJECT_ID),
-      }
+      },
     };
 
-    const authHeader = `Basic ${Buffer.from(`${XSOLLA_MERCHANT_ID}:${MERCHANT_API_KEY}`).toString('base64')}`;
+    const authHeader = `Basic ${Buffer.from(`${MERCHANT_ID}:${MERCHANT_API_KEY}`).toString('base64')}`;
 
-    const response = await axios.post(
-      `https://api.xsolla.com/merchant/v2/merchants/${XSOLLA_MERCHANT_ID}/projects/${PROJECT_ID}/token`,
-      payload,
-      {
-        headers: {
-          Authorization: authHeader,
-          'Content-Type': 'application/json',
-        }
-      }
-    );
+    const url = `https://api.xsolla.com/merchant/merchants/${MERCHANT_ID}/token`;
+
+    const response = await axios.post(url, payload, {
+      headers: {
+        Authorization: authHeader,
+        'Content-Type': 'application/json',
+      },
+    });
 
     const { token } = response.data;
 
@@ -68,7 +65,7 @@ router.post('/get-token', async (req, res) => {
     return res.json({ paymentUrl });
 
   } catch (error) {
-    console.error('Xsolla API error:', error.response?.data || error.message);
+    console.error('Xsolla CAPI error:', error.response?.data || error.message);
     return res.status(500).json({ error: 'Failed to create payment token' });
   }
 });
