@@ -90,7 +90,6 @@ router.post('/get-token', async (req, res) => {
     project_id: PROJECT_ID,
   };
 
-  // Validate payload before sending
   const valid = validatePayload(payload);
   if (!valid) {
     return res.status(400).json({ error: 'Payload validation failed', details: validatePayload.errors });
@@ -98,7 +97,7 @@ router.post('/get-token', async (req, res) => {
 
   try {
     const response = await axios.post(
-      `https://api.xsolla.com/merchant/v2/merchants/${MERCHANT_ID}/token`,
+      `https://api.xsolla.com/merchant/v2/merchants/${MERCHANT_ID}/projects/${PROJECT_ID}/token`,
       payload,
       {
         headers: {
