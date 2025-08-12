@@ -10,12 +10,15 @@ const MERCHANT_ID = process.env.XSOLLA_MERCHANT_ID;
 const OAUTH_ACCESS_TOKEN = process.env.XSOLLA_API_KEY;
 
 const skuMap = {
-  tokens_400: { item_id: tokens_400, amount: 0.99, tokens: 400 },
-  tokens_1000: { item_id: tokens_1000, amount: 19.99, tokens: 1000 },
-  tokens_2000: { item_id: tokens_2000, amount: 29.99, tokens: 2000 },
-  tokens_4000: { item_id: tokens_4000, amount: 49.99, tokens: 4000 },
-  tokens_10000: { item_id: tokens_10000, amount: 99.99, tokens: 10000 },
+  tokens_400: { item_id: 1055102, amount: 0.99, tokens: 400 },
+  tokens_1000: { item_id: 1055103, amount: 19.99, tokens: 1000 },
+  tokens_2000: { item_id: 1055104, amount: 29.99, tokens: 2000 },
+  tokens_4000: { item_id: 1055105, amount: 49.99, tokens: 4000 },
+  tokens_10000: { item_id: 1055106, amount: 99.99, tokens: 10000 },
 };
+
+// Extract stringified item_ids for schema keys
+const itemIds = Object.values(skuMap).map(({ item_id }) => item_id.toString());
 
 const payloadSchema = {
   type: 'object',
@@ -41,10 +44,11 @@ const payloadSchema = {
         virtual_items: {
           type: 'object',
           minProperties: 1,
-          patternProperties: {
-            '^[0-9]+$': { type: 'integer', minimum: 1 }
-          },
-          additionalProperties: false
+          additionalProperties: false,
+          properties: itemIds.reduce((acc, id) => {
+            acc[id] = { type: 'integer', minimum: 1 };
+            return acc;
+          }, {})
         }
       },
       required: ['virtual_items'],
@@ -82,15 +86,15 @@ router.post('/get-token', async (req, res) => {
   const xsollaItemId = skuMap[sku].item_id;
 
   const payload = {
-  user: {
-    id: { value: String(username) }
-  },
-  purchase: {
-    virtual_items: {
-      [xsollaItemId.toString()]: 1
+    user: {
+      id: { value: String(username) }
+    },
+    purchase: {
+      virtual_items: {
+        [xsollaItemId.toString()]: 1
+      }
     }
-  }
-};
+  };
 
   console.log('[DEBUG] Payload being sent to Xsolla:', JSON.stringify(payload, null, 2));
 
