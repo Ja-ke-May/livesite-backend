@@ -39,8 +39,17 @@ const payloadSchema = {
       type: 'object',
       properties: {
         virtual_items: {
-          type: 'object',
-          additionalProperties: { type: 'integer', minimum: 1 }
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              sku: { type: 'string' },
+              quantity: { type: 'integer', minimum: 1 }
+            },
+            required: ['sku', 'quantity'],
+            additionalProperties: false
+          },
+          minItems: 1
         }
       },
       required: ['virtual_items'],
@@ -50,7 +59,6 @@ const payloadSchema = {
   required: ['user', 'purchase'],
   additionalProperties: false
 };
-
 
 const validatePayload = ajv.compile(payloadSchema);
 
@@ -69,16 +77,19 @@ router.post('/get-token', async (req, res) => {
     return res.status(400).json({ error: 'Invalid username format (only letters, numbers, underscore, dash allowed)' });
   }
 
- const payload = {
-  user: {
-    id: { value: String(username) }
-  },
-  purchase: {
-    virtual_items: {
-      [sku]: 1
+  const payload = {
+    user: {
+      id: { value: String(username) }
+    },
+    purchase: {
+      virtual_items: [
+        {
+          sku: sku,
+          quantity: 1
+        }
+      ]
     }
-  }
-};
+  };
 
   const valid = validatePayload(payload);
   if (!valid) {
@@ -87,16 +98,15 @@ router.post('/get-token', async (req, res) => {
 
   try {
     const response = await axios.post(
-  `https://api.xsolla.com/merchant/v2/projects/${PROJECT_ID}/token`,
-  payload,
-  {
-    headers: {
-      Authorization: `Basic ${Buffer.from(`${MERCHANT_ID}:${OAUTH_ACCESS_TOKEN}`).toString('base64')}`,
-      'Content-Type': 'application/json',
-    },
-  }
-);
-
+      `https://api.xsolla.com/merchant/v2/projects/${PROJECT_ID}/token`,
+      payload,
+      {
+        headers: {
+          Authorization: `Basic ${Buffer.from(`${MERCHANT_ID}:${OAUTH_ACCESS_TOKEN}`).toString('base64')}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
 
     const { token } = response.data;
 
@@ -105,7 +115,6 @@ router.post('/get-token', async (req, res) => {
     }
 
     const paymentUrl = `https://secure.xsolla.com/paystation3/?access_token=${token}`;
-
     return res.json({ paymentUrl });
 
   } catch (error) {
