@@ -2,24 +2,26 @@ const express = require('express');
 const axios = require('axios');
 const router = express.Router();
 
-const API_KEY = process.env.XSOLLA_API_KEY;
-const PROJECT_ID = process.env.XSOLLA_PROJECT_ID;
+const API_KEY = process.env.XSOLLA_API_KEY;            // Xsolla API key (password)
+const MERCHANT_ID = process.env.XSOLLA_MERCHANT_ID;    // Xsolla Merchant ID (username)
+const PROJECT_ID = process.env.XSOLLA_PROJECT_ID;      // Xsolla Project ID
 
 router.post('/get-token', async (req, res) => {
-  const { username, sku } = req.body;
+  const { username, sku, sandbox } = req.body;
 
   if (!username || !sku) {
     return res.status(400).json({ error: 'Missing username or SKU' });
   }
 
+  // Payload must use "purchase.items" for admin token flow
   const payload = {
     user: {
       id: { value: username }
     },
     purchase: {
-      virtual_items: {
-        items: [{ sku, amount: 1 }]
-      }
+      items: [
+        { sku, quantity: 1 }
+      ]
     },
     settings: {
       language: 'en',
@@ -27,9 +29,15 @@ router.post('/get-token', async (req, res) => {
     }
   };
 
+  // Optional: allow sandbox mode toggle
+  if (sandbox === true) {
+    payload.sandbox = true;
+  }
+
   console.log('==================');
-  console.log('[Xsolla CAPI] Attempting token generation with:');
+  console.log('[Xsolla CAPI] Attempting admin token generation with:');
   console.log('PROJECT_ID:', PROJECT_ID);
+  console.log('MERCHANT_ID:', MERCHANT_ID);
   console.log('Username:', username);
   console.log('SKU:', sku);
   console.log('Payload:\n', JSON.stringify(payload, null, 2));
@@ -37,12 +45,15 @@ router.post('/get-token', async (req, res) => {
 
   try {
     const response = await axios.post(
-      `https://api.xsolla.com/api/v2/project/${PROJECT_ID}/payment/token`,
+      `https://api.xsolla.com/api/v2/project/${PROJECT_ID}/admin/payment/token`,
       payload,
       {
         auth: {
-          username: API_KEY,
-          password: ''
+          username: MERCHANT_ID.toString(),
+          password: API_KEY
+        },
+        headers: {
+          'Content-Type': 'application/json'
         }
       }
     );
@@ -51,8 +62,8 @@ router.post('/get-token', async (req, res) => {
     console.log('Response:', response.data);
 
     const token = response.data.token;
-    const paymentUrl = `https://secure.xsolla.com/paystation4/?access_token=${token}`;
-    res.json({ paymentUrl });
+    const paymentUrl = `https://secure.xsolla.com/paystation4/?token=${token}`;
+    res.json({ paymentUrl, raw: response.data });
 
   } catch (err) {
     console.error('[Xsolla CAPI] Error getting token:');
@@ -61,7 +72,10 @@ router.post('/get-token', async (req, res) => {
     } else {
       console.error('Error message:', err.message);
     }
-    res.status(500).json({ error: 'Failed to get Xsolla token' });
+    res.status(500).json({
+      error: 'Failed to get Xsolla token',
+      details: err.response?.data || err.message
+    });
   }
 });
 
