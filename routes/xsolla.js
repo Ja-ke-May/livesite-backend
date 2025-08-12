@@ -40,15 +40,11 @@ const payloadSchema = {
       properties: {
         virtual_items: {
           type: 'object',
-  minItems: 1,
-  items: {
-    type: 'object',
           minProperties: 1,
           patternProperties: {
             '^[a-zA-Z0-9_\\-]+$': { type: 'integer', minimum: 1 }
           },
           additionalProperties: false
-       }
         }
       },
       required: ['virtual_items'],
