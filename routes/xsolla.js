@@ -80,7 +80,7 @@ const payload = {
       items: [
         {
           sku: sku,
-          amount: skuMap[sku].amount
+          // amount: skuMap[sku].amount
         }
       ]
     }
