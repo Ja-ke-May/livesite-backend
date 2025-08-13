@@ -9,12 +9,13 @@ const OAUTH_ACCESS_TOKEN = process.env.XSOLLA_API_KEY;
 
 // Map SKUs to item details
 const skuMap = {
-  tokens_400: { item_id: 1055102, amount: 0.99, tokens: 400 },
-  tokens_1000: { item_id: 1055103, amount: 19.99, tokens: 1000 },
-  tokens_2000: { item_id: 1055104, amount: 29.99, tokens: 2000 },
-  tokens_4000: { item_id: 1055105, amount: 49.99, tokens: 4000 },
-  tokens_10000: { item_id: 1055106, amount: 99.99, tokens: 10000 },
+  tokens_400: { item_id: 1055102, amount: 99, tokens: 400 },
+  tokens_1000: { item_id: 1055103, amount: 1999, tokens: 1000 },
+  tokens_2000: { item_id: 1055104, amount: 2999, tokens: 2000 },
+  tokens_4000: { item_id: 1055105, amount: 4999, tokens: 4000 },
+  tokens_10000: { item_id: 1055106, amount: 9999, tokens: 10000 },
 };
+
 
 // Helper: Fetch live SKUs from Xsolla
 async function fetchAvailableSKUs() {
