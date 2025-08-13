@@ -18,7 +18,7 @@ const skuMap = {
   tokens_10000: { item_id: 1055106, amount: 99.99, tokens: 10000 },
 };
 
-const skuKeys = Object.keys(skuMap);
+const itemIdKeys = Object.values(skuMap).map(item => item.item_id.toString());
 
 const payloadSchema = {
   type: 'object',
@@ -45,8 +45,8 @@ const payloadSchema = {
           type: 'object',
           minProperties: 1,
           additionalProperties: false,
-          properties: skuKeys.reduce((acc, sku) => {
-            acc[sku] = { type: 'integer', minimum: 1 };
+          properties: itemIdKeys.reduce((acc, id) => {
+            acc[id] = { type: 'integer', minimum: 1 };
             return acc;
           }, {})
         }
@@ -58,7 +58,6 @@ const payloadSchema = {
   required: ['user', 'purchase'],
   additionalProperties: false,
 };
-
 
 const validatePayload = ajv.compile(payloadSchema);
 
@@ -84,16 +83,29 @@ router.post('/get-token', async (req, res) => {
     });
   }
 
+  // Show the SKU → item_id mapping for debugging
+  console.log('\n[DEBUG] SKU to Item ID Mapping:');
+  console.table(
+    Object.entries(skuMap).map(([skuName, data]) => ({
+      SKU: skuName,
+      item_id: data.item_id,
+      price: `$${data.amount}`,
+      tokens: data.tokens
+    }))
+  );
+
+  const itemIdStr = skuMap[sku].item_id.toString();
+
   const payload = {
-  user: {
-    id: { value: username }
-  },
-  purchase: {
-    virtual_items: {
-      [sku]: 1
+    user: {
+      id: { value: username }
+    },
+    purchase: {
+      virtual_items: {
+        [itemIdStr]: 1
+      }
     }
-  }
-};
+  };
 
   console.log('[DEBUG] Payload being sent to Xsolla:', JSON.stringify(payload, null, 2));
 
