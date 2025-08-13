@@ -2,9 +2,8 @@ const express = require('express');
 const router = express.Router();
 const axios = require('axios');
 
-const PROJECT_ID = process.env.XSOLLA_PROJECT_ID;
-const MERCHANT_ID = process.env.XSOLLA_MERCHANT_ID;
-const API_KEY = process.env.XSOLLA_API_KEY;
+const PROJECT_ID = process.env.XSOLLA_PROJECT_ID;   // e.g. "123456"
+const API_KEY = process.env.XSOLLA_API_KEY;         // CAPI secret (Project settings → API key)
 
 const tokenCounts = {
   tokens_400: 400,
@@ -14,13 +13,13 @@ const tokenCounts = {
   tokens_10000: 10000,
 };
 
-// 1. Get OAuth token from Xsolla
+// 1. Get OAuth token from Xsolla (CAPI)
 async function getOAuthToken() {
   const url = 'https://login.xsolla.com/api/oauth2/token';
   const params = new URLSearchParams();
   params.append('grant_type', 'client_credentials');
-  params.append('client_id', MERCHANT_ID);
-  params.append('client_secret', API_KEY);
+  params.append('client_id', PROJECT_ID);   // IMPORTANT: PROJECT_ID, not Merchant ID
+  params.append('client_secret', API_KEY);  // Project API key/secret
 
   const res = await axios.post(url, params, {
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
@@ -28,13 +27,13 @@ async function getOAuthToken() {
   return res.data.access_token;
 }
 
-// 2. Fetch live SKU data from Store API
-async function fetchLiveSkuData(sku) {
+// 2. Fetch live SKU data from Store API using OAuth
+async function fetchLiveSkuData(sku, oauthToken) {
   try {
     const url = `https://store.xsolla.com/api/v2/project/${PROJECT_ID}/items/virtual_items`;
     const res = await axios.get(url, {
       headers: {
-        Authorization: `Basic ${Buffer.from(`${MERCHANT_ID}:${API_KEY}`).toString('base64')}`,
+        Authorization: `Bearer ${oauthToken}`,
         'Content-Type': 'application/json',
       },
     });
@@ -63,33 +62,33 @@ router.post('/get-token', async (req, res) => {
     return res.status(400).json({ error: 'Invalid username format' });
   }
 
-  console.log('[DEBUG] Fetching live SKU data...');
-  const skuData = await fetchLiveSkuData(sku);
-  if (!skuData) {
-    return res.status(400).json({ error: `SKU '${sku}' not found in Xsolla store` });
-  }
-  console.log(`[DEBUG] SKU fetched: ${skuData.name} - ${skuData.price} ${skuData.currency}`);
-
-  const payload = {
-    user: { id: { value: username } },
-    settings: {
-      return_url: 'https://myme.live/shop',
-      language: 'en'
-    },
-    purchase: {
-      virtual_items: [
-        { sku: skuData.sku, quantity: 1 }
-      ]
-    }
-  };
-  console.log('[DEBUG] Payload being sent to Xsolla (CAPI):', JSON.stringify(payload, null, 2));
-
   try {
-    // Get OAuth access token
+    // Get OAuth token once
     const oauthToken = await getOAuthToken();
 
-    // Call Merchant API
-    const TOKEN_URL = `https://api.xsolla.com/merchant/v2/projects/${PROJECT_ID}/token`;
+    console.log('[DEBUG] Fetching live SKU data...');
+    const skuData = await fetchLiveSkuData(sku, oauthToken);
+    if (!skuData) {
+      return res.status(400).json({ error: `SKU '${sku}' not found in Xsolla store` });
+    }
+    console.log(`[DEBUG] SKU fetched: ${skuData.name} - ${skuData.price} ${skuData.currency}`);
+
+    const payload = {
+      user: { id: { value: username } },
+      settings: {
+        return_url: 'https://myme.live/shop',
+        language: 'en'
+      },
+      purchase: {
+        virtual_items: [
+          { sku: skuData.sku, quantity: 1 }
+        ]
+      }
+    };
+    console.log('[DEBUG] Payload being sent to Xsolla (CAPI):', JSON.stringify(payload, null, 2));
+
+    // Call CAPI to create payment token
+    const TOKEN_URL = `https://store.xsolla.com/api/v2/project/${PROJECT_ID}/payment/token`;
     const response = await axios.post(TOKEN_URL, payload, {
       headers: {
         Authorization: `Bearer ${oauthToken}`,
