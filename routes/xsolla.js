@@ -10,7 +10,7 @@ const PROJECT_ID = Number(process.env.XSOLLA_PROJECT_ID);
 const MERCHANT_ID = process.env.XSOLLA_MERCHANT_ID;
 const OAUTH_ACCESS_TOKEN = process.env.XSOLLA_API_KEY;
 
-// SKU map with item details
+
 const skuMap = {
   tokens_400: { item_id: 1055102, amount: 0.99, tokens: 400 },
   tokens_1000: { item_id: 1055103, amount: 19.99, tokens: 1000 },
@@ -19,7 +19,7 @@ const skuMap = {
   tokens_10000: { item_id: 1055106, amount: 99.99, tokens: 10000 },
 };
 
-const itemIdKeys = Object.values(skuMap).map(item => item.item_id.toString());
+const skuKeys = Object.keys(skuMap);
 
 const payloadSchema = {
   type: 'object',
@@ -46,8 +46,8 @@ const payloadSchema = {
           type: 'object',
           minProperties: 1,
           additionalProperties: false,
-          properties: itemIdKeys.reduce((acc, id) => {
-            acc[id] = { type: 'integer', minimum: 1 };
+          properties: skuKeys.reduce((acc, sku) => {
+            acc[sku] = { type: 'integer', minimum: 1 };
             return acc;
           }, {}),
         },
@@ -84,19 +84,18 @@ router.post('/get-token', async (req, res) => {
     });
   }
 
-  // Convert SKU to item_id string as required by Xsolla
-  const itemIdStr = skuMap[sku].item_id.toString();
+  
 
   const payload = {
-    user: {
-      id: { value: username },
-    },
-    purchase: {
-      virtual_items: {
-        [itemIdStr]: 1,
-      },
-    },
-  };
+  user: {
+    id: { value: username }
+  },
+  purchase: {
+    virtual_items: {
+      [sku]: 1
+    }
+  }
+};
 
   console.log('[DEBUG] Payload being sent to Xsolla:', JSON.stringify(payload, null, 2));
 
