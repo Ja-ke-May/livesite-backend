@@ -19,10 +19,8 @@ const skuMap = {
   tokens_10000: { item_id: 1055106, amount: 99.99, tokens: 10000 },
 };
 
-// Extract item_id strings for AJV schema keys
 const itemIdKeys = Object.values(skuMap).map(item => item.item_id.toString());
 
-// AJV schema validating only allowed item_id keys in virtual_items
 const payloadSchema = {
   type: 'object',
   properties: {
