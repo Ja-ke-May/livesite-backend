@@ -10,7 +10,6 @@ const PROJECT_ID = Number(process.env.XSOLLA_PROJECT_ID);
 const MERCHANT_ID = process.env.XSOLLA_MERCHANT_ID;
 const OAUTH_ACCESS_TOKEN = process.env.XSOLLA_API_KEY;
 
-
 const skuMap = {
   tokens_400: { item_id: 1055102, amount: 0.99, tokens: 400 },
   tokens_1000: { item_id: 1055103, amount: 19.99, tokens: 1000 },
@@ -18,9 +17,6 @@ const skuMap = {
   tokens_4000: { item_id: 1055105, amount: 49.99, tokens: 4000 },
   tokens_10000: { item_id: 1055106, amount: 99.99, tokens: 10000 },
 };
-
-// Extract all item IDs as strings for AJV schema validation
-const itemIdKeys = Object.values(skuMap).map(item => item.item_id.toString());
 
 const payloadSchema = {
   type: 'object',
@@ -31,11 +27,11 @@ const payloadSchema = {
         id: {
           type: 'object',
           properties: {
-            value: { type: 'string', pattern: '^[a-zA-Z0-9_\\-]+$' }
+            value: { type: 'string', pattern: '^[a-zA-Z0-9_\\-]+$' },
           },
           required: ['value'],
           additionalProperties: false,
-        }
+        },
       },
       required: ['id'],
       additionalProperties: false,
@@ -44,13 +40,17 @@ const payloadSchema = {
       type: 'object',
       properties: {
         virtual_items: {
-          type: 'object',
-          minProperties: 1,
-          additionalProperties: false,
-          properties: itemIdKeys.reduce((acc, id) => {
-            acc[id] = { type: 'integer', minimum: 1 };
-            return acc;
-          }, {}),
+          type: 'array',
+          minItems: 1,
+          items: {
+            type: 'object',
+            properties: {
+              item_id: { type: 'integer' },
+              quantity: { type: 'integer', minimum: 1 },
+            },
+            required: ['item_id', 'quantity'],
+            additionalProperties: false,
+          },
         },
       },
       required: ['virtual_items'],
@@ -85,17 +85,18 @@ router.post('/get-token', async (req, res) => {
     });
   }
 
-  const itemIdStr = skuMap[sku].item_id.toString();
-
   const payload = {
     user: {
-      id: { value: username }
+      id: { value: username },
     },
     purchase: {
-      virtual_items: {
-        [itemIdStr]: 1
-      }
-    }
+      virtual_items: [
+        {
+          item_id: skuMap[sku].item_id,
+          quantity: 1,
+        },
+      ],
+    },
   };
 
   console.log('[DEBUG] Payload being sent to Xsolla:', JSON.stringify(payload, null, 2));
