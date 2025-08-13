@@ -76,7 +76,7 @@ const payload = {
   },
   purchase: {
     virtual_items: {
-      [sku]: 1
+      [skuMap[sku].item_id]: 1
     }
   }
 };
