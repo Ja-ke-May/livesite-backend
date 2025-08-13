@@ -75,9 +75,9 @@ router.post('/get-token', async (req, res) => {
     id: { value: username }
   },
   purchase: {
-    virtual_items: [
-      { sku, quantity: 1 }
-    ]
+    virtual_items: {
+      [String(skuMap[sku].item_id)]: 1  
+    }
   }
 };
 
