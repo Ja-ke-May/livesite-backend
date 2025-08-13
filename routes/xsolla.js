@@ -3,7 +3,7 @@ const router = express.Router();
 const axios = require('axios');
 
 const PROJECT_ID = process.env.XSOLLA_PROJECT_ID;   // e.g. "123456"
-const API_KEY = process.env.XSOLLA_API_KEY;         // CAPI secret (Project settings → API key)
+const API_KEY = process.env.MYME_API_KEY;         // CAPI secret (Project settings → API key)
 
 const tokenCounts = {
   tokens_400: 400,
