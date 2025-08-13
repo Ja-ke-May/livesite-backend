@@ -1,11 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const axios = require('axios');
-const Ajv = require('ajv');
 
-const ajv = new Ajv({ allErrors: true });
-
-// Env vars
 const PROJECT_ID = Number(process.env.XSOLLA_PROJECT_ID);
 const MERCHANT_ID = process.env.XSOLLA_MERCHANT_ID;
 const OAUTH_ACCESS_TOKEN = process.env.XSOLLA_API_KEY;
@@ -18,72 +14,25 @@ const skuMap = {
   tokens_10000: { item_id: 1055106, amount: 99.99, tokens: 10000 },
 };
 
-const itemIdKeys = Object.values(skuMap).map(item => item.item_id.toString());
-
-const payloadSchema = {
-  type: 'object',
-  properties: {
-    user: {
-      type: 'object',
-      properties: {
-        id: {
-          type: 'object',
-          properties: {
-            value: { type: 'string', pattern: '^[a-zA-Z0-9_\\-]+$' }
-          },
-          required: ['value'],
-          additionalProperties: false,
-        }
-      },
-      required: ['id'],
-      additionalProperties: false,
-    },
-    purchase: {
-      type: 'object',
-      properties: {
-        virtual_items: {
-          type: 'object',
-          minProperties: 1,
-          additionalProperties: false,
-          properties: itemIdKeys.reduce((acc, id) => {
-            acc[id] = { type: 'integer', minimum: 1 };
-            return acc;
-          }, {})
-        }
-      },
-      required: ['virtual_items'],
-      additionalProperties: false,
-    }
-  },
-  required: ['user', 'purchase'],
-  additionalProperties: false,
-};
-
-const validatePayload = ajv.compile(payloadSchema);
-
 router.post('/get-token', async (req, res) => {
   const { username, sku } = req.body;
 
   console.log('[DEBUG] Incoming request:', req.body);
 
+  // Basic validation
   if (!username || !sku) {
-    console.warn('[WARN] Missing username or SKU');
     return res.status(400).json({ error: 'Missing username or sku' });
   }
-
   if (!skuMap[sku]) {
-    console.warn('[WARN] Invalid SKU:', sku);
     return res.status(400).json({ error: 'Invalid sku' });
   }
-
   if (!/^[a-zA-Z0-9_\-]+$/.test(username)) {
-    console.warn('[WARN] Invalid username format:', username);
     return res.status(400).json({
       error: 'Invalid username format (only letters, numbers, underscore, dash allowed)',
     });
   }
 
-  // Show the SKU → item_id mapping for debugging
+  // Debug SKU map
   console.log('\n[DEBUG] SKU to Item ID Mapping:');
   console.table(
     Object.entries(skuMap).map(([skuName, data]) => ({
@@ -94,26 +43,22 @@ router.post('/get-token', async (req, res) => {
     }))
   );
 
-  const itemIdStr = skuMap[sku].item_id.toString();
-
+  // Xsolla expects this array format
   const payload = {
     user: {
       id: { value: username }
     },
     purchase: {
-      virtual_items: {
-        [itemIdStr]: 1
-      }
+      virtual_items: [
+        {
+          sku: sku,       // Use the SKU string ("tokens_400")
+          quantity: 1
+        }
+      ]
     }
   };
 
   console.log('[DEBUG] Payload being sent to Xsolla:', JSON.stringify(payload, null, 2));
-
-  const valid = validatePayload(payload);
-  if (!valid) {
-    console.error('[ERROR] Payload validation failed:', validatePayload.errors);
-    return res.status(400).json({ error: 'Payload validation failed', details: validatePayload.errors });
-  }
 
   try {
     const response = await axios.post(
@@ -130,17 +75,19 @@ router.post('/get-token', async (req, res) => {
     console.log('[DEBUG] Xsolla API response:', response.data);
 
     const { token } = response.data;
-
     if (!token) {
-      console.error('[ERROR] No token in Xsolla response');
       return res.status(500).json({ error: 'Failed to get payment token from Xsolla' });
     }
 
-    const paymentUrl = `https://secure.xsolla.com/paystation4/?access_token=${token}`;
-    return res.json({ paymentUrl });
+    return res.json({
+      paymentUrl: `https://secure.xsolla.com/paystation4/?access_token=${token}`
+    });
   } catch (error) {
     console.error('[ERROR] Xsolla CAPI error:', error.response?.data || error.message);
-    return res.status(500).json({ error: 'Failed to create payment token', details: error.response?.data || error.message });
+    return res.status(500).json({
+      error: 'Failed to create payment token',
+      details: error.response?.data || error.message
+    });
   }
 });
 
