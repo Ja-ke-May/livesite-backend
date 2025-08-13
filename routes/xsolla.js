@@ -76,10 +76,16 @@ const payload = {
   },
   purchase: {
     virtual_items: {
-      tokens_400: 1
+      items: [
+        {
+          item_id: skuMap[sku].item_id,
+          quantity: 1
+        }
+      ]
     }
   }
 };
+
 
   console.log('[DEBUG] Payload being sent to Xsolla:', JSON.stringify(payload, null, 2));
 
