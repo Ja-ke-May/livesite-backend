@@ -75,11 +75,15 @@ const payload = {
     id: { value: username }
   },
   purchase: {
-    virtual_items: {
-      [skuMap[sku].item_id]: 1
-    }
+    virtual_items: [
+      {
+        item_id: skuMap[sku].item_id,
+        quantity: 1
+      }
+    ]
   }
 };
+
 
 
   console.log('[DEBUG] Payload being sent to Xsolla:', JSON.stringify(payload, null, 2));
