@@ -78,8 +78,8 @@ const payload = {
     virtual_items: {
       items: [
         {
-          item_id: skuMap[sku].item_id,
-          quantity: 1
+          sku: sku,
+          amount: skuMap[sku].amount
         }
       ]
     }
