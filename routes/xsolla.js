@@ -82,19 +82,23 @@ router.post('/get-token', async (req, res) => {
     }
   };
 
-  console.log('[DEBUG] Payload being sent to Xsolla (CAPI):', JSON.stringify(payload, null, 2));
+  console.log('[DEBUG] Payload being sent to Xsolla (CAPI):', JSON.stringify(payload, null, 2)); 
+
+  const TOKEN_URL = `https://api.xsolla.com/merchant/v2/projects/${PROJECT_ID}/payment/token`;
+
+
 
   try {
     const response = await axios.post(
-      `https://store.xsolla.com/api/v2/project/${PROJECT_ID}/payment/token`,
-      payload,
-      {
-        headers: {
-          Authorization: `Bearer ${OAUTH_ACCESS_TOKEN}`,
-          'Content-Type': 'application/json'
-        }
-      }
-    );
+  TOKEN_URL,
+  payload,
+  {
+    headers: {
+      Authorization: `Bearer ${OAUTH_ACCESS_TOKEN}`, 
+      'Content-Type': 'application/json'
+    }
+  }
+);
 
     console.log('[DEBUG] Xsolla API response:', response.data);
 
