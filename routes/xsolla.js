@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const axios = require('axios');
 
-const PROJECT_ID = process.env.XSOLLA_MERCHANT_ID;   
+const PROJECT_ID = process.env.XSOLLA_API_KEY;   
 const API_KEY = process.env.MYME_API_KEY;        
 
 const tokenCounts = {
