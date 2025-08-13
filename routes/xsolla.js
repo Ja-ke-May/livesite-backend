@@ -129,7 +129,7 @@ router.post('/get-token', async (req, res) => {
       return res.status(500).json({ error: 'Failed to get payment token from Xsolla' });
     }
 
-    const paymentUrl = `https://secure.xsolla.com/paystation3/?access_token=${token}`;
+    const paymentUrl = `https://secure.xsolla.com/paystation4/?access_token=${token}`;
     return res.json({ paymentUrl });
   } catch (error) {
     console.error('[ERROR] Xsolla CAPI error:', error.response?.data || error.message);
