@@ -19,7 +19,7 @@ const skuMap = {
 // Helper: Fetch live SKUs from Xsolla
 async function fetchAvailableSKUs() {
   try {
-    const url = `https://api.xsolla.com/merchant/v2/projects/${PROJECT_ID}/items/virtual_items`;
+    const url = `https://store.xsolla.com/api/v2/project/${PROJECT_ID}/items/virtual_items`;
     const res = await axios.get(url, {
       headers: {
         Authorization: `Basic ${Buffer.from(`${MERCHANT_ID}:${OAUTH_ACCESS_TOKEN}`).toString('base64')}`,
