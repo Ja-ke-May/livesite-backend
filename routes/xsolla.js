@@ -18,6 +18,8 @@ const skuMap = {
   tokens_10000: { item_id: 1055106, amount: 99.99, tokens: 10000 },
 };
 
+const skuKeys = Object.keys(skuMap);
+
 const payloadSchema = {
   type: 'object',
   properties: {
@@ -27,11 +29,11 @@ const payloadSchema = {
         id: {
           type: 'object',
           properties: {
-            value: { type: 'string', pattern: '^[a-zA-Z0-9_\\-]+$' },
+            value: { type: 'string', pattern: '^[a-zA-Z0-9_\\-]+$' }
           },
           required: ['value'],
           additionalProperties: false,
-        },
+        }
       },
       required: ['id'],
       additionalProperties: false,
@@ -40,26 +42,23 @@ const payloadSchema = {
       type: 'object',
       properties: {
         virtual_items: {
-          type: 'array',
-          minItems: 1,
-          items: {
-            type: 'object',
-            properties: {
-              item_id: { type: 'integer' },
-              quantity: { type: 'integer', minimum: 1 },
-            },
-            required: ['item_id', 'quantity'],
-            additionalProperties: false,
-          },
-        },
+          type: 'object',
+          minProperties: 1,
+          additionalProperties: false,
+          properties: skuKeys.reduce((acc, sku) => {
+            acc[sku] = { type: 'integer', minimum: 1 };
+            return acc;
+          }, {})
+        }
       },
       required: ['virtual_items'],
       additionalProperties: false,
-    },
+    }
   },
   required: ['user', 'purchase'],
   additionalProperties: false,
 };
+
 
 const validatePayload = ajv.compile(payloadSchema);
 
@@ -86,18 +85,15 @@ router.post('/get-token', async (req, res) => {
   }
 
   const payload = {
-    user: {
-      id: { value: username },
-    },
-    purchase: {
-      virtual_items: [
-        {
-          item_id: skuMap[sku].item_id,
-          quantity: 1,
-        },
-      ],
-    },
-  };
+  user: {
+    id: { value: username }
+  },
+  purchase: {
+    virtual_items: {
+      [sku]: 1
+    }
+  }
+};
 
   console.log('[DEBUG] Payload being sent to Xsolla:', JSON.stringify(payload, null, 2));
 
