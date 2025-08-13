@@ -76,11 +76,10 @@ router.post('/get-token', async (req, res) => {
   },
   purchase: {
     virtual_items: {
-      [skuMap[sku].item_id]: 1
+      [sku]: 1  
     }
   }
 };
-
 
   console.log('[DEBUG] Payload being sent to Xsolla:', JSON.stringify(payload, null, 2));
 
