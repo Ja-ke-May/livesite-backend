@@ -70,16 +70,16 @@ router.post('/get-token', async (req, res) => {
     });
   }
 
-  const payload = {
-    user: {
-      id: { value: username }
-    },
-    purchase: {
-      virtual_items: [
-        { sku: sku, quantity: 1 } // ✅ Use array with sku/quantity
-      ]
+const payload = {
+  user: {
+    id: { value: username }
+  },
+  purchase: {
+    virtual_items: {
+      [skuMap[sku].item_id]: 1
     }
-  };
+  }
+};
 
   console.log('[DEBUG] Payload being sent to Xsolla:', JSON.stringify(payload, null, 2));
 
