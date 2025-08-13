@@ -14,10 +14,10 @@ const tokenCounts = {
   tokens_10000: 10000,
 };
 
-// Fetch SKU details from CAPI
+// Fetch SKU details from Merchant API instead of CAPI
 async function fetchSkuData(sku) {
   try {
-    const url = `https://store.xsolla.com/api/v2/project/${PROJECT_ID}/items/virtual_items`;
+    const url = `https://api.xsolla.com/merchant/v2/projects/${PROJECT_ID}/virtual_items`;
     const res = await axios.get(url, {
       headers: {
         Authorization: `Basic ${Buffer.from(`${MERCHANT_ID}:${API_KEY}`).toString('base64')}`,
@@ -29,12 +29,11 @@ async function fetchSkuData(sku) {
       ? { sku: item.sku, name: item.name, price: item.price.amount, currency: item.price.currency }
       : null;
   } catch (err) {
-    console.error('[ERROR] Failed to fetch SKU from Xsolla:', err.response?.data || err.message);
+    console.error('[ERROR] Failed to fetch SKU from Merchant API:', err.response?.data || err.message);
     return null;
   }
 }
 
-// Route to generate CAPI payment token
 router.post('/get-token', async (req, res) => {
   const { username, sku } = req.body;
   console.log('[DEBUG] Incoming request:', req.body);
@@ -49,7 +48,7 @@ router.post('/get-token', async (req, res) => {
   try {
     const skuData = await fetchSkuData(sku);
     if (!skuData) {
-      return res.status(400).json({ error: `SKU '${sku}' not found in Xsolla store` });
+      return res.status(400).json({ error: `SKU '${sku}' not found` });
     }
     console.log(`[DEBUG] SKU fetched: ${skuData.name} - ${skuData.price} ${skuData.currency}`);
 
@@ -65,17 +64,17 @@ router.post('/get-token', async (req, res) => {
         language: 'en'
       }
     };
-    console.log('[DEBUG] Payload being sent to Xsolla (CAPI):', JSON.stringify(payload, null, 2));
+    console.log('[DEBUG] Payload to Merchant API:', JSON.stringify(payload, null, 2));
 
-    const TOKEN_URL = `https://store.xsolla.com/api/v2/project/${PROJECT_ID}/payment/token`;
+    const TOKEN_URL = `https://api.xsolla.com/merchant/v2/projects/${PROJECT_ID}/token`;
     const response = await axios.post(TOKEN_URL, payload, {
       headers: {
         Authorization: `Basic ${Buffer.from(`${MERCHANT_ID}:${API_KEY}`).toString('base64')}`,
-        'Content-Type': 'application/json'
-      }
+        'Content-Type': 'application/json',
+      },
     });
 
-    console.log('[DEBUG] Xsolla API response:', response.data);
+    console.log('[DEBUG] Merchant API response:', response.data);
 
     const { token } = response.data;
     if (!token) {
@@ -92,7 +91,7 @@ router.post('/get-token', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('[ERROR] Xsolla API error:', error.response?.data || error.message);
+    console.error('[ERROR] Merchant API error:', error.response?.data || error.message);
     return res.status(500).json({
       error: 'Failed to create payment token',
       details: error.response?.data || error.message
