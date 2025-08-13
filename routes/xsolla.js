@@ -21,7 +21,6 @@ router.post('/get-token', async (req, res) => {
 
   console.log('[DEBUG] Incoming request:', req.body);
 
-  // Basic validation
   if (!username || !sku) {
     return res.status(400).json({ error: 'Missing username or sku' });
   }
@@ -32,7 +31,6 @@ router.post('/get-token', async (req, res) => {
     return res.status(400).json({ error: 'Invalid username format' });
   }
 
-  // Show SKU table for debugging
   console.log('\n[DEBUG] SKU to Item ID Mapping:');
   console.table(
     Object.entries(skuMap).map(([skuName, data]) => ({
@@ -43,18 +41,16 @@ router.post('/get-token', async (req, res) => {
     }))
   );
 
-  // Build payload in Xsolla's expected array format
+  const itemId = skuMap[sku].item_id;
+
   const payload = {
     user: {
       id: { value: username }
     },
     purchase: {
-      virtual_items: [
-        {
-          sku: sku, // e.g. "tokens_400"
-          quantity: 1
-        }
-      ]
+      virtual_items: {
+        [itemId]: 1
+      }
     }
   };
 
