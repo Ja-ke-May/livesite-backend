@@ -16,6 +16,23 @@ const skuMap = {
   tokens_10000: { item_id: 1055106, amount: 99.99, tokens: 10000 },
 };
 
+// Helper: Fetch live SKUs from Xsolla
+async function fetchAvailableSKUs() {
+  try {
+    const url = `https://api.xsolla.com/merchant/v2/projects/${PROJECT_ID}/items/virtual_items`;
+    const res = await axios.get(url, {
+      headers: {
+        Authorization: `Basic ${Buffer.from(`${MERCHANT_ID}:${OAUTH_ACCESS_TOKEN}`).toString('base64')}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    return res.data?.items?.map(item => item.sku) || [];
+  } catch (err) {
+    console.error('[ERROR] Failed to fetch SKUs from Xsolla:', err.response?.data || err.message);
+    return [];
+  }
+}
+
 router.post('/get-token', async (req, res) => {
   const { username, sku } = req.body;
 
@@ -25,7 +42,7 @@ router.post('/get-token', async (req, res) => {
     return res.status(400).json({ error: 'Missing username or sku' });
   }
   if (!skuMap[sku]) {
-    return res.status(400).json({ error: 'Invalid sku' });
+    return res.status(400).json({ error: 'Invalid sku (not in local map)' });
   }
   if (!/^[a-zA-Z0-9_\-]+$/.test(username)) {
     return res.status(400).json({ error: 'Invalid username format' });
@@ -41,18 +58,28 @@ router.post('/get-token', async (req, res) => {
     }))
   );
 
-  
+  // 🔍 Live SKU check
+  console.log('[DEBUG] Fetching live SKUs from Xsolla...');
+  const availableSKUs = await fetchAvailableSKUs();
+  console.log('[DEBUG] Live SKUs:', availableSKUs);
+
+  if (!availableSKUs.includes(sku)) {
+    return res.status(400).json({ 
+      error: `SKU '${sku}' not found in live Xsolla store`,
+      availableSKUs 
+    });
+  }
 
   const payload = {
-  user: {
-    id: { value: username }
-  },
-  purchase: {
-    virtual_items: {
-      [sku]: 1
+    user: {
+      id: { value: username }
+    },
+    purchase: {
+      virtual_items: [
+        { sku: sku, quantity: 1 } // ✅ Use array with sku/quantity
+      ]
     }
-  }
-};
+  };
 
   console.log('[DEBUG] Payload being sent to Xsolla:', JSON.stringify(payload, null, 2));
 
