@@ -2,8 +2,8 @@ const express = require('express');
 const router = express.Router();
 const axios = require('axios');
 
-const PROJECT_ID = process.env.XSOLLA_PROJECT_ID;   // e.g. "123456"
-const API_KEY = process.env.MYME_API_KEY;         // CAPI secret (Project settings → API key)
+const PROJECT_ID = process.env.XSOLLA_MERCHANT_ID;   
+const API_KEY = process.env.MYME_API_KEY;        
 
 const tokenCounts = {
   tokens_400: 400,
@@ -18,8 +18,8 @@ async function getOAuthToken() {
   const url = 'https://login.xsolla.com/api/oauth2/token';
   const params = new URLSearchParams();
   params.append('grant_type', 'client_credentials');
-  params.append('client_id', PROJECT_ID);   // IMPORTANT: PROJECT_ID, not Merchant ID
-  params.append('client_secret', API_KEY);  // Project API key/secret
+  params.append('client_id', PROJECT_ID);   
+  params.append('client_secret', API_KEY);  
 
   const res = await axios.post(url, params, {
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
