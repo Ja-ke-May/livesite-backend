@@ -21,7 +21,7 @@ async function fetchLiveSkuData(sku) {
     const url = `https://store.xsolla.com/api/v2/project/${PROJECT_ID}/items/virtual_items`;
     const res = await axios.get(url, {
       headers: {
-        Authorization: `Bearer ${OAUTH_ACCESS_TOKEN}`, // ✅ CAPI uses Bearer
+        Authorization: `Bearer ${OAUTH_ACCESS_TOKEN}`, 
         'Content-Type': 'application/json',
       },
     });
@@ -84,7 +84,7 @@ router.post('/get-token', async (req, res) => {
 
   console.log('[DEBUG] Payload being sent to Xsolla (CAPI):', JSON.stringify(payload, null, 2)); 
 
-  const TOKEN_URL = `https://api.xsolla.com/merchant/v2/projects/${PROJECT_ID}/payment/token`;
+  const TOKEN_URL = `https://api.xsolla.com/merchant/v2/projects/${PROJECT_ID}/token`;
 
 
 
