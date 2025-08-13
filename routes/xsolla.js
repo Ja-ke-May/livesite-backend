@@ -70,17 +70,16 @@ router.post('/get-token', async (req, res) => {
     });
   }
 
-  // ✅ FIX: Use SKU as key, not numeric item_id
-  const payload = {
-    user: {
-      id: { value: username }
-    },
-    purchase: {
-      virtual_items: {
-        [sku]: 1 // use SKU key
-      }
-    }
-  };
+ const payload = {
+  user: {
+    id: { value: username }
+  },
+  purchase: {
+    virtual_items: [
+      { sku, quantity: 1 }
+    ]
+  }
+};
 
   console.log('[DEBUG] Payload being sent to Xsolla:', JSON.stringify(payload, null, 2));
 
