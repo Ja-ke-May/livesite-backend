@@ -76,7 +76,7 @@ router.post('/get-token', async (req, res) => {
   },
   purchase: {
     virtual_items: {
-      [sku]: 1
+      [skuMap[sku].item_id]: 1
     }
   }
 };
@@ -103,7 +103,7 @@ router.post('/get-token', async (req, res) => {
       return res.status(500).json({ error: 'Failed to get payment token from Xsolla' });
     }
 
-    const paymentUrl = `https://secure.xsolla.com/paystation4/?access_token=${token}`;
+    const paymentUrl = `https://secure.xsolla.com/paystation4/?token=${token}`;
     return res.json({ paymentUrl });
 
   } catch (error) {
