@@ -7,18 +7,17 @@ const PROJECT_ID = Number(process.env.XSOLLA_PROJECT_ID);
 const MERCHANT_ID = process.env.XSOLLA_MERCHANT_ID;
 const OAUTH_ACCESS_TOKEN = process.env.XSOLLA_API_KEY;
 
-// Map SKUs to item details
-const skuMap = {
-  tokens_400: { item_id: 1055102, amount: 99, tokens: 400 },
-  tokens_1000: { item_id: 1055103, amount: 1999, tokens: 1000 },
-  tokens_2000: { item_id: 1055104, amount: 2999, tokens: 2000 },
-  tokens_4000: { item_id: 1055105, amount: 4999, tokens: 4000 },
-  tokens_10000: { item_id: 1055106, amount: 9999, tokens: 10000 },
+// Optional token mapping (only if you need to track token count for your own DB)
+const tokenCounts = {
+  tokens_400: 400,
+  tokens_1000: 1000,
+  tokens_2000: 2000,
+  tokens_4000: 4000,
+  tokens_10000: 10000,
 };
 
-
-// Helper: Fetch live SKUs from Xsolla
-async function fetchAvailableSKUs() {
+// Helper: Fetch live SKU details from Xsolla
+async function fetchLiveSkuData(sku) {
   try {
     const url = `https://store.xsolla.com/api/v2/project/${PROJECT_ID}/items/virtual_items`;
     const res = await axios.get(url, {
@@ -27,10 +26,26 @@ async function fetchAvailableSKUs() {
         'Content-Type': 'application/json',
       },
     });
-    return res.data?.items?.map(item => item.sku) || [];
+
+    if (!res.data?.items) return null;
+
+    const item = res.data.items.find(i => i.sku === sku);
+    if (!item) return null;
+
+    // Convert to minor units (Xsolla expects cents)
+    const amountMinor = Math.round(item.price.amount * 100);
+
+    return {
+      sku: item.sku,
+      amount: amountMinor,
+      name: item.name,
+      price: item.price.amount,
+      currency: item.price.currency,
+    };
+
   } catch (err) {
-    console.error('[ERROR] Failed to fetch SKUs from Xsolla:', err.response?.data || err.message);
-    return [];
+    console.error('[ERROR] Failed to fetch SKU from Xsolla:', err.response?.data || err.message);
+    return null;
   }
 }
 
@@ -39,54 +54,39 @@ router.post('/get-token', async (req, res) => {
 
   console.log('[DEBUG] Incoming request:', req.body);
 
+  // Basic validation
   if (!username || !sku) {
     return res.status(400).json({ error: 'Missing username or sku' });
-  }
-  if (!skuMap[sku]) {
-    return res.status(400).json({ error: 'Invalid sku (not in local map)' });
   }
   if (!/^[a-zA-Z0-9_\-]+$/.test(username)) {
     return res.status(400).json({ error: 'Invalid username format' });
   }
 
-  console.log('\n[DEBUG] SKU to Item ID Mapping:');
-  console.table(
-    Object.entries(skuMap).map(([skuName, data]) => ({
-      SKU: skuName,
-      item_id: data.item_id,
-      price: `$${data.amount}`,
-      tokens: data.tokens
-    }))
-  );
-
-  // 🔍 Live SKU check
-  console.log('[DEBUG] Fetching live SKUs from Xsolla...');
-  const availableSKUs = await fetchAvailableSKUs();
-  console.log('[DEBUG] Live SKUs:', availableSKUs);
-
-  if (!availableSKUs.includes(sku)) {
-    return res.status(400).json({
-      error: `SKU '${sku}' not found in live Xsolla store`,
-      availableSKUs
-    });
+  // Get live SKU details
+  console.log('[DEBUG] Fetching SKU data from live Xsolla store...');
+  const skuData = await fetchLiveSkuData(sku);
+  if (!skuData) {
+    return res.status(400).json({ error: `SKU '${sku}' not found in live Xsolla store` });
   }
 
-const payload = {
-  user: {
-    id: { value: username }
-  },
-  purchase: {
-    virtual_items: {
-      items: [
-        {
-          sku: sku,
-          // amount: skuMap[sku].amount
-        }
-      ]
+  console.log(`[DEBUG] Live SKU price: ${skuData.price} ${skuData.currency} (${skuData.amount} in minor units)`);
+
+  // Build payload for Xsolla token creation
+  const payload = {
+    user: {
+      id: { value: username }
+    },
+    purchase: {
+      virtual_items: {
+        items: [
+          {
+            sku: skuData.sku,
+            amount: skuData.amount
+          }
+        ]
+      }
     }
-  }
-};
-
+  };
 
   console.log('[DEBUG] Payload being sent to Xsolla:', JSON.stringify(payload, null, 2));
 
@@ -110,7 +110,13 @@ const payload = {
     }
 
     const paymentUrl = `https://secure.xsolla.com/paystation4/?token=${token}`;
-    return res.json({ paymentUrl });
+    return res.json({
+      paymentUrl,
+      sku: skuData.sku,
+      price: skuData.price,
+      currency: skuData.currency,
+      tokens: tokenCounts[sku] || null
+    });
 
   } catch (error) {
     console.error('[ERROR] Xsolla API error:', error.response?.data || error.message);
