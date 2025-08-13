@@ -64,22 +64,23 @@ router.post('/get-token', async (req, res) => {
   console.log('[DEBUG] Live SKUs:', availableSKUs);
 
   if (!availableSKUs.includes(sku)) {
-    return res.status(400).json({ 
+    return res.status(400).json({
       error: `SKU '${sku}' not found in live Xsolla store`,
-      availableSKUs 
+      availableSKUs
     });
   }
 
-const payload = {
-  user: {
-    id: { value: username }
-  },
-  purchase: {
-    virtual_items: {
-      [skuMap[sku].item_id]: 1
+  // ✅ FIX: Use SKU as key, not numeric item_id
+  const payload = {
+    user: {
+      id: { value: username }
+    },
+    purchase: {
+      virtual_items: {
+        [sku]: 1 // use SKU key
+      }
     }
-  }
-};
+  };
 
   console.log('[DEBUG] Payload being sent to Xsolla:', JSON.stringify(payload, null, 2));
 
