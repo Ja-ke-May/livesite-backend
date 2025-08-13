@@ -71,22 +71,22 @@ router.post('/get-token', async (req, res) => {
 
   console.log(`[DEBUG] Live SKU price: ${skuData.price} ${skuData.currency} (${skuData.amount} in minor units)`);
 
-  // Build payload for Xsolla token creation
-  const payload = {
-    user: {
-      id: { value: username }
-    },
-    purchase: {
-      virtual_items: {
-        items: [
-          {
-            sku: skuData.sku,
-            amount: skuData.amount
-          }
-        ]
-      }
+ const payload = {
+  user: {
+    id: { value: username }
+  },
+  purchase: {
+    virtual_items: {
+      items: [
+        {
+          sku: skuData.sku,
+          amount: skuData.amount
+        }
+      ],
+      currency: skuData.currency 
     }
-  };
+  }
+};
 
   console.log('[DEBUG] Payload being sent to Xsolla:', JSON.stringify(payload, null, 2));
 
