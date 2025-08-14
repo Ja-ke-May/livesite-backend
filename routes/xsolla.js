@@ -40,23 +40,27 @@ router.post('/get-token', async (req, res) => {
       }
     };
 
+    console.log('[DEBUG] Sending payload to Xsolla:', JSON.stringify(payload, null, 2));
+
     const TOKEN_URL = `https://api.xsolla.com/merchant/v2/projects/${process.env.XSOLLA_PROJECT_ID}/token`;
 
     const response = await axios.post(TOKEN_URL, payload, {
       auth: {
-        username: process.env.XSOLLA_MERCHANT_ID.trim(), // Merchant ID
-        password: process.env.XSOLLA_API_KEY.trim()      // Merchant API Key
+        username: process.env.XSOLLA_MERCHANT_ID.trim(),
+        password: process.env.XSOLLA_API_KEY.trim()
       },
       headers: {
         'Content-Type': 'application/json'
       }
     });
 
+    console.log('[DEBUG] Xsolla API full response:', JSON.stringify(response.data, null, 2));
+
     const { token } = response.data;
     if (!token) throw new Error('No payment token received');
 
     return res.json({
-      paymentUrl: `https://secure.xsolla.com/paystation4/?token=${token}&sandbox=1`,
+      paymentUrl: `https://secure.xsolla.com/paystation4?token=${token}&sandbox=1`,
       sku,
       tokens: tokenCounts[sku] || null
     });
