@@ -25,12 +25,14 @@ router.post('/get-token', async (req, res) => {
         id: { value: username }
       },
       purchase: {
-        virtual_items: [
-          {
-            sku,
-            amount: 1
-          }
-        ]
+        virtual_items: {
+          items: [
+            {
+              sku,
+              amount: 1
+            }
+          ]
+        }
       },
       settings: {
         return_url: 'https://myme.live/shop',
@@ -40,11 +42,11 @@ router.post('/get-token', async (req, res) => {
 
     console.log('[DEBUG] Sending payload to Xsolla (CAPI):', JSON.stringify(payload, null, 2));
 
-    const TOKEN_URL = `https://api.xsolla.com/merchant/v2/projects/${process.env.XSOLLA_PROJECT_ID}/token`;
+    const TOKEN_URL = `https://api.xsolla.com/paystation/v2/projects/${process.env.XSOLLA_PROJECT_ID}/token`;
 
     const response = await axios.post(TOKEN_URL, payload, {
       auth: {
-        username: process.env.XSOLLA_MERCHANT_ID.trim(), 
+        username: process.env.XSOLLA_MERCHANT_ID.trim(),
         password: process.env.XSOLLA_API_KEY.trim()
       },
       headers: {
@@ -52,7 +54,8 @@ router.post('/get-token', async (req, res) => {
       }
     });
 
-    console.log('[DEBUG] Xsolla API full response:', JSON.stringify(response.data, null, 2));
+    console.log('[DEBUG] Xsolla API full raw response headers:', response.headers);
+    console.log('[DEBUG] Xsolla API full raw response body:', JSON.stringify(response.data, null, 2));
 
     const { token } = response.data;
     if (!token) throw new Error('No payment token received');
@@ -64,7 +67,11 @@ router.post('/get-token', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('[ERROR] CAPI API error:', error.response?.data || error.message);
+    console.error('[ERROR] CAPI API error (full):', {
+      status: error.response?.status,
+      headers: error.response?.headers,
+      data: error.response?.data
+    });
     res.status(error.response?.status || 500).json({
       error: 'Failed to create payment token',
       details: error.response?.data || error.message
