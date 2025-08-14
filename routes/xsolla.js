@@ -60,7 +60,7 @@ router.post('/get-token', async (req, res) => {
     if (!token) throw new Error('No payment token received');
 
     return res.json({
-      paymentUrl: `https://secure.xsolla.com/paystation4/?token=${token}&sandbox=1`,
+      paymentUrl: `https://sandbox-secure.xsolla.com/paystation4/?token=${token}`,
       sku,
       tokens: tokenCounts[sku] || null
     });
