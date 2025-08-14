@@ -47,7 +47,7 @@ router.post('/get-token', async (req, res) => {
     // API Key auth (username = API key, password = empty)
     const response = await axios.post(TOKEN_URL, payload, {
       auth: {
-        username: process.env.XSOLLA_API_KEY,
+        username: process.env.MYME_API_KEY,
         password: ''
       },
       headers: {
