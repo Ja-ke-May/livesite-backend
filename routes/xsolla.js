@@ -1,4 +1,3 @@
-// routes/xsolla.js
 const express = require('express');
 const axios = require('axios');
 
@@ -26,14 +25,12 @@ router.post('/get-token', async (req, res) => {
         id: { value: username }
       },
       purchase: {
-        virtual_items: {
-          items: [
-            {
-              sku: sku,
-              amount: 1
-            }
-          ]
-        }
+        virtual_items: [
+          {
+            sku: sku,
+            amount: 1
+          }
+        ]
       },
       settings: {
         return_url: 'https://myme.live/shop',
@@ -41,17 +38,17 @@ router.post('/get-token', async (req, res) => {
       }
     };
 
-    const TOKEN_URL = `https://api.xsolla.com/api/v2/project/${process.env.XSOLLA_PROJECT_ID}/token`;
+    const TOKEN_URL = `https://api.xsolla.com/merchant/v2/projects/${process.env.XSOLLA_PROJECT_ID}/token`;
 
-const response = await axios.post(TOKEN_URL, payload, {
-  auth: {
-    username: process.env.MYME_API_KEY,
-    password: ''
-  },
-  headers: {
-    'Content-Type': 'application/json'
-  }
-});
+    const response = await axios.post(TOKEN_URL, payload, {
+      auth: {
+        username: process.env.XSOLLA_API_KEY.trim(), // Merchant API Key here
+        password: ''
+      },
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
 
     const { token } = response.data;
     if (!token) throw new Error('No payment token received');
