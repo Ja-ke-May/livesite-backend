@@ -1,10 +1,9 @@
-// routes/payments.js
+// routes/xsolla.js
 const express = require('express');
 const axios = require('axios');
 
 const router = express.Router();
 
-// Mapping of SKUs to token amounts for your reference
 const tokenCounts = {
   tokens_400: 400,
   tokens_1000: 1000,
@@ -22,7 +21,6 @@ router.post('/get-token', async (req, res) => {
   }
 
   try {
-    // CAPI payload structure
     const payload = {
       user: {
         id: { value: username }
@@ -43,10 +41,10 @@ router.post('/get-token', async (req, res) => {
       }
     };
 
-    // CAPI token creation endpoint
-    const TOKEN_URL = `https://api.xsolla.com/api/v2/project/${process.env.XSOLLA_PROJECT_ID}/token`;
+    // Correct CAPI token endpoint
+    const TOKEN_URL = `https://api.xsolla.com/merchant/v2/projects/${process.env.XSOLLA_PROJECT_ID}/token`;
 
-    // Auth for CAPI: API key as username, password left empty
+    // API Key auth (username = API key, password = empty)
     const response = await axios.post(TOKEN_URL, payload, {
       auth: {
         username: process.env.XSOLLA_API_KEY,
@@ -68,7 +66,7 @@ router.post('/get-token', async (req, res) => {
 
   } catch (error) {
     console.error('[ERROR] CAPI API error:', error.response?.data || error.message);
-    res.status(500).json({
+    res.status(error.response?.status || 500).json({
       error: 'Failed to create payment token',
       details: error.response?.data || error.message
     });
