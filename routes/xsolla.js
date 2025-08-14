@@ -38,7 +38,7 @@ router.post('/get-token', async (req, res) => {
   const payload = {
     user: {
       id: { value: username }, 
-      email: "info@myme.live" 
+      email: { value: "info@myme.live" } 
     },
     purchase: {
       virtual_items: {
