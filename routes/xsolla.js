@@ -24,16 +24,12 @@ router.post('/get-token', async (req, res) => {
       user: {
         id: { value: username }
       },
-      purchase: {
-        virtual_items: {
-          items: [
-            {
-              sku: sku,
-              amount: 1
-            }
-          ]
-        }
-      },
+     purchase: {
+  virtual_items: {
+    sku: sku,
+    amount: 1
+  }
+},
       settings: {
         return_url: 'https://myme.live/shop',
         language: 'en'
