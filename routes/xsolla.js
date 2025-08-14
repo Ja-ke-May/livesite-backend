@@ -12,14 +12,14 @@ const tokenCounts = {
 };
 
 router.post('/get-token', async (req, res) => {
-  const { username, sku, email } = req.body;
+  const { username, sku } = req.body;
   console.log('================== XSOLLA DEBUG START ==================');
   console.log('[DEBUG] Incoming request body:', req.body);
 
-  if (!username || !sku || !email) { // check email
-    console.log('[ERROR] Missing username, sku, or email');
+  if (!username || !sku) {
+    console.log('[ERROR] Missing username or sku');
     console.log('=================== XSOLLA DEBUG END ===================');
-    return res.status(400).json({ error: 'Missing username, sku, or email' });
+    return res.status(400).json({ error: 'Missing username or sku' });
   }
 
   // Mask sensitive data
@@ -37,7 +37,7 @@ router.post('/get-token', async (req, res) => {
 
   const payload = {
     user: {
-      id: { value: username },
+      id: { value: username }, 
       email: "info@myme.live" 
     },
     purchase: {
