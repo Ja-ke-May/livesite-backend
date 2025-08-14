@@ -41,19 +41,17 @@ router.post('/get-token', async (req, res) => {
       }
     };
 
-    // Correct CAPI token endpoint
-    const TOKEN_URL = `https://api.xsolla.com/merchant/v2/projects/${process.env.XSOLLA_PROJECT_ID}/token`;
+    const TOKEN_URL = `https://api.xsolla.com/api/v2/project/${process.env.XSOLLA_PROJECT_ID}/token`;
 
-    // API Key auth (username = API key, password = empty)
-    const response = await axios.post(TOKEN_URL, payload, {
-      auth: {
-        username: process.env.MYME_API_KEY,
-        password: ''
-      },
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    });
+const response = await axios.post(TOKEN_URL, payload, {
+  auth: {
+    username: process.env.MYME_API_KEY.trim(),
+    password: ''
+  },
+  headers: {
+    'Content-Type': 'application/json'
+  }
+});
 
     const { token } = response.data;
     if (!token) throw new Error('No payment token received');
