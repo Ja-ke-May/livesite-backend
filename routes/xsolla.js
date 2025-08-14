@@ -20,6 +20,7 @@ router.post('/get-token', async (req, res) => {
   }
 
   try {
+    // Correct payload structure based on Xsolla schema
     const payload = {
       user: {
         id: { value: username }
@@ -40,8 +41,9 @@ router.post('/get-token', async (req, res) => {
       }
     };
 
-    console.log('[DEBUG] Sending payload to Xsolla (CAPI):', JSON.stringify(payload, null, 2));
+    console.log('[DEBUG] Sending payload to Xsolla (Pay Station v2):', JSON.stringify(payload, null, 2));
 
+    // Correct endpoint for Pay Station v2 token creation (production)
     const TOKEN_URL = `https://api.xsolla.com/paystation/v2/projects/${process.env.XSOLLA_PROJECT_ID}/token`;
 
     const response = await axios.post(TOKEN_URL, payload, {
@@ -54,20 +56,20 @@ router.post('/get-token', async (req, res) => {
       }
     });
 
-    console.log('[DEBUG] Xsolla API full raw response headers:', response.headers);
-    console.log('[DEBUG] Xsolla API full raw response body:', JSON.stringify(response.data, null, 2));
+    console.log('[DEBUG] Xsolla API response headers:', response.headers);
+    console.log('[DEBUG] Xsolla API response body:', JSON.stringify(response.data, null, 2));
 
     const { token } = response.data;
-    if (!token) throw new Error('No payment token received');
+    if (!token) throw new Error('No payment token received from Xsolla');
 
     return res.json({
-      paymentUrl: `https://secure.xsolla.com/paystation4/?token=${token}`, 
+      paymentUrl: `https://secure.xsolla.com/paystation4/?token=${token}`,
       sku,
       tokens: tokenCounts[sku] || null
     });
 
   } catch (error) {
-    console.error('[ERROR] CAPI API error (full):', {
+    console.error('[ERROR] CAPI API error details:', {
       status: error.response?.status,
       headers: error.response?.headers,
       data: error.response?.data
