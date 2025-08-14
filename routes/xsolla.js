@@ -29,7 +29,6 @@ router.post('/get-token', async (req, res) => {
      purchase: {
         virtual_items: {
           sku: sku,
-          quantity: 1
         }
       },
       settings: {
