@@ -44,7 +44,7 @@ router.post('/get-token', async (req, res) => {
 
     const response = await axios.post(TOKEN_URL, payload, {
       auth: {
-        username: process.env.XSOLLA_PROJECT_ID.trim(), 
+        username: process.env.XSOLLA_MERCHANT_ID.trim(), 
         password: process.env.XSOLLA_API_KEY.trim()
       },
       headers: {
