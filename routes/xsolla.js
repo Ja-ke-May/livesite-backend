@@ -22,29 +22,30 @@ router.post('/get-token', async (req, res) => {
   }
 
   try {
-    
     const payload = {
-  user: {
-    id: { value: username }
-  },
-  purchase: {
-    virtual_items: [
-      { sku: sku, amount: 1 }
-    ]
-  },
-  settings: {
-    return_url: 'https://myme.live/shop',
-    language: 'en'
-  }
-};
-
-
+      user: {
+        id: { value: username }
+      },
+      purchase: {
+        virtual_items: {
+          items: [
+            { sku: sku, amount: 1 }
+          ]
+        }
+      },
+      settings: {
+        return_url: 'https://myme.live/shop',
+        language: 'en'
+      }
+    };
 
     const TOKEN_URL = `https://api.xsolla.com/merchant/v2/projects/${process.env.XSOLLA_PROJECT_ID}/token`;
     
     const response = await axios.post(TOKEN_URL, payload, {
       headers: {
-        Authorization: `Basic ${Buffer.from(`${process.env.XSOLLA_MERCHANT_ID}:${process.env.XSOLLA_API_KEY}`).toString('base64')}`,
+        Authorization: `Basic ${Buffer.from(
+          `${process.env.XSOLLA_MERCHANT_ID}:${process.env.XSOLLA_API_KEY}`
+        ).toString('base64')}`,
         'Content-Type': 'application/json',
       },
     });
