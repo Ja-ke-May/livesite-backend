@@ -30,18 +30,17 @@ router.post('/get-token', async (req, res) => {
   }
 
   try {
+    
     const payload = {
   user: {
     id: { value: username }
   },
   purchase: {
-  virtual_items: [
-    {
+    virtual_items: {
       id: itemIds[sku],
       quantity: 1
     }
-  ]
-},
+  },
   settings: {
     return_url: 'https://myme.live/shop',
     language: 'en'
