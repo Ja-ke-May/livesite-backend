@@ -42,8 +42,8 @@ router.post('/get-token', async (req, res) => {
 
     const response = await axios.post(TOKEN_URL, payload, {
       auth: {
-        username: process.env.XSOLLA_API_KEY.trim(), // Merchant API Key here
-        password: ''
+        username: process.env.XSOLLA_MERCHANT_ID.trim(), // Merchant ID here
+        password: process.env.XSOLLA_API_KEY.trim()      // Merchant API Key here
       },
       headers: {
         'Content-Type': 'application/json'
