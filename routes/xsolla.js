@@ -4,7 +4,6 @@ const axios = require('axios');
 
 const router = express.Router();
 
-// Map SKUs to token amounts for your frontend display
 const tokenCounts = {
   tokens_400: 400,
   tokens_1000: 1000,
@@ -26,10 +25,10 @@ router.post('/get-token', async (req, res) => {
       user: {
         id: { value: username }
       },
-     purchase: {
-        virtual_items: {
-          sku: sku,
-        }
+      purchase: {
+        virtual_items: [
+          { sku: sku, quantity: 1 }
+        ]
       },
       settings: {
         return_url: 'https://myme.live/shop',
@@ -38,7 +37,7 @@ router.post('/get-token', async (req, res) => {
     };
 
     const TOKEN_URL = `https://api.xsolla.com/merchant/v2/projects/${process.env.XSOLLA_PROJECT_ID}/token`;
-    
+
     const response = await axios.post(TOKEN_URL, payload, {
       headers: {
         Authorization: `Basic ${Buffer.from(
@@ -59,12 +58,11 @@ router.post('/get-token', async (req, res) => {
 
   } catch (error) {
     console.error('[ERROR] Merchant API error:', error.response?.data || error.message);
-    res.status(500).json({ 
-      error: 'Failed to create payment token', 
-      details: error.response?.data || error.message 
+    res.status(500).json({
+      error: 'Failed to create payment token',
+      details: error.response?.data || error.message
     });
   }
 });
 
 module.exports = router;
-
