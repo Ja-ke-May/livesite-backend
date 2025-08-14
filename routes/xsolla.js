@@ -22,22 +22,21 @@ router.post('/get-token', async (req, res) => {
 
   try {
     const payload = {
-      user: {
-        id: { value: username }
-      },
-      purchase: {
-  virtual_items: [
-    {
+  user: {
+    id: { value: username }
+  },
+  purchase: {
+    virtual_items: {
       sku: sku,
       quantity: 1
     }
-  ]
-},
-      settings: {
-        return_url: 'https://myme.live/shop',
-        language: 'en'
-      }
-    };
+  },
+  settings: {
+    return_url: 'https://myme.live/shop',
+    language: 'en'
+  }
+};
+
 
     const TOKEN_URL = `https://api.xsolla.com/merchant/v2/projects/${process.env.XSOLLA_PROJECT_ID}/token`;
 
