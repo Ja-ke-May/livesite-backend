@@ -45,7 +45,7 @@ router.post('/get-token', async (req, res) => {
 
 const response = await axios.post(TOKEN_URL, payload, {
   auth: {
-    username: process.env.MYME_API_KEY.trim(),
+    username: process.env.MYME_API_KEY,
     password: ''
   },
   headers: {
