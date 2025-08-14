@@ -25,14 +25,12 @@ router.post('/get-token', async (req, res) => {
         id: { value: username }
       },
       purchase: {
-        virtual_items: {
-          items: [
-            {
-              sku: sku,
-              amount: 1
-            }
-          ]
-        }
+        virtual_items: [
+          {
+            sku,
+            amount: 1
+          }
+        ]
       },
       settings: {
         return_url: 'https://myme.live/shop',
@@ -40,15 +38,14 @@ router.post('/get-token', async (req, res) => {
       }
     };
 
-    console.log('[DEBUG] Sending payload to Xsolla:', JSON.stringify(payload, null, 2));
+    console.log('[DEBUG] Sending payload to Xsolla (CAPI):', JSON.stringify(payload, null, 2));
 
     const TOKEN_URL = `https://api.xsolla.com/merchant/v2/projects/${process.env.XSOLLA_PROJECT_ID}/payment_token`;
 
-
     const response = await axios.post(TOKEN_URL, payload, {
       auth: {
-        username: process.env.XSOLLA_MERCHANT_ID.trim(),
-        password: process.env.XSOLLA_API_KEY.trim()
+        username: process.env.XSOLLA_PROJECT_ID.trim(), 
+        password: process.env.MYME_API_KEY.trim()
       },
       headers: {
         'Content-Type': 'application/json'
@@ -61,7 +58,7 @@ router.post('/get-token', async (req, res) => {
     if (!token) throw new Error('No payment token received');
 
     return res.json({
-      paymentUrl: `https://secure.xsolla.com/paystation4/?token=${token}`,
+      paymentUrl: `https://secure.xsolla.com/paystation4/?token=${token}`, 
       sku,
       tokens: tokenCounts[sku] || null
     });
