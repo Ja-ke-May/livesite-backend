@@ -26,11 +26,10 @@ router.post('/get-token', async (req, res) => {
       user: {
         id: { value: username }
       },
-      purchase: {
+     purchase: {
         virtual_items: {
-          items: [
-            { sku: sku, amount: 1 }
-          ]
+          sku: sku,
+          quantity: 1
         }
       },
       settings: {
