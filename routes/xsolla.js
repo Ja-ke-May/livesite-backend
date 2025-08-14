@@ -64,5 +64,5 @@ router.post('/get-token', async (req, res) => {
   }
 });
 
-export default router;
+module.exports = router;
 
