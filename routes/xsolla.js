@@ -40,7 +40,7 @@ router.post('/get-token', async (req, res) => {
 
     console.log('[DEBUG] Sending payload to Xsolla (CAPI):', JSON.stringify(payload, null, 2));
 
-    const TOKEN_URL = `https://api.xsolla.com/merchant/v2/projects/${process.env.XSOLLA_PROJECT_ID}/payment_token`;
+    const TOKEN_URL = `https://api.xsolla.com/merchant/v2/projects/${process.env.XSOLLA_PROJECT_ID}/token`;
 
     const response = await axios.post(TOKEN_URL, payload, {
       auth: {
