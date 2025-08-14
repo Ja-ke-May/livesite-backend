@@ -25,12 +25,14 @@ router.post('/get-token', async (req, res) => {
         id: { value: username }
       },
       purchase: {
-        virtual_items: [
-          {
-            sku: sku,
-            amount: 1
-          }
-        ]
+        virtual_items: {
+          items: [
+            {
+              sku: sku,
+              amount: 1
+            }
+          ]
+        }
       },
       settings: {
         return_url: 'https://myme.live/shop',
@@ -42,8 +44,8 @@ router.post('/get-token', async (req, res) => {
 
     const response = await axios.post(TOKEN_URL, payload, {
       auth: {
-        username: process.env.XSOLLA_MERCHANT_ID.trim(), // Merchant ID here
-        password: process.env.XSOLLA_API_KEY.trim()      // Merchant API Key here
+        username: process.env.XSOLLA_MERCHANT_ID.trim(), // Merchant ID
+        password: process.env.XSOLLA_API_KEY.trim()      // Merchant API Key
       },
       headers: {
         'Content-Type': 'application/json'
