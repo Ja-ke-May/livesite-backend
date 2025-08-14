@@ -12,6 +12,15 @@ const tokenCounts = {
   tokens_10000: 10000,
 };
 
+const itemIds = {
+  tokens_400: 1055102,
+  tokens_1000: 1055103,
+  tokens_2000: 1055104,
+  tokens_4000: 1055105,
+  tokens_10000: 1055106,
+};
+
+
 router.post('/get-token', async (req, res) => {
   const { username, sku } = req.body;
   console.log('[DEBUG] Incoming request:', req.body);
@@ -26,11 +35,13 @@ router.post('/get-token', async (req, res) => {
     id: { value: username }
   },
   purchase: {
-    virtual_items: {
-      sku: sku,
+  virtual_items: [
+    {
+      id: itemIds[sku],
       quantity: 1
     }
-  },
+  ]
+},
   settings: {
     return_url: 'https://myme.live/shop',
     language: 'en'
