@@ -4,6 +4,7 @@ const axios = require('axios');
 
 const router = express.Router();
 
+// Mapping of SKUs to token amounts for your reference
 const tokenCounts = {
   tokens_400: 400,
   tokens_1000: 1000,
@@ -11,9 +12,6 @@ const tokenCounts = {
   tokens_4000: 4000,
   tokens_10000: 10000,
 };
-
-
-
 
 router.post('/get-token', async (req, res) => {
   const { username, sku } = req.body;
@@ -24,35 +22,39 @@ router.post('/get-token', async (req, res) => {
   }
 
   try {
-    
-   const payload = {
-  user: {
-    id: { value: username }
-  },
-  purchase: {
-    virtual_items: [
-      {
-        sku: sku,
-        quantity: 1
-      }
-    ]
-  },
-  settings: {
-    return_url: 'https://myme.live/shop',
-    language: 'en'
-  }
-};
-
-
-    const TOKEN_URL = `https://api.xsolla.com/merchant/v2/projects/${process.env.XSOLLA_PROJECT_ID}/token`;
-
-    const response = await axios.post(TOKEN_URL, payload, {
-      headers: {
-        Authorization: `Basic ${Buffer.from(
-          `${process.env.XSOLLA_MERCHANT_ID}:${process.env.XSOLLA_API_KEY}`
-        ).toString('base64')}`,
-        'Content-Type': 'application/json',
+    // CAPI payload structure
+    const payload = {
+      user: {
+        id: { value: username }
       },
+      purchase: {
+        virtual_items: {
+          items: [
+            {
+              sku: sku,
+              amount: 1
+            }
+          ]
+        }
+      },
+      settings: {
+        return_url: 'https://myme.live/shop',
+        language: 'en'
+      }
+    };
+
+    // CAPI token creation endpoint
+    const TOKEN_URL = `https://api.xsolla.com/api/v2/project/${process.env.XSOLLA_PROJECT_ID}/token`;
+
+    // Auth for CAPI: API key as username, password left empty
+    const response = await axios.post(TOKEN_URL, payload, {
+      auth: {
+        username: process.env.XSOLLA_API_KEY,
+        password: ''
+      },
+      headers: {
+        'Content-Type': 'application/json'
+      }
     });
 
     const { token } = response.data;
@@ -65,7 +67,7 @@ router.post('/get-token', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('[ERROR] Merchant API error:', error.response?.data || error.message);
+    console.error('[ERROR] CAPI API error:', error.response?.data || error.message);
     res.status(500).json({
       error: 'Failed to create payment token',
       details: error.response?.data || error.message
