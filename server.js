@@ -135,29 +135,34 @@ app.post('/api/xsolla/webhook', express.json(), require('./xsollaWebhook'));
   });
 
 
+app.post('/report', authMiddleware, async (req, res) => {
+  try {
+    const { username, content } = req.body;
+    const reporterId = req.user.userId;
 
-  app.post('/report', authMiddleware, async (req, res) => {
-    try {
-      const { content } = req.body;
-      const userId = req.user.userId; 
-
-      if (!content) {
-        return res.status(400).json({ message: 'Content is required' });
-      }
-
-      const report = new Report({
-        userId,
-        content,
-      });
-
-      await report.save();
-
-      res.status(201).json({ message: 'Report submitted successfully' });
-    } catch (err) {
-      console.error('Error submitting report:', err);
-      res.status(500).json({ error: 'Server error, please try again later' });
+    if (!username || !content) {
+      return res.status(400).json({ message: 'Username and content are required' });
     }
-  });
+
+    const reportedUser = await User.findOne({ username });
+    if (!reportedUser) {
+      return res.status(404).json({ message: 'Reported user not found' });
+    }
+
+    const report = new Report({
+      reporterId,
+      reportedUserId: reportedUser._id,
+      content,
+    });
+
+    await report.save();
+
+    res.status(201).json({ message: 'Report submitted successfully' });
+  } catch (err) {
+    console.error('Error submitting report:', err);
+    res.status(500).json({ error: 'Server error, please try again later' });
+  }
+});
 
   app.post('/comments', authMiddleware, async (req, res) => {
     try {

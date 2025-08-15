@@ -1,8 +1,10 @@
-// models/report.js
-const mongoose = require('mongoose');
-
 const reportSchema = new mongoose.Schema({
-  userId: {
+  reporterId: {            
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true,
+  },
+  reportedUserId: {         
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true,
