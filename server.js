@@ -144,14 +144,9 @@ app.post('/report', authMiddleware, async (req, res) => {
       return res.status(400).json({ message: 'Username and content are required' });
     }
 
-    const reportedUser = await User.findOne({ username });
-    if (!reportedUser) {
-      return res.status(404).json({ message: 'Reported user not found' });
-    }
-
     const report = new Report({
       reporterId,
-      reportedUserId: reportedUser._id,
+      reportedUsername: username,
       content,
     });
 
@@ -163,6 +158,7 @@ app.post('/report', authMiddleware, async (req, res) => {
     res.status(500).json({ error: 'Server error, please try again later' });
   }
 });
+
 
   app.post('/comments', authMiddleware, async (req, res) => {
     try {
