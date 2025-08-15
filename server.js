@@ -136,28 +136,29 @@ app.post('/api/xsolla/webhook', express.json(), require('./xsollaWebhook'));
 
 
 
-  app.post('/report', authMiddleware, async (req, res) => {
-    try {
-      const { content } = req.body;
-      const userId = req.user.userId; 
+ app.post('/report', authMiddleware, async (req, res) => {
+  try {
+    const { content, userReported } = req.body; // get reported user's ID from the request
+    const userId = req.user.userId; // reporter's ID from auth middleware
 
-      if (!content) {
-        return res.status(400).json({ message: 'Content is required' });
-      }
-
-      const report = new Report({
-        userId,
-        content,
-      });
-
-      await report.save();
-
-      res.status(201).json({ message: 'Report submitted successfully' });
-    } catch (err) {
-      console.error('Error submitting report:', err);
-      res.status(500).json({ error: 'Server error, please try again later' });
+    if (!content || !userReported) {
+      return res.status(400).json({ message: 'Content and reported user are required' });
     }
-  });
+
+    const report = new Report({
+      userId,          
+      userReported,   
+      content,         
+    });
+
+    await report.save();
+
+    res.status(201).json({ message: 'Report submitted successfully' });
+  } catch (err) {
+    console.error('Error submitting report:', err);
+    res.status(500).json({ error: 'Server error, please try again later' });
+  }
+});
 
   app.post('/comments', authMiddleware, async (req, res) => {
     try {

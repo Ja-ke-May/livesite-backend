@@ -2,12 +2,17 @@
 const mongoose = require('mongoose');
 
 const reportSchema = new mongoose.Schema({
-  userId: {
+  userId: { 
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true,
   },
-  content: {
+  userReported: { 
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true,
+  },
+  content: { 
     type: String, 
     required: true,
   },
