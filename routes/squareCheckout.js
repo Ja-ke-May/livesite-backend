@@ -1,18 +1,17 @@
-// routes/squareCheckout.js
-
-
 import express from "express";
-import { Client } from "square";
+import SquarePkg from "square"; 
+const { Client } = SquarePkg; 
 
 const router = express.Router();
 
-// Initialize Square client
+
 const client = new Client({
   accessToken: process.env.SQUARE_ACCESS_TOKEN,
-  environment: process.env.SQUARE_ENV,
+  environment:
+    process.env.SQUARE_ENV
 });
 
-// Create checkout link
+
 router.post("/create-checkout", async (req, res) => {
   try {
     const { userName, sku } = req.body;
@@ -26,7 +25,6 @@ router.post("/create-checkout", async (req, res) => {
       quickPay: {
         name: sku,
         priceMoney: {
-          // map SKU → cents
           amount: (() => {
             switch (sku) {
               case "tokens_400": return 400 * 100;
@@ -53,4 +51,4 @@ router.post("/create-checkout", async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router; 
