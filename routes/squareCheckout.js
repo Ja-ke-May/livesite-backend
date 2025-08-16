@@ -1,10 +1,8 @@
 const express = require('express');
 const router = express.Router();
 
-const { Client } = require('square');
-
-// Square client setup (always production)
-const client = new Client({
+const Square = require('square');   
+const client = new Square.Client({  
   accessToken: process.env.SQUARE_ACCESS_TOKEN,
   environment: 'production',
 });
