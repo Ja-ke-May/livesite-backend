@@ -1,12 +1,13 @@
+import { Client } from "square";
+
 const express = require('express');
 const router = express.Router();
 
-const { Client } = require('square');   // ⬅️ Correct for CJS
-
 const client = new Client({
   accessToken: process.env.SQUARE_ACCESS_TOKEN,
-  environment: 'production',
+  environment: "production",
 });
+
 
 // Map SKUs → amounts (in pennies/cents)
 const skuPrices = {
