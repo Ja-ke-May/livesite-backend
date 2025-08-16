@@ -1,16 +1,16 @@
-import express from "express";
-import SquarePkg from "square"; 
-const { Client } = SquarePkg; 
+// squareCheckout.js
+const express = require("express");
+const { Client, Environment } = require("square");
 
 const router = express.Router();
-
 
 const client = new Client({
   accessToken: process.env.SQUARE_ACCESS_TOKEN,
   environment:
-    process.env.SQUARE_ENV
+    process.env.SQUARE_ENV === "production"
+      ? Environment.Production
+      : Environment.Sandbox,
 });
-
 
 router.post("/create-checkout", async (req, res) => {
   try {
@@ -39,9 +39,7 @@ router.post("/create-checkout", async (req, res) => {
         },
         locationId: process.env.SQUARE_LOCATION_ID,
       },
-      checkoutOptions: {
-        referenceId: userName,
-      },
+      checkoutOptions: { referenceId: userName },
     });
 
     res.json({ url: result.paymentLink.url });
@@ -51,4 +49,4 @@ router.post("/create-checkout", async (req, res) => {
   }
 });
 
-export default router; 
+module.exports = router;
