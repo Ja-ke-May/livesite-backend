@@ -7,16 +7,18 @@ let client;
 // Dynamically import the Square SDK
 (async () => {
   try {
-    const { Client } = await import("square");
+    const square = await import("square");   
+    const { Client } = square.default;       
     client = new Client({
       accessToken: process.env.SQUARE_ACCESS_TOKEN,
-      environment: process.env.SQUARE_ENV
+      environment: process.env.SQUARE_ENV,
     });
     console.log("✅ Square client initialized");
   } catch (err) {
     console.error("❌ Failed to initialize Square client:", err);
   }
 })();
+
 
 // Create checkout link
 router.post("/create-checkout", async (req, res) => {
