@@ -1,8 +1,9 @@
 const express = require('express');
 const router = express.Router();
 
-const Square = require('square');   
-const client = new Square.Client({  
+const { Client } = require('square');   // ⬅️ Correct for CJS
+
+const client = new Client({
   accessToken: process.env.SQUARE_ACCESS_TOKEN,
   environment: 'production',
 });
@@ -31,21 +32,20 @@ router.post('/create-checkout', async (req, res) => {
 
   try {
     const response = await client.checkoutApi.createPaymentLink({
-  idempotency_key: Date.now().toString(),
-  quick_pay: {
-    name: sku,
-    price_money: {
-      amount: amountCents,
-      currency: 'GBP',
-    },
-    location_id: process.env.SQUARE_LOCATION_ID,
-  },
-  payment_note: sku,
-  reference_id: username,
-});
+      idempotency_key: Date.now().toString(),
+      quick_pay: {
+        name: sku,
+        price_money: {
+          amount: amountCents,
+          currency: 'GBP',
+        },
+        location_id: process.env.SQUARE_LOCATION_ID,
+      },
+      payment_note: sku,
+      reference_id: username,
+    });
 
-
-    res.json({ checkoutUrl: response.result.paymentLink.url });
+    res.json({ checkoutUrl: response.result.payment_link.url });
   } catch (err) {
     console.error('Error creating Square checkout:', err);
     res.status(500).json({ error: 'Failed to create checkout' });
@@ -53,3 +53,4 @@ router.post('/create-checkout', async (req, res) => {
 });
 
 module.exports = router;
+
