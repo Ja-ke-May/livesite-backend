@@ -1,24 +1,16 @@
 // routes/squareCheckout.js
+
+
+import { Client } from "square";
+
 const express = require("express");
 const router = express.Router();
 
-let client;
-
-// Dynamically import the Square SDK
-(async () => {
-  try {
-    const square = await import("square");   
-    const { Client } = square.default;       
-    client = new Client({
-      accessToken: process.env.SQUARE_ACCESS_TOKEN,
-      environment: process.env.SQUARE_ENV,
-    });
-    console.log("✅ Square client initialized");
-  } catch (err) {
-    console.error("❌ Failed to initialize Square client:", err);
-  }
-})();
-
+// Initialize Square client
+const client = new Client({
+  accessToken: process.env.SQUARE_ACCESS_TOKEN,
+  environment: process.env.SQUARE_ENV,
+});
 
 // Create checkout link
 router.post("/create-checkout", async (req, res) => {

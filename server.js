@@ -1,39 +1,35 @@
   // server.js
-  const express = require('express');
-  const http = require('http');
-  const socketIo = require('socket.io');
-  const mongoose = require('mongoose');
-  const dotenv = require('dotenv');
-  const cors = require('cors');
-  const helmet = require('helmet');
-  const rateLimit = require('express-rate-limit');
-  const multer = require('multer');
-  const userRoutes = require('./routes/userRoutes');
-  const { handleSocketConnection, onlineUsers } = require('./socketHandler'); 
-  const { sendBlockNotificationEmail } = require('./emails')
-  const cron = require('node-cron');
-  const xsollaRoutes = require('./routes/xsolla');
-  const tokenGoalRoutes = require('./routes/tokenGoalRoutes');
+import express from 'express';
+import { socketIo } from 'socket.io';
+import mongoose from 'mongoose';
+import dotenv from 'dotenv';
+import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
+import multer from 'multer';
+import cron from 'node-cron';
+import bodyParser from 'body-parser';
 
-  const handleSquareWebhook = require('./squareWebhook');
-const squareCheckout = require('./routes/squareCheckout');
-  
-  
-  const app = express();
-  const server = http.createServer(app);
+// Routes
+import userRoutes from './routes/userRoutes.js';
+import xsollaRoutes from './routes/xsolla.js';
+import tokenGoalRoutes from './routes/tokenGoalRoutes.js';
+import squareCheckout from './routes/squareCheckout.js';
 
-  const User = require('./models/user');
-  const Report = require('./models/report');
-  const Comment = require('./models/comment');
-  const UserAds = require('./models/userAds');
+// Handlers / utils
+import { handleSocketConnection, onlineUsers } from './socketHandler.js';
+import { sendBlockNotificationEmail } from './emails.js';
+import handleSquareWebhook from './squareWebhook.js';
 
+// Models
+import User from './models/user.js';
+import Report from './models/report.js';
+import Comment from './models/comment.js';
+import UserAds from './models/userAds.js';
 
+// Middleware
+import authMiddleware from './middleware/authMiddleware.js';
 
-
-
-
-  const bodyParser = require('body-parser');
-  const authMiddleware = require('./middleware/authMiddleware');
 
 
   dotenv.config();
