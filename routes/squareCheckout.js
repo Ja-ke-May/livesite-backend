@@ -33,18 +33,19 @@ router.post('/create-checkout', async (req, res) => {
 
   try {
     const response = await client.checkoutApi.createPaymentLink({
-      idempotencyKey: Date.now().toString(),
-      quickPay: {
-        name: sku,
-        priceMoney: {
-          amount: amountCents,
-          currency: 'GBP',
-        },
-        locationId: process.env.SQUARE_LOCATION_ID,
-      },
-      paymentNote: sku,
-      referenceId: username,
-    });
+  idempotency_key: Date.now().toString(),
+  quick_pay: {
+    name: sku,
+    price_money: {
+      amount: amountCents,
+      currency: 'GBP',
+    },
+    location_id: process.env.SQUARE_LOCATION_ID,
+  },
+  payment_note: sku,
+  reference_id: username,
+});
+
 
     res.json({ checkoutUrl: response.result.paymentLink.url });
   } catch (err) {
