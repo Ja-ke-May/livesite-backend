@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
-   "type": "module",
+  "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -23,6 +23,7 @@
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.10.1",
     "multer": "^2.0.2",
+    "node": "^24.6.0",
     "node-cron": "^3.0.3",
     "nodemailer": "^6.9.15",
     "socket.io": "^4.7.5",
