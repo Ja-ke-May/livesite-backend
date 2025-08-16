@@ -15,6 +15,8 @@
   const xsollaRoutes = require('./routes/xsolla');
   const tokenGoalRoutes = require('./routes/tokenGoalRoutes');
 
+  const handleSquareWebhook = require('./squareWebhook');
+const squareCheckout = require('./routes/squareCheckout');
   
   
   const app = express();
@@ -32,6 +34,7 @@
 
   const bodyParser = require('body-parser');
   const authMiddleware = require('./middleware/authMiddleware');
+const handleSquareWebhook = require('./squareWebhook');
 
   dotenv.config();
 
@@ -111,6 +114,9 @@ cron.schedule('*/15 * * * *', async () => {
 
   
 app.post('/api/xsolla/webhook', express.json(), require('./xsollaWebhook'));
+
+app.use('/api/square', squareCheckout);
+app.use('/api/square', handleSquareWebhook);
 
  app.use('/api/token-goal', tokenGoalRoutes);
 
