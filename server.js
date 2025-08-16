@@ -1,5 +1,5 @@
   // server.js
-  import express from 'express';
+  const express = require('express');
   const http = require('http');
   const socketIo = require('socket.io');
   const mongoose = require('mongoose');
@@ -116,7 +116,7 @@ cron.schedule('*/15 * * * *', async () => {
 app.post('/api/xsolla/webhook', express.json(), require('./xsollaWebhook'));
 
 app.use('/api/square', squareCheckout);
-app.use('/api/square', handleSquareWebhook);
+app.post('/api/square/webhook', express.json(), handleSquareWebhook);
 
  app.use('/api/token-goal', tokenGoalRoutes);
 
