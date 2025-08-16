@@ -1,14 +1,13 @@
 // squareCheckout.js
 const express = require("express");
-const { Client } = require("square");
+const express = require('express');
 
-const router = express.Router();
-
-const client = new Client({
+const Square = require('square');  // CommonJS import
+const client = new Square.Client({
   accessToken: process.env.SQUARE_ACCESS_TOKEN,
-  environment:
-    process.env.SQUARE_ENV 
+  environment: process.env.SQUARE_ENV,
 });
+
 
 router.post("/create-checkout", async (req, res) => {
   try {
