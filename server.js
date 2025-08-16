@@ -13,6 +13,7 @@
   const { sendBlockNotificationEmail } = require('./emails')
   const cron = require('node-cron');
   const xsollaRoutes = require('./routes/xsolla');
+  const tokenGoalRoutes = require('./routes/tokenGoalRoutes');
 
   
   
@@ -111,7 +112,7 @@ cron.schedule('*/15 * * * *', async () => {
   
 app.post('/api/xsolla/webhook', express.json(), require('./xsollaWebhook'));
 
- 
+ app.use('/api/token-goal', tokenGoalRoutes);
 
   app.post('/profile-picture', upload.single('profilePicture'), authMiddleware, async (req, res) => {
     try {
