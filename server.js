@@ -34,7 +34,7 @@ const squareCheckout = require('./routes/squareCheckout');
 
   const bodyParser = require('body-parser');
   const authMiddleware = require('./middleware/authMiddleware');
-const handleSquareWebhook = require('./squareWebhook');
+
 
   dotenv.config();
 
