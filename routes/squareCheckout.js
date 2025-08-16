@@ -4,9 +4,7 @@ const { Client, Environment } = require('square');
 
 // Square client setup
 const client = new Client({
-  environment: process.env.SQUARE_ENV === 'production'
-    ? Environment.Production
-    : Environment.Sandbox,
+  environment: process.env.SQUARE_ENV,
   accessToken: process.env.SQUARE_ACCESS_TOKEN,
 });
 
