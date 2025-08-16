@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const Square = require('square');
+
+const { Client } = require('square');
 
 // Square client setup (always production)
 const client = new Square.Client({
