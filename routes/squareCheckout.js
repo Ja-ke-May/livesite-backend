@@ -1,9 +1,9 @@
 // routes/squareCheckout.js
 
 
+import express from "express";
 import { Client } from "square";
 
-const express = require("express");
 const router = express.Router();
 
 // Initialize Square client
