@@ -282,7 +282,7 @@ router.put('/profile/:username/flag', authMiddleware, async (req, res) => {
     
 
   
-    if (!flag || typeof flag !== 'string' || flag.length !== 2) {
+    if (!flag || typeof flag !== 'string' || flag.length !== 5) {
       return res.status(400).json({ message: 'Invalid flag format' });
     }
 
