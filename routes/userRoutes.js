@@ -287,9 +287,7 @@ router.put('/profile/:username/flag', authMiddleware, async (req, res) => {
     }
 
     
-    if (req.user.username !== username && !req.user.isAdmin) {
-      return res.status(403).json({ message: 'Unauthorized to update this flag' });
-    }
+    
 
 
     const user = await User.findOne({ userName: username });
