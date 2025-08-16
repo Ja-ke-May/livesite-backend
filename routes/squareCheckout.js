@@ -1,11 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const { Client, Environment } = require('square');
+const Square = require('square');
 
-// Square client setup
-const client = new Client({
-  environment: process.env.SQUARE_ENV,
+// Square client setup (always production)
+const client = new Square.Client({
   accessToken: process.env.SQUARE_ACCESS_TOKEN,
+  environment: 'production',
 });
 
 // Map SKUs → amounts (in pennies/cents)
@@ -37,12 +37,12 @@ router.post('/create-checkout', async (req, res) => {
         name: sku,
         priceMoney: {
           amount: amountCents,
-          currency: 'GBP', // change if needed
+          currency: 'GBP',
         },
         locationId: process.env.SQUARE_LOCATION_ID,
       },
-      paymentNote: sku,      // so webhook can award correct tokens
-      referenceId: username, // so webhook knows which user
+      paymentNote: sku,
+      referenceId: username,
     });
 
     res.json({ checkoutUrl: response.result.paymentLink.url });
