@@ -19,6 +19,15 @@ const squareClient = new Client({
   environment: process.env.SQUARE_ENVIRONMENT || "production",
 });
 
+// --- Safe stringify for Square API responses (handles BigInt) ---
+function safeStringify(obj, space = 2) {
+  return JSON.stringify(
+    obj,
+    (_, value) => (typeof value === "bigint" ? value.toString() : value),
+    space
+  );
+}
+
 /**
  * Extract { username, sku, shortId } from order.referenceId
  * Format: username-sku-shortId
@@ -35,7 +44,7 @@ const extractPaymentDetails = async (payment, ordersApi) => {
       const { result } = await ordersApi.retrieveOrder(payment.orderId);
 
       // 🔎 Log the full Square order object for debugging
-      console.log("📦 Full Square Order response:", JSON.stringify(result, null, 2));
+      console.log("📦 Full Square Order response:", safeStringify(result));
 
       const orderRef = result?.order?.referenceId;
 
@@ -89,13 +98,12 @@ const handleSquareWebhook = async (req, res) => {
       const { result } = await squareClient.paymentsApi.getPayment(webhookPayment.id);
       fullPayment = result.payment;
 
-     
-  // 🔎 Log safely (no BigInt crash)
-  console.log("💳 Full Square Payment response:", safeStringify(result));
-} catch (err) {
-  console.error("❌ Failed to fetch full payment:", err);
-  return res.status(500).send("Square payment fetch failed");
-}
+      // 🔎 Log safely (no BigInt crash)
+      console.log("💳 Full Square Payment response:", safeStringify(result));
+    } catch (err) {
+      console.error("❌ Failed to fetch full payment:", err);
+      return res.status(500).send("Square payment fetch failed");
+    }
 
     if (fullPayment.status !== "COMPLETED") {
       console.log(`ℹ️ Payment ${fullPayment.id} status = ${fullPayment.status}, ignored`);
