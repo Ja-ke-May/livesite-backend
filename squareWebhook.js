@@ -21,13 +21,13 @@ const extractPaymentDetails = async (payment) => {
   let sku = null;
   let username = null;
 
-  // 1️⃣ Try metadata first (most reliable)
+  // 1️⃣ Metadata first
   if (payment.metadata) {
     username = payment.metadata.username || username;
     sku = payment.metadata.sku || sku;
   }
 
-  // 2️⃣ Fallback to payment.note
+  // 2️⃣ Note fallback
   if ((!username || !sku) && payment.note) {
     try {
       const noteData = JSON.parse(payment.note);
@@ -36,20 +36,25 @@ const extractPaymentDetails = async (payment) => {
     } catch {}
   }
 
-  // 3️⃣ Fetch order if needed
+  // 3️⃣ Reference ID fallback
+  if ((!username || !sku) && payment.referenceId) {
+    const refParts = payment.referenceId.split("-");
+    if (!username && refParts.length > 0) username = refParts[0];
+    if (!sku && refParts.length > 1) sku = refParts[1];
+  }
+
+  // 4️⃣ Fetch order if still missing
   if ((!username || !sku) && payment.orderId) {
     try {
       const { result } = await ordersApi.retrieveOrder(payment.orderId);
       const lineItem = result?.order?.lineItems?.[0];
 
       if (lineItem) {
-        // Check line item metadata first
         if (lineItem.metadata) {
           username = username || lineItem.metadata.username;
           sku = sku || lineItem.metadata.sku;
         }
 
-        // Fallback to line item note
         if ((!username || !sku) && lineItem.note) {
           try {
             const noteData = JSON.parse(lineItem.note);
@@ -58,7 +63,6 @@ const extractPaymentDetails = async (payment) => {
           } catch {}
         }
 
-        // Fallback to parsing SKU from lineItem name
         if (!sku) {
           sku = Object.keys(skuMap).find((key) => lineItem.name.includes(key));
         }
@@ -99,6 +103,13 @@ const handleSquareWebhook = async (req, res) => {
       ? payment.amountMoney.amount / 100
       : 0;
 
+    // Prevent double-credit: check if paymentId already exists
+    const existingUser = await User.findOne({ "purchases.paymentId": payment.id });
+    if (existingUser) {
+      console.warn(`⚠️ Payment ${payment.id} already processed for ${username}`);
+      return res.status(200).send("Already processed");
+    }
+
     const newPurchase = {
       date: new Date(),
       tokens,
@@ -136,3 +147,4 @@ const handleSquareWebhook = async (req, res) => {
 };
 
 module.exports = handleSquareWebhook;
+

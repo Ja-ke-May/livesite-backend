@@ -27,26 +27,27 @@ router.post("/create-checkout", async (req, res) => {
     const amount = Math.round(Number(price) * 100);
     const idempotencyKey = `${username}-${sku}-${Date.now()}`;
 
-    // Include username & SKU in both note and metadata
     const lineItemNote = JSON.stringify({ username, sku });
     const metadata = { username, sku };
+    const referenceId = `${username}-${sku}-${Date.now()}`;
 
     const requestPayload = {
       idempotencyKey,
       order: {
         locationId: process.env.SQUARE_LOCATION_ID,
+        referenceId, // ✅ username in order reference
         lineItems: [
           {
-            name,                  // e.g., "Tokens 1000"
+            name,
             quantity: "1",
             basePriceMoney: { amount, currency: "GBP" },
-            note: lineItemNote,     // fallback
-            metadata,               // primary reliable storage
+            note: lineItemNote, // ✅ username in note
+            metadata,           // ✅ username in metadata
           },
         ],
       },
       checkoutOptions: {
-        redirectUrl: process.env.CLIENT_SUCCESS_URL,
+        redirectUrl: `${process.env.CLIENT_SUCCESS_URL}?username=${encodeURIComponent(username)}&sku=${sku}`, // ✅ username in redirect URL
       },
     };
 
@@ -58,7 +59,6 @@ router.post("/create-checkout", async (req, res) => {
     }
 
     const checkoutUrl = result.paymentLink?.url;
-
     console.log(`✅ Created checkout link for ${username} (${sku}): ${checkoutUrl}`);
     res.json({ checkoutUrl });
   } catch (error) {
