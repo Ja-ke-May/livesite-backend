@@ -16,18 +16,17 @@ const skuMap = {
   tokens_10000: 10000,
 };
 
-// Extract SKU & username from payment
-const extractPaymentDetails = async (payment) => {
+const extractPaymentDetails = async (payment, ordersApi) => {
   let sku = null;
   let username = null;
 
-  // 1️⃣ Metadata on payment
+  // 1️⃣ Check payment metadata first
   if (payment.metadata) {
     username = payment.metadata.username || username;
     sku = payment.metadata.sku || sku;
   }
 
-  // 2️⃣ Note fallback
+  // 2️⃣ Fallback to payment note (JSON format)
   if ((!username || !sku) && payment.note) {
     try {
       const noteData = JSON.parse(payment.note);
@@ -36,46 +35,62 @@ const extractPaymentDetails = async (payment) => {
     } catch {}
   }
 
-  // 3️⃣ Reference ID fallback
+  // 3️⃣ Fallback to referenceId convention "username-sku"
   if ((!username || !sku) && payment.referenceId) {
     const refParts = payment.referenceId.split("-");
     if (!username && refParts.length > 0) username = refParts[0];
     if (!sku && refParts.length > 1) sku = refParts[1];
   }
 
-  // 4️⃣ Fetch order if still missing
+  // 4️⃣ Fetch order if still missing anything
   if ((!username || !sku) && payment.orderId) {
     try {
       const { result } = await ordersApi.retrieveOrder(payment.orderId);
-      const lineItems = result?.order?.lineItems || [];
+      const lineItem = result?.order?.lineItems?.[0];
 
-      for (const lineItem of lineItems) {
+      if (lineItem) {
+        // 4a️⃣ Check line item metadata
         if (lineItem.metadata) {
           username = username || lineItem.metadata.username;
           sku = sku || lineItem.metadata.sku;
         }
 
+        // 4b️⃣ Check line item note
         if ((!username || !sku) && lineItem.note) {
           try {
             const noteData = JSON.parse(lineItem.note);
             username = username || noteData.username;
             sku = sku || noteData.sku;
-          } catch {}
+          } catch {
+            // Attempt to parse "username-sku" pattern
+            const match = lineItem.note.match(/(\w+)-(\w+)/);
+            if (match) {
+              username = username || match[1];
+              sku = sku || match[2];
+            }
+          }
         }
 
+        // 4c️⃣ Fallback to line item name for SKU
         if (!sku) {
-          sku = Object.keys(skuMap).find((key) => lineItem.name.includes(key));
+          sku = Object.keys(skuMap).find((key) =>
+            lineItem.name.toLowerCase().includes(key.toLowerCase())
+          );
         }
-
-        if (username && sku) break;
       }
     } catch (err) {
       console.error("❌ Error fetching order:", err);
     }
   }
 
+  // 5️⃣ Last resort: use buyer email as username
+  if (!username && payment.buyer_email_address) {
+    username = payment.buyer_email_address;
+  }
+
   return { sku, username };
 };
+
 
 const handleSquareWebhook = async (req, res) => {
   try {
