@@ -20,12 +20,13 @@ const squareClient = new Client({
 });
 
 /**
- * Extract { username, sku, purchaseId } from order.referenceId
+ * Extract { username, sku, shortId } from order.referenceId
+ * Format: username-sku-shortId
  */
 const extractPaymentDetails = async (payment, ordersApi) => {
   let sku = null;
   let username = null;
-  let purchaseId = null;
+  let shortId = null;
 
   console.log("🔍 Extracting payment details:", payment.id);
 
@@ -38,12 +39,12 @@ const extractPaymentDetails = async (payment, ordersApi) => {
         const parts = orderRef.split("-");
         username = parts[0] || null;
         sku = parts[1] || null;
-        purchaseId = parts.slice(2).join("-") || null;
+        shortId = parts[2] || null; // random hex ID
 
         console.log("✅ Extracted from order.referenceId:", {
           username,
           sku,
-          purchaseId,
+          shortId,
         });
       } else {
         console.warn("⚠️ No referenceId found on order:", payment.orderId);
@@ -55,8 +56,8 @@ const extractPaymentDetails = async (payment, ordersApi) => {
     console.warn("⚠️ Payment missing orderId:", payment.id);
   }
 
-  console.log("🏷 Final extracted details:", { sku, username, purchaseId });
-  return { sku, username, purchaseId };
+  console.log("🏷 Final extracted details:", { sku, username, shortId });
+  return { sku, username, shortId };
 };
 
 /**
@@ -83,8 +84,8 @@ const handleSquareWebhook = async (req, res) => {
       return res.status(200).send("Ignored");
     }
 
-    // Extract username / sku / purchaseId from order.referenceId
-    const { sku, username, purchaseId } = await extractPaymentDetails(
+    // Extract username / sku / shortId from order.referenceId
+    const { sku, username, shortId } = await extractPaymentDetails(
       payment,
       squareClient.ordersApi
     );
@@ -105,11 +106,14 @@ const handleSquareWebhook = async (req, res) => {
         ? payment.amountMoney.amount / 100
         : 0;
 
+    // Build safe purchaseId for DB (unique per payment)
+    const purchaseId = `${payment.id}-${shortId || "noid"}`;
+
     // Prevent double-crediting
     const existingUser = await User.findOne({
       $or: [
         { "purchases.paymentId": payment.id },
-        purchaseId ? { "purchases.purchaseId": purchaseId } : {},
+        { "purchases.purchaseId": purchaseId },
       ],
     });
 
