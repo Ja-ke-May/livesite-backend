@@ -60,14 +60,13 @@ router.post("/create-checkout", async (req, res) => {
 
     console.log("Square API result:", result);
 
-    // Safely return URL
-    const url = result?.paymentLink?.url || result?.payment_link?.url;
-    if (!url) {
+   const checkoutUrl = result?.paymentLink?.url || result?.payment_link?.url;
+    if (!checkoutUrl) {
       console.error("No checkout URL received from Square");
       return res.status(500).json({ error: "No checkout URL received" });
     }
 
-    res.json({ url });
+    res.json({ checkoutUrl });
 
   } catch (error) {
     console.error("Unexpected Square error:", error);
