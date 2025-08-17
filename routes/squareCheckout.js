@@ -1,12 +1,12 @@
 const express = require("express");
 const router = express.Router();
+const Square = require('square');
+const PaymentLink = require('../models/paymentLink');
 
-const Square = require('square'); 
 const client = new Square.Client({
   accessToken: process.env.SQUARE_ACCESS_TOKEN,
-  environment: 'production', 
+  environment: 'production',
 });
-
 
 const tokenDetails = {
   tokens_400: { name: "Tokens 400", price: 0.01 },
@@ -19,58 +19,35 @@ const tokenDetails = {
 router.post("/create-checkout", async (req, res) => {
   try {
     const { username, sku } = req.body;
-
-    console.log("Incoming create-checkout request:", { username, sku });
-
-    if (!username || !sku || !tokenDetails[sku]) {
-      console.warn("Missing or invalid username/sku");
-      return res.status(400).json({ error: "Missing or invalid username/sku" });
-    }
+    if (!username || !sku || !tokenDetails[sku]) return res.status(400).json({ error: "Missing or invalid username/sku" });
 
     const { name, price } = tokenDetails[sku];
-    const amount = Math.round(price * 100); 
-
-    console.log("Calculated amount (cents):", amount);
+    const amount = Math.round(price * 100);
 
     const requestPayload = {
       idempotencyKey: Date.now().toString(),
       quickPay: {
         name,
-        priceMoney: {
-          amount,
-          currency: "GBP",
-        },
+        priceMoney: { amount, currency: "GBP" },
         locationId: process.env.SQUARE_LOCATION_ID,
       },
       checkoutOptions: { referenceId: `${username}|${sku}` },
-      note: JSON.stringify({ username, sku })
+      note: JSON.stringify({ username, sku }),
     };
 
-    console.log("Request payload to Square:", requestPayload);
-
     const { result, errors } = await client.checkoutApi.createPaymentLink(requestPayload);
+    if (errors) return res.status(500).json({ error: "Square API error", details: errors });
 
-    if (errors) {
-      console.error("Square API returned errors:", errors);
-      return res.status(500).json({ error: "Square API error", details: errors });
-    }
+    const checkoutUrl = result.paymentLink?.url;
+    const paymentLinkId = result.paymentLink?.id;
 
-    console.log("Square API result:", result);
-
-    const checkoutUrl = result?.paymentLink?.url || result?.payment_link?.url;
-    if (!checkoutUrl) {
-      console.error("No checkout URL received from Square");
-      return res.status(500).json({ error: "No checkout URL received" });
-    }
+    // Save payment link to DB
+    await PaymentLink.create({ linkId: paymentLinkId, username, sku });
 
     res.json({ checkoutUrl });
-
   } catch (error) {
-    console.error("Unexpected Square error:", error);
-    if (error.response) {
-      console.error("Square response body:", error.response.body);
-    }
-    res.status(500).json({ error: error.message, stack: error.stack });
+    console.error("Square checkout error:", error);
+    res.status(500).json({ error: error.message });
   }
 });
 
