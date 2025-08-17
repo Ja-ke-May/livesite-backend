@@ -28,17 +28,22 @@ router.post("/create-checkout", async (req, res) => {
 
     
     const requestPayload = {
-      idempotencyKey,
-      quickPay: {
+  idempotencyKey,
+  order: {
+    locationId: process.env.SQUARE_LOCATION_ID,
+    lineItems: [
+      {
         name,
-        priceMoney: { amount, currency: "GBP" },
-        locationId: process.env.SQUARE_LOCATION_ID,
-      },
+        quantity: "1",
+        basePriceMoney: { amount, currency: "GBP" },
         metadata: { username, sku }, 
-      checkoutOptions: {
-        redirectUrl: process.env.CLIENT_SUCCESS_URL,
       },
-    };
+    ],
+  },
+  checkoutOptions: {
+    redirectUrl: process.env.CLIENT_SUCCESS_URL,
+  },
+};
 
     const { result, errors } = await client.checkoutApi.createPaymentLink(requestPayload);
     if (errors) return res.status(500).json({ error: "Square API error", details: errors });

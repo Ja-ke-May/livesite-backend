@@ -14,31 +14,33 @@ const handleSquareWebhook = async (req, res) => {
     const event = req.body;
     console.log('📬 Incoming Square webhook event:', event.type, event.event_id);
 
-    if (!event.type?.startsWith('payment.')) return res.status(200).send('Ignored');
+    if (!event.type?.startsWith('payment.')) {
+      return res.status(200).send('Ignored');
+    }
 
     const payment = event.data?.object?.payment;
-    if (!payment) return res.status(200).send('Ignored');
+    if (!payment) {
+      return res.status(200).send('Ignored');
+    }
 
     console.log('💳 Incoming payment object:', {
       id: payment.id,
       status: payment.status,
-      metadata: payment.metadata,
     });
 
-    if (payment.status !== 'COMPLETED') return res.status(200).send('Ignored');
+    if (payment.status !== 'COMPLETED') {
+      return res.status(200).send('Ignored');
+    }
 
+    // Try to extract username + sku from the linked order
     let username, sku;
+    const order = payment.order; // Square attaches order details inside the payment object
 
-    if (payment.metadata) {
-      username = payment.metadata.username;
-      sku = payment.metadata.sku;
-    } else if (payment.note) {
-      try {
-        const parsed = JSON.parse(payment.note);
-        username = parsed.username;
-        sku = parsed.sku;
-      } catch (err) {
-        console.warn('⚠️ Could not parse payment.note as JSON', err);
+    if (order?.lineItems?.length > 0) {
+      const meta = order.lineItems[0].metadata;
+      if (meta) {
+        username = meta.username;
+        sku = meta.sku;
       }
     }
 
@@ -83,7 +85,9 @@ const handleSquareWebhook = async (req, res) => {
     }
 
     // Send thank-you email
-    sendThankYouEmail(user, newPurchase).catch(err => console.error('❌ Email error:', err));
+    sendThankYouEmail(user, newPurchase).catch(err =>
+      console.error('❌ Email error:', err)
+    );
 
     console.log(`✅ ${username} credited ${tokens} tokens (Payment ID: ${payment.id})`);
     res.status(200).send('Processed');
