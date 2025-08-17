@@ -1,7 +1,8 @@
 const express = require("express");
 const router = express.Router();
 const Square = require("square");
-const { v4: uuidv4 } = require("uuid"); 
+const { v4: uuidv4 } = require("uuid");
+const crypto = require("crypto");
 
 const client = new Square.Client({
   accessToken: process.env.SQUARE_ACCESS_TOKEN,
@@ -27,14 +28,16 @@ router.post("/create-checkout", async (req, res) => {
     const { name, price } = tokenDetails[sku];
     const amount = Math.round(Number(price) * 100);
 
-    // Generate a unique purchase ID for this transaction
+    // Generate a unique purchase ID for full tracking
     const purchaseId = `${username}-${sku}-${uuidv4()}`;
-    const idempotencyKey = purchaseId;
 
-    // Include all identifying info in note, metadata, and referenceId
+    // Generate a short referenceId ≤ 40 characters for Square
+    const shortId = crypto.randomBytes(8).toString("hex"); // 16 chars
+    const referenceId = `${username}-${sku}-${shortId}`.slice(0, 40);
+
     const lineItemNote = JSON.stringify({ username, sku, purchaseId });
     const metadata = { username, sku, purchaseId };
-    const referenceId = purchaseId;
+    const idempotencyKey = purchaseId;
 
     const requestPayload = {
       idempotencyKey,
