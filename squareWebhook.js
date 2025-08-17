@@ -19,7 +19,9 @@ const squareClient = new Client({
   environment: process.env.SQUARE_ENVIRONMENT || "production",
 });
 
-// Extract from order.referenceId only
+/**
+ * Extract { username, sku, purchaseId } from order.referenceId
+ */
 const extractPaymentDetails = async (payment, ordersApi) => {
   let sku = null;
   let username = null;
@@ -37,29 +39,55 @@ const extractPaymentDetails = async (payment, ordersApi) => {
         username = parts[0] || null;
         sku = parts[1] || null;
         purchaseId = parts.slice(2).join("-") || null;
-        console.log("✅ Extracted from order.referenceId:", { username, sku, purchaseId });
+
+        console.log("✅ Extracted from order.referenceId:", {
+          username,
+          sku,
+          purchaseId,
+        });
+      } else {
+        console.warn("⚠️ No referenceId found on order:", payment.orderId);
       }
     } catch (err) {
       console.error("❌ Error fetching order:", err);
     }
+  } else {
+    console.warn("⚠️ Payment missing orderId:", payment.id);
   }
 
   console.log("🏷 Final extracted details:", { sku, username, purchaseId });
   return { sku, username, purchaseId };
 };
 
+/**
+ * Main Square Webhook handler
+ */
 const handleSquareWebhook = async (req, res) => {
   try {
     const event = req.body;
     console.log("📬 Incoming Square webhook:", event.type, event.event_id);
 
-    if (!event.type?.startsWith("payment.")) return res.status(200).send("Ignored");
+    // Only care about payment events
+    if (!event.type?.startsWith("payment.")) {
+      return res.status(200).send("Ignored");
+    }
 
     const payment = event.data?.object?.payment;
-    if (!payment) return res.status(200).send("Ignored");
-    if (payment.status !== "COMPLETED") return res.status(200).send("Ignored");
+    if (!payment) {
+      console.warn("⚠️ Webhook missing payment object");
+      return res.status(200).send("Ignored");
+    }
 
-    const { sku, username, purchaseId } = await extractPaymentDetails(payment, squareClient.ordersApi);
+    if (payment.status !== "COMPLETED") {
+      console.log(`ℹ️ Payment ${payment.id} status = ${payment.status}, ignored`);
+      return res.status(200).send("Ignored");
+    }
+
+    // Extract username / sku / purchaseId from order.referenceId
+    const { sku, username, purchaseId } = await extractPaymentDetails(
+      payment,
+      squareClient.ordersApi
+    );
 
     if (!username) {
       console.warn("⚠️ Payment ignored: username missing");
@@ -72,17 +100,23 @@ const handleSquareWebhook = async (req, res) => {
     }
 
     const tokens = skuMap[sku];
-    const amountSpent = payment.amountMoney?.amount ? payment.amountMoney.amount / 100 : 0;
+    const amountSpent =
+      payment.amountMoney?.amount != null
+        ? payment.amountMoney.amount / 100
+        : 0;
 
-    // Prevent double-credit
+    // Prevent double-crediting
     const existingUser = await User.findOne({
       $or: [
         { "purchases.paymentId": payment.id },
         purchaseId ? { "purchases.purchaseId": purchaseId } : {},
       ],
     });
+
     if (existingUser) {
-      console.warn(`⚠️ Payment ${payment.id} / purchase ${purchaseId} already processed for ${username}`);
+      console.warn(
+        `⚠️ Payment ${payment.id} / purchase ${purchaseId} already processed for ${username}`
+      );
       return res.status(200).send("Already processed");
     }
 
@@ -107,11 +141,14 @@ const handleSquareWebhook = async (req, res) => {
       return res.status(200).send("Ignored");
     }
 
-    sendThankYouEmail(user, newPurchase).catch(err =>
+    // Fire-and-forget thank-you email
+    sendThankYouEmail(user, newPurchase).catch((err) =>
       console.error("❌ Email error:", err)
     );
 
-    console.log(`✅ ${username} credited with ${tokens} tokens (Payment ID: ${payment.id}, Purchase ID: ${purchaseId})`);
+    console.log(
+      `✅ ${username} credited with ${tokens} tokens (Payment ID: ${payment.id}, Purchase ID: ${purchaseId})`
+    );
     res.status(200).send("Processed");
   } catch (err) {
     console.error("❌ Square webhook error:", err);
