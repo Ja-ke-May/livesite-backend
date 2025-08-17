@@ -30,16 +30,18 @@ router.post("/create-checkout", async (req, res) => {
     // Square Payment Link payload
     const requestPayload = {
       idempotencyKey,
-      quickPay: {
+       quickPay: {
         name,
         priceMoney: { amount, currency: "GBP" },
         locationId: process.env.SQUARE_LOCATION_ID,
       },
-       note: JSON.stringify({ username, sku }),
-      checkoutOptions: {
-        redirectUrl: process.env.CLIENT_SUCCESS_URL, 
+      metadata: {
+        username,  
+        sku,       
       },
-      
+      checkoutOptions: {
+        redirectUrl: process.env.CLIENT_SUCCESS_URL,
+      },
     };
 
     // Create payment link in Square

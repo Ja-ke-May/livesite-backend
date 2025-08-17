@@ -30,15 +30,19 @@ const handleSquareWebhook = async (req, res) => {
 
     // Step 1: Extract username & SKU
     let username, sku;
-    if (payment.note) {
-      try {
-        const parsed = JSON.parse(payment.note);
-        username = parsed.username;
-        sku = parsed.sku;
-      } catch (err) {
-        console.warn('⚠️ Could not parse payment.note as JSON', err);
-      }
-    }
+
+if (payment.metadata) {
+  username = payment.metadata.username;
+  sku = payment.metadata.sku;
+} else if (payment.note) {
+  try {
+    const parsed = JSON.parse(payment.note);
+    username = parsed.username;
+    sku = parsed.sku;
+  } catch (err) {
+    console.warn('⚠️ Could not parse payment.note as JSON', err);
+  }
+}
 
     // Step 2: Fallback — find PaymentLink in DB
     const paymentLink = await PaymentLink.findOne({ linkId: payment.paymentLinkId });
