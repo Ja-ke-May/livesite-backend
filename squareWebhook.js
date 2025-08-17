@@ -21,46 +21,52 @@ const catalogSkuMap = {
 // Helper to normalize names for matching
 const normalize = (str) => str?.toLowerCase().replace(/\s+/g, "_");
 
+// Extract username, SKU, and purchaseId from payment object
 const extractPaymentDetails = async (payment, ordersApi) => {
   let sku = null;
   let username = null;
+  let purchaseId = null;
 
   console.log("🔍 Extracting payment details:", payment.id);
 
-  // 1️⃣ Check payment metadata
+  // 1️⃣ Metadata
   if (payment.metadata) {
     username = payment.metadata.username || username;
     sku = payment.metadata.sku || sku;
+    purchaseId = payment.metadata.purchaseId || purchaseId;
     if (sku) console.log("✅ SKU from payment metadata:", sku);
   }
 
-  // 2️⃣ Check payment note (JSON or "username-sku")
-  if ((!username || !sku) && payment.note) {
+  // 2️⃣ Payment note (JSON or "username-sku-purchaseId")
+  if ((!username || !sku || !purchaseId) && payment.note) {
     try {
       const noteData = JSON.parse(payment.note);
       username = username || noteData.username;
       sku = sku || noteData.sku;
+      purchaseId = purchaseId || noteData.purchaseId;
       if (sku) console.log("✅ SKU from payment note JSON:", sku);
     } catch {
-      const match = payment.note.match(/(\w+)-(\w+)/);
+      const match = payment.note.match(/(\w+)-(\w+)-([\w-]+)/);
       if (match) {
         username = username || match[1];
         sku = sku || match[2];
+        purchaseId = purchaseId || match[3];
         if (sku) console.log("✅ SKU from payment note pattern:", sku);
       }
     }
   }
 
-  // 3️⃣ Check referenceId
-  if ((!username || !sku) && payment.referenceId) {
+  // 3️⃣ ReferenceId
+  if ((!username || !sku || !purchaseId) && payment.referenceId) {
     const parts = payment.referenceId.split("-");
     if (!username && parts[0]) username = parts[0];
     if (!sku && parts[1]) sku = parts[1];
+    if (!purchaseId && parts.slice(2).length) purchaseId = parts.slice(2).join("-");
     if (sku) console.log("✅ SKU from referenceId:", sku);
   }
 
   // 4️⃣ Fetch order if still missing anything
-  if ((!username || !sku) && payment.orderId && ordersApi) {
+  if ((!username || !sku || !purchaseId) && payment.orderId && ordersApi) {
     try {
       const { result } = await ordersApi.retrieveOrder(payment.orderId);
       const lineItem = result?.order?.lineItems?.[0];
@@ -71,20 +77,23 @@ const extractPaymentDetails = async (payment, ordersApi) => {
         if (lineItem.metadata) {
           username = username || lineItem.metadata.username;
           sku = sku || lineItem.metadata.sku;
+          purchaseId = purchaseId || lineItem.metadata.purchaseId;
           if (sku) console.log("✅ SKU from line item metadata:", sku);
         }
 
-        if ((!username || !sku) && lineItem.note) {
+        if ((!username || !sku || !purchaseId) && lineItem.note) {
           try {
             const noteData = JSON.parse(lineItem.note);
             username = username || noteData.username;
             sku = sku || noteData.sku;
+            purchaseId = purchaseId || noteData.purchaseId;
             if (sku) console.log("✅ SKU from line item note JSON:", sku);
           } catch {
-            const match = lineItem.note.match(/(\w+)-(\w+)/);
+            const match = lineItem.note.match(/(\w+)-(\w+)-([\w-]+)/);
             if (match) {
               username = username || match[1];
               sku = sku || match[2];
+              purchaseId = purchaseId || match[3];
               if (sku) console.log("✅ SKU from line item note pattern:", sku);
             }
           }
@@ -112,14 +121,8 @@ const extractPaymentDetails = async (payment, ordersApi) => {
     }
   }
 
-  // 5️⃣ Last resort: use buyer email as username
-  if (!username && payment.buyer_email_address) {
-    username = payment.buyer_email_address;
-    console.log("✅ Username fallback to buyer email:", username);
-  }
-
-  console.log("🏷 Final extracted details:", { sku, username });
-  return { sku, username };
+  console.log("🏷 Final extracted details:", { sku, username, purchaseId });
+  return { sku, username, purchaseId };
 };
 
 const handleSquareWebhook = async (req, res) => {
@@ -133,15 +136,15 @@ const handleSquareWebhook = async (req, res) => {
     if (!payment) return res.status(200).send("Ignored");
     if (payment.status !== "COMPLETED") return res.status(200).send("Ignored");
 
-    const { sku, username } = await extractPaymentDetails(payment);
+    const { sku, username, purchaseId } = await extractPaymentDetails(payment);
 
     if (!username) {
-      console.warn("⚠️ No username found in payment/order");
+      console.warn("⚠️ Payment ignored: username missing");
       return res.status(200).send("Ignored");
     }
 
     if (!sku || !skuMap[sku]) {
-      console.warn("⚠️ Invalid or missing SKU:", sku);
+      console.warn("⚠️ Payment ignored: invalid or missing SKU:", sku);
       return res.status(200).send("Ignored");
     }
 
@@ -150,10 +153,15 @@ const handleSquareWebhook = async (req, res) => {
       ? payment.amountMoney.amount / 100
       : 0;
 
-    // Prevent double-credit
-    const existingUser = await User.findOne({ "purchases.paymentId": payment.id });
+    // Prevent double-credit using purchaseId if available, else fallback to payment.id
+    const existingUser = await User.findOne({
+      $or: [
+        { "purchases.paymentId": payment.id },
+        purchaseId ? { "purchases.purchaseId": purchaseId } : {},
+      ],
+    });
     if (existingUser) {
-      console.warn(`⚠️ Payment ${payment.id} already processed for ${username}`);
+      console.warn(`⚠️ Payment ${payment.id} / purchase ${purchaseId} already processed for ${username}`);
       return res.status(200).send("Already processed");
     }
 
@@ -164,9 +172,10 @@ const handleSquareWebhook = async (req, res) => {
       currency: payment.amountMoney?.currency || "GBP",
       description: "Token Purchase",
       paymentId: payment.id,
+      purchaseId,
     };
 
-    // ✅ Update using correct field name: userName
+    // ✅ Update user tokens and record purchase
     const user = await User.findOneAndUpdate(
       { userName: username },
       {
@@ -185,7 +194,7 @@ const handleSquareWebhook = async (req, res) => {
       console.error("❌ Email error:", err)
     );
 
-    console.log(`✅ ${username} credited with ${tokens} tokens (Payment ID: ${payment.id})`);
+    console.log(`✅ ${username} credited with ${tokens} tokens (Payment ID: ${payment.id}, Purchase ID: ${purchaseId})`);
     res.status(200).send("Processed");
   } catch (err) {
     console.error("❌ Square webhook error:", err);

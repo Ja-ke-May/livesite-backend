@@ -27,7 +27,8 @@
     "nodemailer": "^6.9.15",
     "socket.io": "^4.7.5",
     "square": "^39.1.0",
-    "stripe": "^16.9.0"
+    "stripe": "^16.9.0",
+    "uuid": "^11.1.0"
   },
   "resolutions": {
     "form-data": "^4.0.4"

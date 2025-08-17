@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const Square = require("square");
+const { v4: uuidv4 } = require("uuid"); 
 
 const client = new Square.Client({
   accessToken: process.env.SQUARE_ACCESS_TOKEN,
@@ -25,29 +26,33 @@ router.post("/create-checkout", async (req, res) => {
 
     const { name, price } = tokenDetails[sku];
     const amount = Math.round(Number(price) * 100);
-    const idempotencyKey = `${username}-${sku}-${Date.now()}`;
 
-    const lineItemNote = JSON.stringify({ username, sku });
-    const metadata = { username, sku };
-    const referenceId = `${username}-${sku}-${Date.now()}`;
+    // Generate a unique purchase ID for this transaction
+    const purchaseId = `${username}-${sku}-${uuidv4()}`;
+    const idempotencyKey = purchaseId;
+
+    // Include all identifying info in note, metadata, and referenceId
+    const lineItemNote = JSON.stringify({ username, sku, purchaseId });
+    const metadata = { username, sku, purchaseId };
+    const referenceId = purchaseId;
 
     const requestPayload = {
       idempotencyKey,
       order: {
         locationId: process.env.SQUARE_LOCATION_ID,
-        referenceId, // ✅ username in order reference
+        referenceId,
         lineItems: [
           {
             name,
             quantity: "1",
             basePriceMoney: { amount, currency: "GBP" },
-            note: lineItemNote, // ✅ username in note
-            metadata,           // ✅ username in metadata
+            note: lineItemNote,
+            metadata,
           },
         ],
       },
       checkoutOptions: {
-        redirectUrl: `${process.env.CLIENT_SUCCESS_URL}?username=${encodeURIComponent(username)}&sku=${sku}`, // ✅ username in redirect URL
+        redirectUrl: `${process.env.CLIENT_SUCCESS_URL}?username=${encodeURIComponent(username)}&sku=${sku}&purchaseId=${purchaseId}`,
       },
     };
 
@@ -59,8 +64,8 @@ router.post("/create-checkout", async (req, res) => {
     }
 
     const checkoutUrl = result.paymentLink?.url;
-    console.log(`✅ Created checkout link for ${username} (${sku}): ${checkoutUrl}`);
-    res.json({ checkoutUrl });
+    console.log(`✅ Created checkout link for ${username} (${sku}) [${purchaseId}]: ${checkoutUrl}`);
+    res.json({ checkoutUrl, purchaseId });
   } catch (error) {
     console.error("❌ Square checkout error:", error);
     res.status(500).json({ error: error.message });
