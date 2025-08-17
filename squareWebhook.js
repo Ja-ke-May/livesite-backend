@@ -2,32 +2,18 @@ const { Client } = require("square");
 const User = require("./models/user");
 const { sendThankYouEmail } = require("./emails");
 
+// Token mapping
 const skuMap = {
   tokens_400: 400,
   tokens_1000: 1000,
   tokens_2000: 2000,
   tokens_4000: 4000,
   tokens_10000: 10000,
-  tokens_50000: 50000, 
-  tokens_150000: 150000, 
-tokens_400000: 400000, 
-tokens_1000000: 1000000,
+  tokens_50000: 50000,
+  tokens_150000: 150000,
+  tokens_400000: 400000,
+  tokens_1000000: 1000000,
 };
-
-// Map real catalogObjectIds to SKU keys
-const catalogSkuMap = {
-  "CATALOG_OBJ_ID_400": "tokens_400",
-  "CATALOG_OBJ_ID_1000": "tokens_1000",
-  "CATALOG_OBJ_ID_2000": "tokens_2000",
-  "CATALOG_OBJ_ID_4000": "tokens_4000",
-  "CATALOG_OBJ_ID_10000": "tokens_10000",
-   "CATALOG_OBJ_ID_50000": "tokens_50000",
-  "CATALOG_OBJ_ID_150000": "tokens_150000",
-  "CATALOG_OBJ_ID_400000": "tokens_400000",
-  "CATALOG_OBJ_ID_1000000": "tokens_1000000",
-};
-
-  
 
 // Square client
 const squareClient = new Client({
@@ -35,10 +21,7 @@ const squareClient = new Client({
   environment: process.env.SQUARE_ENVIRONMENT || "production",
 });
 
-// Helper to normalize names for matching
-const normalize = (str) => str?.toLowerCase().replace(/\s+/g, "_");
-
-// Extract username, SKU, and purchaseId from payment object
+// Extract details directly from payment + lineItem.note
 const extractPaymentDetails = async (payment, ordersApi) => {
   let sku = null;
   let username = null;
@@ -46,91 +29,43 @@ const extractPaymentDetails = async (payment, ordersApi) => {
 
   console.log("🔍 Extracting payment details:", payment.id);
 
-  // 1️⃣ Metadata
-  if (payment.metadata) {
-    username = payment.metadata.username || username;
-    sku = payment.metadata.sku || sku;
-    purchaseId = payment.metadata.purchaseId || purchaseId;
-    if (sku) console.log("✅ SKU from payment metadata:", sku);
-  }
-
-  // 2️⃣ Payment note (JSON or "username-sku-purchaseId")
-  if ((!username || !sku || !purchaseId) && payment.note) {
+  // 1️⃣ Try payment.note (should contain JSON)
+  if (payment.note) {
     try {
       const noteData = JSON.parse(payment.note);
-      username = username || noteData.username;
-      sku = sku || noteData.sku;
-      purchaseId = purchaseId || noteData.purchaseId;
-      if (sku) console.log("✅ SKU from payment note JSON:", sku);
+      username = noteData.username || username;
+      sku = noteData.sku || sku;
+      purchaseId = noteData.purchaseId || purchaseId;
+      console.log("✅ Extracted from payment.note:", noteData);
     } catch {
-      const match = payment.note.match(/(\w+)-(\w+)-([\w-]+)/);
-      if (match) {
-        username = username || match[1];
-        sku = sku || match[2];
-        purchaseId = purchaseId || match[3];
-        if (sku) console.log("✅ SKU from payment note pattern:", sku);
-      }
+      console.warn("⚠️ Failed to parse payment.note:", payment.note);
     }
   }
 
-  // 3️⃣ ReferenceId
+  // 2️⃣ ReferenceId fallback
   if ((!username || !sku || !purchaseId) && payment.referenceId) {
     const parts = payment.referenceId.split("-");
     if (!username && parts[0]) username = parts[0];
     if (!sku && parts[1]) sku = parts[1];
     if (!purchaseId && parts.slice(2).length) purchaseId = parts.slice(2).join("-");
-    if (sku) console.log("✅ SKU from referenceId:", sku);
+    console.log("✅ Extracted from referenceId:", { username, sku, purchaseId });
   }
 
-  // 4️⃣ Fetch order if still missing anything
-  if ((!username || !sku || !purchaseId) && payment.orderId && ordersApi) {
+  // 3️⃣ Fetch order + lineItem.note if still missing
+  if ((!username || !sku || !purchaseId) && payment.orderId) {
     try {
       const { result } = await ordersApi.retrieveOrder(payment.orderId);
       const lineItem = result?.order?.lineItems?.[0];
 
-      console.log("📦 Order line items:", JSON.stringify(result.order?.lineItems, null, 2));
-
-      if (lineItem) {
-        if (lineItem.metadata) {
-          username = username || lineItem.metadata.username;
-          sku = sku || lineItem.metadata.sku;
-          purchaseId = purchaseId || lineItem.metadata.purchaseId;
-          if (sku) console.log("✅ SKU from line item metadata:", sku);
-        }
-
-        if ((!username || !sku || !purchaseId) && lineItem.note) {
-          try {
-            const noteData = JSON.parse(lineItem.note);
-            username = username || noteData.username;
-            sku = sku || noteData.sku;
-            purchaseId = purchaseId || noteData.purchaseId;
-            if (sku) console.log("✅ SKU from line item note JSON:", sku);
-          } catch {
-            const match = lineItem.note.match(/(\w+)-(\w+)-([\w-]+)/);
-            if (match) {
-              username = username || match[1];
-              sku = sku || match[2];
-              purchaseId = purchaseId || match[3];
-              if (sku) console.log("✅ SKU from line item note pattern:", sku);
-            }
-          }
-        }
-
-        if (!sku && lineItem.name) {
-          const normalizedName = normalize(lineItem.name);
-          sku = Object.keys(skuMap).find((key) => normalizedName.includes(key));
-          if (sku) console.log("✅ SKU from line item name:", sku);
-        }
-
-        if (!sku && lineItem.variationName) {
-          const normalizedVariation = normalize(lineItem.variationName);
-          sku = Object.keys(skuMap).find((key) => normalizedVariation.includes(key));
-          if (sku) console.log("✅ SKU from line item variationName:", sku);
-        }
-
-        if (!sku && lineItem.catalogObjectId) {
-          sku = catalogSkuMap[lineItem.catalogObjectId] || sku;
-          if (sku) console.log("✅ SKU from catalogObjectId:", sku);
+      if (lineItem?.note) {
+        try {
+          const noteData = JSON.parse(lineItem.note);
+          username = noteData.username || username;
+          sku = noteData.sku || sku;
+          purchaseId = noteData.purchaseId || purchaseId;
+          console.log("✅ Extracted from lineItem.note:", noteData);
+        } catch {
+          console.warn("⚠️ Failed to parse lineItem.note:", lineItem.note);
         }
       }
     } catch (err) {
@@ -154,7 +89,6 @@ const handleSquareWebhook = async (req, res) => {
     if (!payment) return res.status(200).send("Ignored");
     if (payment.status !== "COMPLETED") return res.status(200).send("Ignored");
 
-    // Pass ordersApi so extractPaymentDetails can fetch line items
     const { sku, username, purchaseId } = await extractPaymentDetails(payment, squareClient.ordersApi);
 
     if (!username) {
@@ -168,11 +102,9 @@ const handleSquareWebhook = async (req, res) => {
     }
 
     const tokens = skuMap[sku];
-    const amountSpent = payment.amountMoney?.amount
-      ? payment.amountMoney.amount / 100
-      : 0;
+    const amountSpent = payment.amountMoney?.amount ? payment.amountMoney.amount / 100 : 0;
 
-    // Prevent double-credit using purchaseId if available, else fallback to payment.id
+    // Prevent double-credit (check both paymentId + purchaseId)
     const existingUser = await User.findOne({
       $or: [
         { "purchases.paymentId": payment.id },
@@ -197,10 +129,7 @@ const handleSquareWebhook = async (req, res) => {
     // ✅ Update user tokens and record purchase
     const user = await User.findOneAndUpdate(
       { userName: username },
-      {
-        $inc: { tokens },
-        $push: { purchases: newPurchase },
-      },
+      { $inc: { tokens }, $push: { purchases: newPurchase } },
       { new: true }
     );
 
