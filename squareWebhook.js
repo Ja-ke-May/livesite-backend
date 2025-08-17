@@ -1,6 +1,6 @@
-const User = require('./models/user');
-const PaymentLink = require('./models/paymentLink');
-const { sendThankYouEmail } = require('./emails');
+const User = require('../models/user');
+const PaymentLink = require('../models/paymentLink');
+const { sendThankYouEmail } = require('../emails');
 
 const skuMap = {
   tokens_400: 400,
@@ -15,11 +15,7 @@ const handleSquareWebhook = async (req, res) => {
     const event = req.body;
     console.log('📬 Incoming Square webhook event:', event.type, event.event_id);
 
-    // Only process payment events
-    if (!event.type || !event.type.startsWith('payment.')) {
-      console.log('⚠️ Ignored non-payment event:', event.type);
-      return res.status(200).send('Ignored');
-    }
+    if (!event.type?.startsWith('payment.')) return res.status(200).send('Ignored');
 
     const payment = event.data?.object?.payment;
     if (!payment) return res.status(200).send('Ignored');
@@ -27,33 +23,51 @@ const handleSquareWebhook = async (req, res) => {
     console.log('💳 Incoming payment object:', {
       id: payment.id,
       status: payment.status,
-      amount: payment.amount_money,
+      note: payment.note,
     });
 
-    // Only handle completed payments
-    if (payment.status !== 'COMPLETED') {
-      console.log('⚠️ Ignored payment not completed:', payment.status);
-      return res.status(200).send('Ignored');
+    if (payment.status !== 'COMPLETED') return res.status(200).send('Ignored');
+
+    // Step 1: Extract username & SKU
+    let username, sku;
+    if (payment.note) {
+      try {
+        const parsed = JSON.parse(payment.note);
+        username = parsed.username;
+        sku = parsed.sku;
+      } catch (err) {
+        console.warn('⚠️ Could not parse payment.note as JSON', err);
+      }
     }
 
-    // Lookup PaymentLink to get username and SKU
-    const paymentLink = await PaymentLink.findOne({
-      $or: [{ linkId: payment.id }, { orderId: payment.order_id }]
-    });
-
-    if (!paymentLink) {
-      console.warn('⚠️ Could not find PaymentLink for payment', payment.id);
-      return res.status(200).send('Ignored');
-    }
-
-    const { username, sku } = paymentLink;
-    if (!username || !sku || !skuMap[sku]) {
-      console.warn('⚠️ Invalid username or SKU from PaymentLink', { username, sku });
-      return res.status(200).send('Ignored');
+    // Step 2: Fallback — find PaymentLink in DB
+    const paymentLink = await PaymentLink.findOne({ linkId: payment.paymentLinkId });
+    if (!username || !sku) {
+      if (paymentLink) {
+        username = username || paymentLink.username;
+        sku = sku || paymentLink.sku;
+      } else {
+        console.warn('⚠️ Missing username or SKU', { username, sku });
+        return res.status(200).send('Ignored');
+      }
     }
 
     const tokens = skuMap[sku];
-    const amountSpent = payment.amount_money?.amount ? payment.amount_money.amount / 100 : 0;
+    if (!tokens) {
+      console.warn('⚠️ Invalid SKU:', sku);
+      return res.status(200).send('Ignored');
+    }
+
+    // Step 3: Prevent double-crediting
+    if (paymentLink?.isPaid) {
+      console.log(`⚠️ Payment already processed: ${payment.id}`);
+      return res.status(200).send('Already processed');
+    }
+
+    const amountSpent = payment.amount_money?.amount
+      ? payment.amount_money.amount / 100
+      : 0;
+
     const newPurchase = {
       date: new Date(),
       tokens,
@@ -63,9 +77,7 @@ const handleSquareWebhook = async (req, res) => {
       paymentId: payment.id,
     };
 
-    console.log('💰 Processing purchase for user:', username, newPurchase);
-
-    // Update User tokens and purchase history
+    // Step 4: Update user tokens & purchase history
     const user = await User.findOneAndUpdate(
       { username },
       {
@@ -77,20 +89,20 @@ const handleSquareWebhook = async (req, res) => {
     );
 
     if (!user) {
-      console.warn(`⚠️ Webhook received for unknown user: ${username}`);
+      console.warn(`⚠️ Unknown user: ${username}`);
       return res.status(200).send('Ignored');
     }
 
-    // Mark PaymentLink as paid
-    await PaymentLink.findOneAndUpdate(
-      { $or: [{ linkId: payment.id }, { orderId: payment.order_id }] },
-      { isPaid: true, paidAt: new Date() }
-    );
+    // Step 5: Mark PaymentLink as paid
+    if (paymentLink) {
+      await PaymentLink.findOneAndUpdate(
+        { linkId: payment.paymentLinkId },
+        { isPaid: true, paidAt: new Date() }
+      );
+    }
 
-    // Send thank-you email
-    sendThankYouEmail(user, newPurchase).catch(err =>
-      console.error('❌ Email send error:', err)
-    );
+    // Step 6: Send thank-you email
+    sendThankYouEmail(user, newPurchase).catch(err => console.error('❌ Email error:', err));
 
     console.log(`✅ ${username} credited ${tokens} tokens (Payment ID: ${payment.id})`);
     res.status(200).send('Processed');

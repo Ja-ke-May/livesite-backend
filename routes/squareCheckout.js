@@ -35,10 +35,11 @@ router.post("/create-checkout", async (req, res) => {
         priceMoney: { amount, currency: "GBP" },
         locationId: process.env.SQUARE_LOCATION_ID,
       },
+       note: JSON.stringify({ username, sku }),
       checkoutOptions: {
-        redirectUrl: process.env.CLIENT_SUCCESS_URL, // optional: redirect after payment
+        redirectUrl: process.env.CLIENT_SUCCESS_URL, 
       },
-      // Removed referenceId and note
+      
     };
 
     // Create payment link in Square
@@ -49,7 +50,7 @@ router.post("/create-checkout", async (req, res) => {
     const paymentLinkId = result.paymentLink?.id;
 
     // Save the payment link to your DB for webhook mapping
-    await PaymentLink.create({ linkId: paymentLinkId, username, sku });
+   await PaymentLink.create({ linkId: paymentLinkId, username, sku, isPaid: false });
 
     console.log(`✅ Created checkout link for ${username} (${sku}): ${checkoutUrl}`);
     res.json({ checkoutUrl, paymentLinkId });
