@@ -11,7 +11,7 @@ const skuMap = {
   tokens_50000: 50000, 
   tokens_150000: 150000, 
 tokens_400000: 400000, 
-tokens_: 1000000,
+tokens_1000000: 1000000,
 };
 
 // Map real catalogObjectIds to SKU keys

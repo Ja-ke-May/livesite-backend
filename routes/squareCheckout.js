@@ -39,9 +39,8 @@ router.post("/create-checkout", async (req, res) => {
     const shortId = crypto.randomBytes(8).toString("hex");
     const referenceId = `${username}-${sku}-${shortId}`.slice(0, 40);
 
-    // Ensure metadata and note are consistent
-    const metadata = { username, sku, purchaseId };
-    const lineItemNote = JSON.stringify(metadata);
+    // Put all needed info inside the line item note
+    const lineItemNote = JSON.stringify({ username, sku, purchaseId });
 
     const requestPayload = {
       idempotencyKey: purchaseId,
@@ -53,8 +52,7 @@ router.post("/create-checkout", async (req, res) => {
             name,
             quantity: "1",
             basePriceMoney: { amount, currency: "GBP" },
-            note: lineItemNote,
-            metadata, // ✅ ensures webhook can read metadata
+            note: lineItemNote, // ✅ only using note now
           },
         ],
       },
@@ -83,4 +81,3 @@ router.post("/create-checkout", async (req, res) => {
 });
 
 module.exports = router;
-
