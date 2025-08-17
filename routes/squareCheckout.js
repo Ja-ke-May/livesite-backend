@@ -9,13 +9,13 @@ const client = new Square.Client({
 
 router.post("/create-checkout", async (req, res) => {
   try {
-    const { userName, sku } = req.body;
+    const { username, sku } = req.body;
 
-    console.log("Incoming create-checkout request:", { userName, sku });
+    console.log("Incoming create-checkout request:", { username, sku });
 
-    if (!userName || !sku) {
-      console.warn("Missing userName or sku");
-      return res.status(400).json({ error: "Missing userName or sku" });
+    if (!username || !sku) {
+      console.warn("Missing username or sku");
+      return res.status(400).json({ error: "Missing username or sku" });
     }
 
     const amount = (() => {
@@ -46,7 +46,7 @@ router.post("/create-checkout", async (req, res) => {
         },
         locationId: process.env.SQUARE_LOCATION_ID,
       },
-      checkoutOptions: { referenceId: userName },
+      checkoutOptions: { referenceId: username },
     };
 
     console.log("Request payload to Square:", requestPayload);
