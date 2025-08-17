@@ -1,4 +1,4 @@
-const User = require('../models/user');
+const User = require('./models/user');
 const PaymentLink = require('../models/paymentLink');
 const { sendThankYouEmail } = require('../emails');
 
