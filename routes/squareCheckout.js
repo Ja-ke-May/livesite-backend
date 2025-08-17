@@ -7,39 +7,35 @@ const client = new Square.Client({
   environment: 'production', // force production
 });
 
+// Map SKUs to friendly names and prices
+const tokenDetails = {
+  tokens_400: { name: "Tokens 400", price: 0.99 },
+  tokens_1000: { name: "Tokens 1000", price: 19.99 },
+  tokens_2000: { name: "Tokens 2000", price: 29.99 },
+  tokens_4000: { name: "Tokens 4000", price: 49.99 },
+  tokens_10000: { name: "Tokens 10000", price: 99.99 },
+};
+
 router.post("/create-checkout", async (req, res) => {
   try {
     const { username, sku } = req.body;
 
     console.log("Incoming create-checkout request:", { username, sku });
 
-    if (!username || !sku) {
-      console.warn("Missing username or sku");
-      return res.status(400).json({ error: "Missing username or sku" });
+    if (!username || !sku || !tokenDetails[sku]) {
+      console.warn("Missing or invalid username/sku");
+      return res.status(400).json({ error: "Missing or invalid username/sku" });
     }
 
-    const amount = (() => {
-      switch (sku) {
-        case "tokens_400": return 400 * 100;
-        case "tokens_1000": return 1000 * 100;
-        case "tokens_2000": return 2000 * 100;
-        case "tokens_4000": return 4000 * 100;
-        case "tokens_10000": return 10000 * 100;
-        default: return 0;
-      }
-    })();
+    const { name, price } = tokenDetails[sku];
+    const amount = Math.round(price * 100); // Convert GBP to pence
 
     console.log("Calculated amount (cents):", amount);
-
-    if (amount <= 0) {
-      console.warn("Invalid SKU or amount 0");
-      return res.status(400).json({ error: "Invalid SKU" });
-    }
 
     const requestPayload = {
       idempotencyKey: Date.now().toString(),
       quickPay: {
-        name: sku,
+        name, // Friendly name for better UX
         priceMoney: {
           amount,
           currency: "GBP",
@@ -60,7 +56,7 @@ router.post("/create-checkout", async (req, res) => {
 
     console.log("Square API result:", result);
 
-   const checkoutUrl = result?.paymentLink?.url || result?.payment_link?.url;
+    const checkoutUrl = result?.paymentLink?.url || result?.payment_link?.url;
     if (!checkoutUrl) {
       console.error("No checkout URL received from Square");
       return res.status(500).json({ error: "No checkout URL received" });
