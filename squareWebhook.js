@@ -28,11 +28,15 @@ const extractPaymentDetails = async (payment, ordersApi) => {
   let username = null;
   let shortId = null;
 
-  console.log("🔍 Extracting payment details:", payment.id);
+  console.log("🔍 Extracting payment details for payment:", payment.id);
 
   if (payment.orderId) {
     try {
       const { result } = await ordersApi.retrieveOrder(payment.orderId);
+
+      // 🔎 Log the full Square order object for debugging
+      console.log("📦 Full Square Order response:", JSON.stringify(result, null, 2));
+
       const orderRef = result?.order?.referenceId;
 
       if (orderRef) {
@@ -68,25 +72,38 @@ const handleSquareWebhook = async (req, res) => {
     const event = req.body;
     console.log("📬 Incoming Square webhook:", event.type, event.event_id);
 
-    // Only care about payment events
+    // Only process payment events
     if (!event.type?.startsWith("payment.")) {
       return res.status(200).send("Ignored");
     }
 
-    const payment = event.data?.object?.payment;
-    if (!payment) {
+    const webhookPayment = event.data?.object?.payment;
+    if (!webhookPayment) {
       console.warn("⚠️ Webhook missing payment object");
       return res.status(200).send("Ignored");
     }
 
-    if (payment.status !== "COMPLETED") {
-      console.log(`ℹ️ Payment ${payment.id} status = ${payment.status}, ignored`);
+    // 🔎 Always fetch the full payment object to get orderId
+    let fullPayment;
+    try {
+      const { result } = await squareClient.paymentsApi.getPayment(webhookPayment.id);
+      fullPayment = result.payment;
+
+      // 🔎 Log the full payment object for debugging
+      console.log("💳 Full Square Payment response:", JSON.stringify(result, null, 2));
+    } catch (err) {
+      console.error("❌ Failed to fetch full payment:", err);
+      return res.status(500).send("Square payment fetch failed");
+    }
+
+    if (fullPayment.status !== "COMPLETED") {
+      console.log(`ℹ️ Payment ${fullPayment.id} status = ${fullPayment.status}, ignored`);
       return res.status(200).send("Ignored");
     }
 
     // Extract username / sku / shortId from order.referenceId
     const { sku, username, shortId } = await extractPaymentDetails(
-      payment,
+      fullPayment,
       squareClient.ordersApi
     );
 
@@ -102,24 +119,24 @@ const handleSquareWebhook = async (req, res) => {
 
     const tokens = skuMap[sku];
     const amountSpent =
-      payment.amountMoney?.amount != null
-        ? payment.amountMoney.amount / 100
+      fullPayment.amountMoney?.amount != null
+        ? fullPayment.amountMoney.amount / 100
         : 0;
 
     // Build safe purchaseId for DB (unique per payment)
-    const purchaseId = `${payment.id}-${shortId || "noid"}`;
+    const purchaseId = `${fullPayment.id}-${shortId || "noid"}`;
 
     // Prevent double-crediting
     const existingUser = await User.findOne({
       $or: [
-        { "purchases.paymentId": payment.id },
+        { "purchases.paymentId": fullPayment.id },
         { "purchases.purchaseId": purchaseId },
       ],
     });
 
     if (existingUser) {
       console.warn(
-        `⚠️ Payment ${payment.id} / purchase ${purchaseId} already processed for ${username}`
+        `⚠️ Payment ${fullPayment.id} / purchase ${purchaseId} already processed for ${username}`
       );
       return res.status(200).send("Already processed");
     }
@@ -128,9 +145,9 @@ const handleSquareWebhook = async (req, res) => {
       date: new Date(),
       tokens,
       amountSpent,
-      currency: payment.amountMoney?.currency || "GBP",
+      currency: fullPayment.amountMoney?.currency || "GBP",
       description: "Token Purchase",
-      paymentId: payment.id,
+      paymentId: fullPayment.id,
       purchaseId,
     };
 
@@ -151,7 +168,7 @@ const handleSquareWebhook = async (req, res) => {
     );
 
     console.log(
-      `✅ ${username} credited with ${tokens} tokens (Payment ID: ${payment.id}, Purchase ID: ${purchaseId})`
+      `✅ ${username} credited with ${tokens} tokens (Payment ID: ${fullPayment.id}, Purchase ID: ${purchaseId})`
     );
     res.status(200).send("Processed");
   } catch (err) {
