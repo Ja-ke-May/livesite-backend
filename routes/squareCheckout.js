@@ -7,7 +7,7 @@ const client = new Square.Client({
   environment: "production",
 });
 
-// Token packs and prices (in GBP)
+
 const tokenDetails = {
   tokens_400: { name: "Tokens 400", price: 0.01 },
   tokens_1000: { name: "Tokens 1000", price: 19.99 },
@@ -25,7 +25,7 @@ router.post("/create-checkout", async (req, res) => {
     }
 
     const { name, price } = tokenDetails[sku];
-    const amount = Math.round(Number(price) * 100); // Convert to pence (integer)
+    const amount = Math.round(Number(price) * 100);
 
     const idempotencyKey = `${username}-${sku}-${Date.now()}`;
 
@@ -38,7 +38,6 @@ router.post("/create-checkout", async (req, res) => {
             name,
             quantity: "1",
             basePriceMoney: { amount, currency: "GBP" },
-            // 👇 Store username + sku in the line item note
             note: JSON.stringify({ username, sku }),
           },
         ],

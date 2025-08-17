@@ -6,7 +6,7 @@ const client = new Square.Client({
   accessToken: process.env.SQUARE_ACCESS_TOKEN,
   environment: "production",
 });
-const paymentsApi = client.paymentsApi;
+const ordersApi = client.ordersApi;
 
 const skuMap = {
   tokens_400: 400,
@@ -14,6 +14,22 @@ const skuMap = {
   tokens_2000: 2000,
   tokens_4000: 4000,
   tokens_10000: 10000,
+};
+
+// Helper to fetch SKU from Square order
+const fetchSkuFromOrder = async (orderId) => {
+  try {
+    const { result } = await ordersApi.retrieveOrder(orderId);
+    const order = result.order;
+    if (!order || !order.lineItems) return null;
+
+    // Assuming first line item contains the SKU
+    const lineItem = order.lineItems[0];
+    return lineItem.catalogObjectId || lineItem.name; // adjust depending on your catalog setup
+  } catch (err) {
+    console.error("❌ Error fetching order:", err);
+    return null;
+  }
 };
 
 const handleSquareWebhook = async (req, res) => {
@@ -27,11 +43,22 @@ const handleSquareWebhook = async (req, res) => {
     if (!payment) return res.status(200).send("Ignored");
     if (payment.status !== "COMPLETED") return res.status(200).send("Ignored");
 
-    // Extract username and SKU from metadata
-    const username = payment.metadata?.username;
-    const sku = payment.metadata?.sku;
-    if (!username || !sku) {
-      console.warn("⚠️ Missing username or SKU in metadata");
+    // Use backend-known username if available
+    // For example, pass username in webhook body or retrieve from DB using payment.orderId
+    const username = req.body.username;
+    if (!username) {
+      console.warn("⚠️ No username provided in webhook context");
+      return res.status(200).send("Ignored");
+    }
+
+    // Get SKU from order if orderId exists
+    let sku;
+    if (payment.orderId) {
+      sku = await fetchSkuFromOrder(payment.orderId);
+    }
+
+    if (!sku) {
+      console.warn("⚠️ No SKU found for payment:", payment.id);
       return res.status(200).send("Ignored");
     }
 
@@ -54,7 +81,6 @@ const handleSquareWebhook = async (req, res) => {
       paymentId: payment.id,
     };
 
-    // Update user by username
     const user = await User.findOneAndUpdate(
       { username },
       {
