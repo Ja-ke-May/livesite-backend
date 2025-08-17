@@ -36,7 +36,7 @@ router.post("/create-checkout", async (req, res) => {
         name,
         quantity: "1",
         basePriceMoney: { amount, currency: "GBP" },
-        metadata: { username, sku }, 
+        note: JSON.stringify({ username, sku }),
       },
     ],
   },
