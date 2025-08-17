@@ -89,12 +89,13 @@ const handleSquareWebhook = async (req, res) => {
       const { result } = await squareClient.paymentsApi.getPayment(webhookPayment.id);
       fullPayment = result.payment;
 
-      // 🔎 Log the full payment object for debugging
-      console.log("💳 Full Square Payment response:", JSON.stringify(result, null, 2));
-    } catch (err) {
-      console.error("❌ Failed to fetch full payment:", err);
-      return res.status(500).send("Square payment fetch failed");
-    }
+     
+  // 🔎 Log safely (no BigInt crash)
+  console.log("💳 Full Square Payment response:", safeStringify(result));
+} catch (err) {
+  console.error("❌ Failed to fetch full payment:", err);
+  return res.status(500).send("Square payment fetch failed");
+}
 
     if (fullPayment.status !== "COMPLETED") {
       console.log(`ℹ️ Payment ${fullPayment.id} status = ${fullPayment.status}, ignored`);
