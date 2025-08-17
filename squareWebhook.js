@@ -16,31 +16,59 @@ const skuMap = {
   tokens_10000: 10000,
 };
 
-// Helper to fetch SKU and username from Square order
-const fetchOrderDetails = async (orderId) => {
-  try {
-    const { result } = await ordersApi.retrieveOrder(orderId);
-    const order = result.order;
-    if (!order || !order.lineItems || !order.lineItems.length) return {};
+// Extract SKU & username from payment
+const extractPaymentDetails = async (payment) => {
+  let sku = null;
+  let username = null;
 
-    const lineItem = order.lineItems[0];
-    const name = lineItem.name; // expected to contain SKU
-    const sku = Object.keys(skuMap).find((key) => name.includes(key));
-
-    // Extract username from note if possible
-    let username = null;
-    if (lineItem.note) {
-      try {
-        const noteData = JSON.parse(lineItem.note);
-        username = noteData.username;
-      } catch {}
-    }
-
-    return { sku, username };
-  } catch (err) {
-    console.error("❌ Error fetching order:", err);
-    return {};
+  // 1️⃣ Try metadata first (most reliable)
+  if (payment.metadata) {
+    username = payment.metadata.username || username;
+    sku = payment.metadata.sku || sku;
   }
+
+  // 2️⃣ Fallback to payment.note
+  if ((!username || !sku) && payment.note) {
+    try {
+      const noteData = JSON.parse(payment.note);
+      username = username || noteData.username;
+      sku = sku || noteData.sku;
+    } catch {}
+  }
+
+  // 3️⃣ Fetch order if needed
+  if ((!username || !sku) && payment.orderId) {
+    try {
+      const { result } = await ordersApi.retrieveOrder(payment.orderId);
+      const lineItem = result?.order?.lineItems?.[0];
+
+      if (lineItem) {
+        // Check line item metadata first
+        if (lineItem.metadata) {
+          username = username || lineItem.metadata.username;
+          sku = sku || lineItem.metadata.sku;
+        }
+
+        // Fallback to line item note
+        if ((!username || !sku) && lineItem.note) {
+          try {
+            const noteData = JSON.parse(lineItem.note);
+            username = username || noteData.username;
+            sku = sku || noteData.sku;
+          } catch {}
+        }
+
+        // Fallback to parsing SKU from lineItem name
+        if (!sku) {
+          sku = Object.keys(skuMap).find((key) => lineItem.name.includes(key));
+        }
+      }
+    } catch (err) {
+      console.error("❌ Error fetching order:", err);
+    }
+  }
+
+  return { sku, username };
 };
 
 const handleSquareWebhook = async (req, res) => {
@@ -54,16 +82,10 @@ const handleSquareWebhook = async (req, res) => {
     if (!payment) return res.status(200).send("Ignored");
     if (payment.status !== "COMPLETED") return res.status(200).send("Ignored");
 
-    if (!payment.orderId) {
-      console.warn("⚠️ Payment has no orderId, cannot determine SKU/username");
-      return res.status(200).send("Ignored");
-    }
-
-    // Fetch SKU and username from order
-    const { sku, username } = await fetchOrderDetails(payment.orderId);
+    const { sku, username } = await extractPaymentDetails(payment);
 
     if (!username) {
-      console.warn("⚠️ No username found in order:", payment.orderId);
+      console.warn("⚠️ No username found in payment/order");
       return res.status(200).send("Ignored");
     }
 

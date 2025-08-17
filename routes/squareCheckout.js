@@ -25,11 +25,11 @@ router.post("/create-checkout", async (req, res) => {
 
     const { name, price } = tokenDetails[sku];
     const amount = Math.round(Number(price) * 100);
-
     const idempotencyKey = `${username}-${sku}-${Date.now()}`;
 
-    // Include username and SKU directly in the line item note
+    // Include username & SKU in both note and metadata
     const lineItemNote = JSON.stringify({ username, sku });
+    const metadata = { username, sku };
 
     const requestPayload = {
       idempotencyKey,
@@ -37,10 +37,11 @@ router.post("/create-checkout", async (req, res) => {
         locationId: process.env.SQUARE_LOCATION_ID,
         lineItems: [
           {
-            name,                 // e.g., "Tokens 1000"
+            name,                  // e.g., "Tokens 1000"
             quantity: "1",
             basePriceMoney: { amount, currency: "GBP" },
-            note: lineItemNote,   // username & sku stored here
+            note: lineItemNote,     // fallback
+            metadata,               // primary reliable storage
           },
         ],
       },
