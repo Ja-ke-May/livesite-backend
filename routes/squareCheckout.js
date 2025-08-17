@@ -43,7 +43,7 @@ router.post("/create-checkout", async (req, res) => {
         locationId: process.env.SQUARE_LOCATION_ID,
       },
       checkoutOptions: { referenceId: username },
-      metadata: { username, sku } 
+      note: JSON.stringify({ username, sku }) 
     };
 
     console.log("Request payload to Square:", requestPayload);

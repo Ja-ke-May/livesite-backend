@@ -1,7 +1,6 @@
 const User = require('./models/user');
 const { sendThankYouEmail } = require('./emails');
 
-
 const handleSquareWebhook = async (req, res) => {
   try {
     const event = req.body;
@@ -14,22 +13,30 @@ const handleSquareWebhook = async (req, res) => {
 
     const payment = event.data?.object?.payment;
 
-    // Only process completed payments
     if (!payment || payment.status !== 'COMPLETED') {
       console.log('⚠️ Ignored payment not completed:', payment?.status);
       return res.status(200).send('Ignored');
     }
 
-    // Use metadata if available, fallback to note/reference_id
-    const sku = payment.metadata?.sku || payment.note;
-    const username = payment.metadata?.username || payment.reference_id;
+    // Extract username/sku
+    let username = payment.metadata?.username;
+    let sku = payment.metadata?.sku;
+
+    if ((!username || !sku) && payment.note) {
+      try {
+        const parsed = JSON.parse(payment.note);
+        username = parsed.username;
+        sku = parsed.sku;
+      } catch (err) {
+        console.warn('⚠️ Failed to parse payment note for username/sku', payment.note);
+      }
+    }
 
     if (!username || !sku) {
       console.warn('⚠️ Missing username or SKU in Square payment', { username, sku });
-      return res.status(400).send('Missing data');
+      return res.status(200).send('Ignored'); // Don't fail with 400, just ignore
     }
 
-    // Map SKU to token amount
     const skuMap = {
       tokens_400: 400,
       tokens_1000: 1000,
@@ -39,10 +46,9 @@ const handleSquareWebhook = async (req, res) => {
     };
 
     const tokens = skuMap[sku];
-
     if (!tokens) {
       console.warn(`⚠️ Unknown SKU received from Square: ${sku}`);
-      return res.status(400).send('Invalid SKU');
+      return res.status(200).send('Ignored');
     }
 
     const newPurchase = {
@@ -53,10 +59,9 @@ const handleSquareWebhook = async (req, res) => {
         : 0,
       currency: payment.amount_money?.currency || 'GBP',
       description: 'Token Purchase',
-      paymentId: payment.id || null, // Track Square payment ID
+      paymentId: payment.id,
     };
 
-    // Update user in DB
     const user = await User.findOneAndUpdate(
       { username },
       {
@@ -69,10 +74,9 @@ const handleSquareWebhook = async (req, res) => {
 
     if (!user) {
       console.warn(`⚠️ Webhook received for unknown user: ${username}`);
-      return res.status(404).send('User not found');
+      return res.status(200).send('Ignored');
     }
 
-    // Fire off thank-you email (async, non-blocking)
     sendThankYouEmail(user, newPurchase).catch(err =>
       console.error('❌ Email send error:', err)
     );
