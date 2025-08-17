@@ -35,9 +35,10 @@ router.post("/create-checkout", async (req, res) => {
         priceMoney: { amount, currency: "GBP" },
         locationId: process.env.SQUARE_LOCATION_ID,
       },
-     metadata: { username, sku }, 
+     
       checkoutOptions: {
         redirectUrl: process.env.CLIENT_SUCCESS_URL,
+        metadata: { username, sku },
       },
     };
 
