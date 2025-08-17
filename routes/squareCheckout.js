@@ -1,6 +1,6 @@
 // squareCheckout.js
-const express = require("express");
-const express = require('express');
+const express = require("express"); 
+const router = express.Router();
 
 const Square = require('square');  // CommonJS import
 const client = new Square.Client({
