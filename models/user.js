@@ -49,6 +49,7 @@ const userSchema = new mongoose.Schema({
         amountSpent: Number,
         currency: String,
         description: String,
+        paymentId: String,
       }
     ],
     default: [],

@@ -60,7 +60,7 @@ const extractPaymentDetails = async (payment, ordersApi) => {
   }
 
   // 4️⃣ Fetch order if still missing anything
-  if ((!username || !sku) && payment.orderId) {
+  if ((!username || !sku) && payment.orderId && ordersApi) {
     try {
       const { result } = await ordersApi.retrieveOrder(payment.orderId);
       const lineItem = result?.order?.lineItems?.[0];
@@ -68,14 +68,12 @@ const extractPaymentDetails = async (payment, ordersApi) => {
       console.log("📦 Order line items:", JSON.stringify(result.order?.lineItems, null, 2));
 
       if (lineItem) {
-        // 4a️⃣ Check line item metadata
         if (lineItem.metadata) {
           username = username || lineItem.metadata.username;
           sku = sku || lineItem.metadata.sku;
           if (sku) console.log("✅ SKU from line item metadata:", sku);
         }
 
-        // 4b️⃣ Check line item note
         if ((!username || !sku) && lineItem.note) {
           try {
             const noteData = JSON.parse(lineItem.note);
@@ -92,19 +90,18 @@ const extractPaymentDetails = async (payment, ordersApi) => {
           }
         }
 
-        // 4c️⃣ Name / variationName
         if (!sku && lineItem.name) {
           const normalizedName = normalize(lineItem.name);
           sku = Object.keys(skuMap).find((key) => normalizedName.includes(key));
           if (sku) console.log("✅ SKU from line item name:", sku);
         }
+
         if (!sku && lineItem.variationName) {
           const normalizedVariation = normalize(lineItem.variationName);
           sku = Object.keys(skuMap).find((key) => normalizedVariation.includes(key));
           if (sku) console.log("✅ SKU from line item variationName:", sku);
         }
 
-        // 4d️⃣ CatalogObjectId
         if (!sku && lineItem.catalogObjectId) {
           sku = catalogSkuMap[lineItem.catalogObjectId] || sku;
           if (sku) console.log("✅ SKU from catalogObjectId:", sku);
@@ -124,8 +121,6 @@ const extractPaymentDetails = async (payment, ordersApi) => {
   console.log("🏷 Final extracted details:", { sku, username });
   return { sku, username };
 };
-
-
 
 const handleSquareWebhook = async (req, res) => {
   try {
@@ -171,11 +166,11 @@ const handleSquareWebhook = async (req, res) => {
       paymentId: payment.id,
     };
 
+    // ✅ Update using correct field name: userName
     const user = await User.findOneAndUpdate(
-      { username },
+      { userName: username },
       {
         $inc: { tokens },
-        $set: { lastPurchaseAmount: amountSpent },
         $push: { purchases: newPurchase },
       },
       { new: true }
