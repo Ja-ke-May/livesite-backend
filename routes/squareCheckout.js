@@ -4,7 +4,7 @@ const router = express.Router();
 const Square = require('square');  // CommonJS import
 const client = new Square.Client({
   accessToken: process.env.SQUARE_ACCESS_TOKEN,
-  environment: process.env.SQUARE_ENV,
+  environment: 'production',
 });
 
 router.post("/create-checkout", async (req, res) => {
@@ -42,7 +42,7 @@ router.post("/create-checkout", async (req, res) => {
         name: sku,
         priceMoney: {
           amount,
-          currency: "USD",
+          currency: "GBP",
         },
         locationId: process.env.SQUARE_LOCATION_ID,
       },
