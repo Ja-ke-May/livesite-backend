@@ -1,5 +1,5 @@
 const User = require('./models/user');
-const PaymentLink = require('../models/paymentLink');
+const PaymentLink = require('./models/paymentLink');
 const { sendThankYouEmail } = require('../emails');
 
 const skuMap = {
