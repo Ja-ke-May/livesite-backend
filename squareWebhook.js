@@ -6,6 +6,7 @@ const client = new Square.Client({
   accessToken: process.env.SQUARE_ACCESS_TOKEN,
   environment: "production",
 });
+
 const ordersApi = client.ordersApi;
 const paymentsApi = client.paymentsApi;
 
@@ -28,9 +29,7 @@ const handleSquareWebhook = async (req, res) => {
     }
 
     const payment = event.data?.object?.payment;
-    if (!payment) {
-      return res.status(200).send("Ignored");
-    }
+    if (!payment) return res.status(200).send("Ignored");
 
     console.log("💳 Payment:", {
       id: payment.id,
@@ -38,12 +37,12 @@ const handleSquareWebhook = async (req, res) => {
       orderId: payment.orderId,
     });
 
-    // Only process completed payments
+    // Only process COMPLETED payments
     if (payment.status !== "COMPLETED") {
       return res.status(200).send("Ignored");
     }
 
-    // ✅ Retrieve full payment details (to get orderId reliably)
+    // ✅ Retrieve full payment details (to ensure orderId exists)
     const { result: paymentResult } = await paymentsApi.getPayment(payment.id);
     const fullPayment = paymentResult?.payment;
     const orderId = fullPayment?.orderId;
@@ -53,7 +52,7 @@ const handleSquareWebhook = async (req, res) => {
       return res.status(200).send("Ignored");
     }
 
-    // ✅ Deduplication: skip if already processed
+    // ✅ Deduplication: check if already processed
     const alreadyProcessed = await User.findOne({ "purchases.orderId": orderId });
     if (alreadyProcessed) {
       console.log(`⏩ Skipping duplicate order: ${orderId}`);
@@ -70,11 +69,11 @@ const handleSquareWebhook = async (req, res) => {
 
     if (!order.lineItems?.length) {
       console.warn("⚠️ No line items found on order", orderId);
-      console.dir(order, { depth: null }); // 🔍 dump full order object
+      console.dir(order, { depth: null });
       return res.status(200).send("Ignored");
     }
 
-    // ✅ Extract metadata from lineItem.note (our custom JSON)
+    // ✅ Extract metadata from lineItem.note
     let username, sku;
     try {
       const note = order.lineItems[0].note;
@@ -84,13 +83,12 @@ const handleSquareWebhook = async (req, res) => {
         sku = parsed.sku;
       }
     } catch (err) {
-      console.warn("⚠️ Failed to parse lineItem.note as JSON");
+      console.warn("⚠️ Failed to parse lineItem.note as JSON:", err.message);
     }
 
-    // 🔍 If missing, dump entire lineItems
     if (!username || !sku) {
       console.warn("⚠️ Missing username or SKU", { username, sku });
-      console.log("🔍 Full lineItems object:", JSON.stringify(order.lineItems, null, 2));
+      console.log("🔍 Full lineItems:", JSON.stringify(order.lineItems, null, 2));
       return res.status(200).send("Ignored");
     }
 
@@ -102,7 +100,7 @@ const handleSquareWebhook = async (req, res) => {
 
     const lineItem = order.lineItems[0];
     const amountSpent = lineItem.basePriceMoney?.amount
-      ? lineItem.basePriceMoney.amount / 100
+      ? Number(lineItem.basePriceMoney.amount) / 100 // avoid BigInt crash
       : 0;
 
     const newPurchase = {
@@ -115,6 +113,7 @@ const handleSquareWebhook = async (req, res) => {
       paymentId: payment.id,
     };
 
+    // ✅ Credit user
     const user = await User.findOneAndUpdate(
       { username },
       {
@@ -130,6 +129,7 @@ const handleSquareWebhook = async (req, res) => {
       return res.status(200).send("Ignored");
     }
 
+    // ✅ Thank you email
     sendThankYouEmail(user, newPurchase).catch((err) =>
       console.error("❌ Email error:", err)
     );
