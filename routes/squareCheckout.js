@@ -9,7 +9,7 @@ const client = new Square.Client({
 
 
 const tokenDetails = {
-  tokens_400: { name: "Tokens 400", price: 9.99 },
+  tokens_400: { name: "Tokens 400", price: 0.01 },
   tokens_1000: { name: "Tokens 1000", price: 19.99 },
   tokens_2000: { name: "Tokens 2000", price: 29.99 },
   tokens_4000: { name: "Tokens 4000", price: 49.99 },
