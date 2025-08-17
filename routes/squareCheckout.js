@@ -28,19 +28,19 @@ router.post("/create-checkout", async (req, res) => {
     const { name, price } = tokenDetails[sku];
     const amount = Math.round(Number(price) * 100);
 
-    // Generate a unique purchase ID for full tracking
+    // Unique purchase ID
     const purchaseId = `${username}-${sku}-${uuidv4()}`;
 
-    // Generate a short referenceId ≤ 40 characters for Square
-    const shortId = crypto.randomBytes(8).toString("hex"); // 16 chars
+    // Short referenceId for Square (<= 40 chars)
+    const shortId = crypto.randomBytes(8).toString("hex");
     const referenceId = `${username}-${sku}-${shortId}`.slice(0, 40);
 
-    const lineItemNote = JSON.stringify({ username, sku, purchaseId });
+    // Ensure metadata and note are consistent
     const metadata = { username, sku, purchaseId };
-    const idempotencyKey = purchaseId;
+    const lineItemNote = JSON.stringify(metadata);
 
     const requestPayload = {
-      idempotencyKey,
+      idempotencyKey: purchaseId,
       order: {
         locationId: process.env.SQUARE_LOCATION_ID,
         referenceId,
@@ -50,12 +50,14 @@ router.post("/create-checkout", async (req, res) => {
             quantity: "1",
             basePriceMoney: { amount, currency: "GBP" },
             note: lineItemNote,
-            metadata,
+            metadata, // ✅ ensures webhook can read metadata
           },
         ],
       },
       checkoutOptions: {
-        redirectUrl: `${process.env.CLIENT_SUCCESS_URL}?username=${encodeURIComponent(username)}&sku=${sku}&purchaseId=${purchaseId}`,
+        redirectUrl: `${process.env.CLIENT_SUCCESS_URL}?username=${encodeURIComponent(
+          username
+        )}&sku=${sku}&purchaseId=${purchaseId}`,
       },
     };
 
@@ -68,6 +70,7 @@ router.post("/create-checkout", async (req, res) => {
 
     const checkoutUrl = result.paymentLink?.url;
     console.log(`✅ Created checkout link for ${username} (${sku}) [${purchaseId}]: ${checkoutUrl}`);
+
     res.json({ checkoutUrl, purchaseId });
   } catch (error) {
     console.error("❌ Square checkout error:", error);
@@ -76,3 +79,4 @@ router.post("/create-checkout", async (req, res) => {
 });
 
 module.exports = router;
+

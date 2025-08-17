@@ -1,3 +1,4 @@
+const { Client } = require("square");
 const User = require("./models/user");
 const { sendThankYouEmail } = require("./emails");
 
@@ -17,6 +18,12 @@ const catalogSkuMap = {
   "CATALOG_OBJ_ID_4000": "tokens_4000",
   "CATALOG_OBJ_ID_10000": "tokens_10000",
 };
+
+// Square client
+const squareClient = new Client({
+  accessToken: process.env.SQUARE_ACCESS_TOKEN,
+  environment: process.env.SQUARE_ENVIRONMENT || "production",
+});
 
 // Helper to normalize names for matching
 const normalize = (str) => str?.toLowerCase().replace(/\s+/g, "_");
@@ -125,6 +132,7 @@ const extractPaymentDetails = async (payment, ordersApi) => {
   return { sku, username, purchaseId };
 };
 
+// Webhook handler
 const handleSquareWebhook = async (req, res) => {
   try {
     const event = req.body;
@@ -136,7 +144,8 @@ const handleSquareWebhook = async (req, res) => {
     if (!payment) return res.status(200).send("Ignored");
     if (payment.status !== "COMPLETED") return res.status(200).send("Ignored");
 
-    const { sku, username, purchaseId } = await extractPaymentDetails(payment);
+    // Pass ordersApi so extractPaymentDetails can fetch line items
+    const { sku, username, purchaseId } = await extractPaymentDetails(payment, squareClient.ordersApi);
 
     if (!username) {
       console.warn("⚠️ Payment ignored: username missing");
