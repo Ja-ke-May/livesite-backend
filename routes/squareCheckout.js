@@ -6,7 +6,7 @@ const crypto = require("crypto");
 
 const client = new Square.Client({
   accessToken: process.env.SQUARE_ACCESS_TOKEN,
-  environment: "production",
+  environment: process.env.SQUARE_ENVIRONMENT || "production",
 });
 
 const tokenDetails = {
@@ -35,23 +35,20 @@ router.post("/create-checkout", async (req, res) => {
     // Unique purchase ID
     const purchaseId = `${username}-${sku}-${uuidv4()}`;
 
-    // Short referenceId for Square (<= 40 chars)
-    const shortId = crypto.randomBytes(8).toString("hex");
+    // Short safe referenceId for Square (<= 40 chars)
+    const shortId = crypto.randomBytes(6).toString("hex"); 
     const referenceId = `${username}-${sku}-${shortId}`.slice(0, 40);
-
-    
 
     const requestPayload = {
       idempotencyKey: purchaseId,
       order: {
         locationId: process.env.SQUARE_LOCATION_ID,
-        referenceId,
+        referenceId, // ✅ now only this is used in webhook
         lineItems: [
           {
             name,
             quantity: "1",
             basePriceMoney: { amount, currency: "GBP" },
-            note: JSON.stringify({ username, sku, purchaseId }),
           },
         ],
       },
