@@ -16,19 +16,30 @@ const skuMap = {
   tokens_10000: 10000,
 };
 
-// Helper to fetch SKU from Square order
-const fetchSkuFromOrder = async (orderId) => {
+// Helper to fetch SKU and username from Square order
+const fetchOrderDetails = async (orderId) => {
   try {
     const { result } = await ordersApi.retrieveOrder(orderId);
     const order = result.order;
-    if (!order || !order.lineItems) return null;
+    if (!order || !order.lineItems || !order.lineItems.length) return {};
 
-    // Assuming first line item contains the SKU
     const lineItem = order.lineItems[0];
-    return lineItem.catalogObjectId || lineItem.name; // adjust depending on your catalog setup
+    const name = lineItem.name; // expected to contain SKU
+    const sku = Object.keys(skuMap).find((key) => name.includes(key));
+
+    // Extract username from note if possible
+    let username = null;
+    if (lineItem.note) {
+      try {
+        const noteData = JSON.parse(lineItem.note);
+        username = noteData.username;
+      } catch {}
+    }
+
+    return { sku, username };
   } catch (err) {
     console.error("❌ Error fetching order:", err);
-    return null;
+    return {};
   }
 };
 
@@ -43,31 +54,25 @@ const handleSquareWebhook = async (req, res) => {
     if (!payment) return res.status(200).send("Ignored");
     if (payment.status !== "COMPLETED") return res.status(200).send("Ignored");
 
-    // Use backend-known username if available
-    // For example, pass username in webhook body or retrieve from DB using payment.orderId
-    const username = req.body.username;
-    if (!username) {
-      console.warn("⚠️ No username provided in webhook context");
+    if (!payment.orderId) {
+      console.warn("⚠️ Payment has no orderId, cannot determine SKU/username");
       return res.status(200).send("Ignored");
     }
 
-    // Get SKU from order if orderId exists
-    let sku;
-    if (payment.orderId) {
-      sku = await fetchSkuFromOrder(payment.orderId);
+    // Fetch SKU and username from order
+    const { sku, username } = await fetchOrderDetails(payment.orderId);
+
+    if (!username) {
+      console.warn("⚠️ No username found in order:", payment.orderId);
+      return res.status(200).send("Ignored");
     }
 
-    if (!sku) {
-      console.warn("⚠️ No SKU found for payment:", payment.id);
+    if (!sku || !skuMap[sku]) {
+      console.warn("⚠️ Invalid or missing SKU:", sku);
       return res.status(200).send("Ignored");
     }
 
     const tokens = skuMap[sku];
-    if (!tokens) {
-      console.warn("⚠️ Invalid SKU:", sku);
-      return res.status(200).send("Ignored");
-    }
-
     const amountSpent = payment.amountMoney?.amount
       ? payment.amountMoney.amount / 100
       : 0;

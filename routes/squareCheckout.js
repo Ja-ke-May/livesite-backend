@@ -7,7 +7,6 @@ const client = new Square.Client({
   environment: "production",
 });
 
-
 const tokenDetails = {
   tokens_400: { name: "Tokens 400", price: 0.01 },
   tokens_1000: { name: "Tokens 1000", price: 19.99 },
@@ -29,16 +28,19 @@ router.post("/create-checkout", async (req, res) => {
 
     const idempotencyKey = `${username}-${sku}-${Date.now()}`;
 
+    // Include username and SKU directly in the line item note
+    const lineItemNote = JSON.stringify({ username, sku });
+
     const requestPayload = {
       idempotencyKey,
       order: {
         locationId: process.env.SQUARE_LOCATION_ID,
         lineItems: [
           {
-            name,
+            name,                 // e.g., "Tokens 1000"
             quantity: "1",
             basePriceMoney: { amount, currency: "GBP" },
-            note: JSON.stringify({ username, sku }),
+            note: lineItemNote,   // username & sku stored here
           },
         ],
       },
