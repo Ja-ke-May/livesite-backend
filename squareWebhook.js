@@ -1,12 +1,5 @@
-const Square = require("square");
 const User = require("./models/user");
 const { sendThankYouEmail } = require("./emails");
-
-const client = new Square.Client({
-  accessToken: process.env.SQUARE_ACCESS_TOKEN,
-  environment: "production",
-});
-const ordersApi = client.ordersApi;
 
 const skuMap = {
   tokens_400: 400,
@@ -16,36 +9,54 @@ const skuMap = {
   tokens_10000: 10000,
 };
 
-const extractPaymentDetails = async (payment) => {
+// Map real catalogObjectIds to SKU keys
+const catalogSkuMap = {
+  "CATALOG_OBJ_ID_400": "tokens_400",
+  "CATALOG_OBJ_ID_1000": "tokens_1000",
+  "CATALOG_OBJ_ID_2000": "tokens_2000",
+  "CATALOG_OBJ_ID_4000": "tokens_4000",
+  "CATALOG_OBJ_ID_10000": "tokens_10000",
+};
+
+// Helper to normalize names for matching
+const normalize = (str) => str?.toLowerCase().replace(/\s+/g, "_");
+
+const extractPaymentDetails = async (payment, ordersApi) => {
   let sku = null;
   let username = null;
 
-  // 1️⃣ Check payment metadata first
+  console.log("🔍 Extracting payment details:", payment.id);
+
+  // 1️⃣ Check payment metadata
   if (payment.metadata) {
     username = payment.metadata.username || username;
     sku = payment.metadata.sku || sku;
+    if (sku) console.log("✅ SKU from payment metadata:", sku);
   }
 
-  // 2️⃣ Fallback to payment note (JSON format)
+  // 2️⃣ Check payment note (JSON or "username-sku")
   if ((!username || !sku) && payment.note) {
     try {
       const noteData = JSON.parse(payment.note);
       username = username || noteData.username;
       sku = sku || noteData.sku;
+      if (sku) console.log("✅ SKU from payment note JSON:", sku);
     } catch {
       const match = payment.note.match(/(\w+)-(\w+)/);
       if (match) {
         username = username || match[1];
         sku = sku || match[2];
+        if (sku) console.log("✅ SKU from payment note pattern:", sku);
       }
     }
   }
 
-  // 3️⃣ Fallback to referenceId convention "username-sku"
+  // 3️⃣ Check referenceId
   if ((!username || !sku) && payment.referenceId) {
-    const refParts = payment.referenceId.split("-");
-    if (!username && refParts.length > 0) username = refParts[0];
-    if (!sku && refParts.length > 1) sku = refParts[1];
+    const parts = payment.referenceId.split("-");
+    if (!username && parts[0]) username = parts[0];
+    if (!sku && parts[1]) sku = parts[1];
+    if (sku) console.log("✅ SKU from referenceId:", sku);
   }
 
   // 4️⃣ Fetch order if still missing anything
@@ -54,11 +65,14 @@ const extractPaymentDetails = async (payment) => {
       const { result } = await ordersApi.retrieveOrder(payment.orderId);
       const lineItem = result?.order?.lineItems?.[0];
 
+      console.log("📦 Order line items:", JSON.stringify(result.order?.lineItems, null, 2));
+
       if (lineItem) {
         // 4a️⃣ Check line item metadata
         if (lineItem.metadata) {
           username = username || lineItem.metadata.username;
           sku = sku || lineItem.metadata.sku;
+          if (sku) console.log("✅ SKU from line item metadata:", sku);
         }
 
         // 4b️⃣ Check line item note
@@ -67,38 +81,33 @@ const extractPaymentDetails = async (payment) => {
             const noteData = JSON.parse(lineItem.note);
             username = username || noteData.username;
             sku = sku || noteData.sku;
+            if (sku) console.log("✅ SKU from line item note JSON:", sku);
           } catch {
             const match = lineItem.note.match(/(\w+)-(\w+)/);
             if (match) {
               username = username || match[1];
               sku = sku || match[2];
+              if (sku) console.log("✅ SKU from line item note pattern:", sku);
             }
           }
         }
 
-        // 4c️⃣ Fallback to line item name for SKU
+        // 4c️⃣ Name / variationName
         if (!sku && lineItem.name) {
-          sku = Object.keys(skuMap).find((key) =>
-            lineItem.name.toLowerCase().includes(key.toLowerCase())
-          );
+          const normalizedName = normalize(lineItem.name);
+          sku = Object.keys(skuMap).find((key) => normalizedName.includes(key));
+          if (sku) console.log("✅ SKU from line item name:", sku);
         }
-
-        // 4d️⃣ Check variation name for SKU
         if (!sku && lineItem.variationName) {
-          sku = Object.keys(skuMap).find((key) =>
-            lineItem.variationName.toLowerCase().includes(key.toLowerCase())
-          );
+          const normalizedVariation = normalize(lineItem.variationName);
+          sku = Object.keys(skuMap).find((key) => normalizedVariation.includes(key));
+          if (sku) console.log("✅ SKU from line item variationName:", sku);
         }
 
-        // 4e️⃣ Optional: check catalogObjectId if you map SKUs to IDs
+        // 4d️⃣ CatalogObjectId
         if (!sku && lineItem.catalogObjectId) {
-          // Example: mapping catalogObjectId to SKU
-          const catalogSkuMap = {
-            "CATALOG_OBJ_ID_400": "tokens_400",
-            "CATALOG_OBJ_ID_1000": "tokens_1000",
-            // add your own catalog object IDs here
-          };
           sku = catalogSkuMap[lineItem.catalogObjectId] || sku;
+          if (sku) console.log("✅ SKU from catalogObjectId:", sku);
         }
       }
     } catch (err) {
@@ -109,8 +118,10 @@ const extractPaymentDetails = async (payment) => {
   // 5️⃣ Last resort: use buyer email as username
   if (!username && payment.buyer_email_address) {
     username = payment.buyer_email_address;
+    console.log("✅ Username fallback to buyer email:", username);
   }
 
+  console.log("🏷 Final extracted details:", { sku, username });
   return { sku, username };
 };
 
