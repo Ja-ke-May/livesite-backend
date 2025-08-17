@@ -1,15 +1,15 @@
 const express = require("express");
 const router = express.Router();
 
-const Square = require('square');  // CommonJS import
+const Square = require('square'); 
 const client = new Square.Client({
   accessToken: process.env.SQUARE_ACCESS_TOKEN,
-  environment: 'production', // force production
+  environment: 'production', 
 });
 
-// Map SKUs to friendly names and prices
+
 const tokenDetails = {
-  tokens_400: { name: "Tokens 400", price: 0.99 },
+  tokens_400: { name: "Tokens 400", price: 9.99 },
   tokens_1000: { name: "Tokens 1000", price: 19.99 },
   tokens_2000: { name: "Tokens 2000", price: 29.99 },
   tokens_4000: { name: "Tokens 4000", price: 49.99 },
@@ -28,14 +28,14 @@ router.post("/create-checkout", async (req, res) => {
     }
 
     const { name, price } = tokenDetails[sku];
-    const amount = Math.round(price * 100); // Convert GBP to pence
+    const amount = Math.round(price * 100); 
 
     console.log("Calculated amount (cents):", amount);
 
     const requestPayload = {
       idempotencyKey: Date.now().toString(),
       quickPay: {
-        name, // Friendly name for better UX
+        name,
         priceMoney: {
           amount,
           currency: "GBP",
@@ -43,6 +43,7 @@ router.post("/create-checkout", async (req, res) => {
         locationId: process.env.SQUARE_LOCATION_ID,
       },
       checkoutOptions: { referenceId: username },
+      metadata: { username, sku } 
     };
 
     console.log("Request payload to Square:", requestPayload);

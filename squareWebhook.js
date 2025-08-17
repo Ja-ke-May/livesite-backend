@@ -1,9 +1,7 @@
 const User = require('./models/user');
 const { sendThankYouEmail } = require('./emails');
 
-/**
- * Handle incoming Square webhook events for payments.
- */
+
 const handleSquareWebhook = async (req, res) => {
   try {
     const event = req.body;
@@ -22,8 +20,9 @@ const handleSquareWebhook = async (req, res) => {
       return res.status(200).send('Ignored');
     }
 
-    const sku = payment.note;              // SKU set in checkout link
-    const username = payment.reference_id; // Passed from frontend
+    // Use metadata if available, fallback to note/reference_id
+    const sku = payment.metadata?.sku || payment.note;
+    const username = payment.metadata?.username || payment.reference_id;
 
     if (!username || !sku) {
       console.warn('⚠️ Missing username or SKU in Square payment', { username, sku });
@@ -73,7 +72,7 @@ const handleSquareWebhook = async (req, res) => {
       return res.status(404).send('User not found');
     }
 
-    // Fire off thank-you email (async, not blocking webhook response)
+    // Fire off thank-you email (async, non-blocking)
     sendThankYouEmail(user, newPurchase).catch(err =>
       console.error('❌ Email send error:', err)
     );
