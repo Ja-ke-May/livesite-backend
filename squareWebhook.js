@@ -1,5 +1,4 @@
 const User = require('./models/user');
-const PaymentLink = require('./models/paymentLink');
 const { sendThankYouEmail } = require('./emails');
 
 const skuMap = {
@@ -30,41 +29,28 @@ const handleSquareWebhook = async (req, res) => {
 
     let username, sku;
 
-if (payment.metadata) {
-  username = payment.metadata.username;
-  sku = payment.metadata.sku;
-} else if (payment.note) {
-  try {
-    const parsed = JSON.parse(payment.note);
-    username = parsed.username;
-    sku = parsed.sku;
-  } catch (err) {
-    console.warn('⚠️ Could not parse payment.note as JSON', err);
-  }
-}
-
-    
-    const paymentLink = await PaymentLink.findOne({ linkId: payment.paymentLinkId });
-    if (!username || !sku) {
-      if (paymentLink) {
-        username = username || paymentLink.username;
-        sku = sku || paymentLink.sku;
-      } else {
-        console.warn('⚠️ Missing username or SKU', { username, sku });
-        return res.status(200).send('Ignored');
+    if (payment.metadata) {
+      username = payment.metadata.username;
+      sku = payment.metadata.sku;
+    } else if (payment.note) {
+      try {
+        const parsed = JSON.parse(payment.note);
+        username = parsed.username;
+        sku = parsed.sku;
+      } catch (err) {
+        console.warn('⚠️ Could not parse payment.note as JSON', err);
       }
+    }
+
+    if (!username || !sku) {
+      console.warn('⚠️ Missing username or SKU', { username, sku });
+      return res.status(200).send('Ignored');
     }
 
     const tokens = skuMap[sku];
     if (!tokens) {
       console.warn('⚠️ Invalid SKU:', sku);
       return res.status(200).send('Ignored');
-    }
-
-    
-    if (paymentLink?.isPaid) {
-      console.log(`⚠️ Payment already processed: ${payment.id}`);
-      return res.status(200).send('Already processed');
     }
 
     const amountSpent = payment.amount_money?.amount
@@ -80,7 +66,7 @@ if (payment.metadata) {
       paymentId: payment.id,
     };
 
-    // Step 4: Update user tokens & purchase history
+    // Update user tokens & purchase history
     const user = await User.findOneAndUpdate(
       { username },
       {
@@ -96,15 +82,7 @@ if (payment.metadata) {
       return res.status(200).send('Ignored');
     }
 
-    // Step 5: Mark PaymentLink as paid
-    if (paymentLink) {
-      await PaymentLink.findOneAndUpdate(
-        { linkId: payment.paymentLinkId },
-        { isPaid: true, paidAt: new Date() }
-      );
-    }
-
-    // Step 6: Send thank-you email
+    // Send thank-you email
     sendThankYouEmail(user, newPurchase).catch(err => console.error('❌ Email error:', err));
 
     console.log(`✅ ${username} credited ${tokens} tokens (Payment ID: ${payment.id})`);
