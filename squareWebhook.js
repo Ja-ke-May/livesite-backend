@@ -16,7 +16,7 @@ const skuMap = {
   tokens_10000: 10000,
 };
 
-const extractPaymentDetails = async (payment, ordersApi) => {
+const extractPaymentDetails = async (payment) => {
   let sku = null;
   let username = null;
 
@@ -32,7 +32,13 @@ const extractPaymentDetails = async (payment, ordersApi) => {
       const noteData = JSON.parse(payment.note);
       username = username || noteData.username;
       sku = sku || noteData.sku;
-    } catch {}
+    } catch {
+      const match = payment.note.match(/(\w+)-(\w+)/);
+      if (match) {
+        username = username || match[1];
+        sku = sku || match[2];
+      }
+    }
   }
 
   // 3️⃣ Fallback to referenceId convention "username-sku"
@@ -62,7 +68,6 @@ const extractPaymentDetails = async (payment, ordersApi) => {
             username = username || noteData.username;
             sku = sku || noteData.sku;
           } catch {
-            // Attempt to parse "username-sku" pattern
             const match = lineItem.note.match(/(\w+)-(\w+)/);
             if (match) {
               username = username || match[1];
@@ -72,10 +77,28 @@ const extractPaymentDetails = async (payment, ordersApi) => {
         }
 
         // 4c️⃣ Fallback to line item name for SKU
-        if (!sku) {
+        if (!sku && lineItem.name) {
           sku = Object.keys(skuMap).find((key) =>
             lineItem.name.toLowerCase().includes(key.toLowerCase())
           );
+        }
+
+        // 4d️⃣ Check variation name for SKU
+        if (!sku && lineItem.variationName) {
+          sku = Object.keys(skuMap).find((key) =>
+            lineItem.variationName.toLowerCase().includes(key.toLowerCase())
+          );
+        }
+
+        // 4e️⃣ Optional: check catalogObjectId if you map SKUs to IDs
+        if (!sku && lineItem.catalogObjectId) {
+          // Example: mapping catalogObjectId to SKU
+          const catalogSkuMap = {
+            "CATALOG_OBJ_ID_400": "tokens_400",
+            "CATALOG_OBJ_ID_1000": "tokens_1000",
+            // add your own catalog object IDs here
+          };
+          sku = catalogSkuMap[lineItem.catalogObjectId] || sku;
         }
       }
     } catch (err) {
@@ -90,6 +113,7 @@ const extractPaymentDetails = async (payment, ordersApi) => {
 
   return { sku, username };
 };
+
 
 
 const handleSquareWebhook = async (req, res) => {
