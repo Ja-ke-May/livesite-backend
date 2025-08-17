@@ -21,7 +21,7 @@ const extractPaymentDetails = async (payment) => {
   let sku = null;
   let username = null;
 
-  // 1️⃣ Metadata first
+  // 1️⃣ Metadata on payment
   if (payment.metadata) {
     username = payment.metadata.username || username;
     sku = payment.metadata.sku || sku;
@@ -47,9 +47,9 @@ const extractPaymentDetails = async (payment) => {
   if ((!username || !sku) && payment.orderId) {
     try {
       const { result } = await ordersApi.retrieveOrder(payment.orderId);
-      const lineItem = result?.order?.lineItems?.[0];
+      const lineItems = result?.order?.lineItems || [];
 
-      if (lineItem) {
+      for (const lineItem of lineItems) {
         if (lineItem.metadata) {
           username = username || lineItem.metadata.username;
           sku = sku || lineItem.metadata.sku;
@@ -66,6 +66,8 @@ const extractPaymentDetails = async (payment) => {
         if (!sku) {
           sku = Object.keys(skuMap).find((key) => lineItem.name.includes(key));
         }
+
+        if (username && sku) break;
       }
     } catch (err) {
       console.error("❌ Error fetching order:", err);
@@ -103,7 +105,7 @@ const handleSquareWebhook = async (req, res) => {
       ? payment.amountMoney.amount / 100
       : 0;
 
-    // Prevent double-credit: check if paymentId already exists
+    // Prevent double-credit
     const existingUser = await User.findOne({ "purchases.paymentId": payment.id });
     if (existingUser) {
       console.warn(`⚠️ Payment ${payment.id} already processed for ${username}`);
@@ -147,4 +149,3 @@ const handleSquareWebhook = async (req, res) => {
 };
 
 module.exports = handleSquareWebhook;
-
