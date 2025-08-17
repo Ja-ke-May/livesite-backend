@@ -1,10 +1,10 @@
-const express = require("express"); 
+const express = require("express");
 const router = express.Router();
 
 const Square = require('square');  // CommonJS import
 const client = new Square.Client({
   accessToken: process.env.SQUARE_ACCESS_TOKEN,
-  environment: 'production',
+  environment: 'production', // force production
 });
 
 router.post("/create-checkout", async (req, res) => {
@@ -37,7 +37,7 @@ router.post("/create-checkout", async (req, res) => {
     }
 
     const requestPayload = {
-      idempotencyKey: new Date().getTime().toString(),
+      idempotencyKey: Date.now().toString(),
       quickPay: {
         name: sku,
         priceMoney: {
@@ -60,7 +60,14 @@ router.post("/create-checkout", async (req, res) => {
 
     console.log("Square API result:", result);
 
-    res.json({ url: result.paymentLink.url });
+    // Safely return URL
+    const url = result?.paymentLink?.url || result?.payment_link?.url;
+    if (!url) {
+      console.error("No checkout URL received from Square");
+      return res.status(500).json({ error: "No checkout URL received" });
+    }
+
+    res.json({ url });
 
   } catch (error) {
     console.error("Unexpected Square error:", error);

@@ -16,10 +16,10 @@ const handleSquareWebhook = async (req, res) => {
     }
 
     const sku = payment.note;              // set in checkout link
-    const userName = payment.reference_id; // passed from frontend
+    const username = payment.reference_id; // passed from frontend
 
-    if (!userName || !sku) {
-      console.warn('⚠️ Missing userName or sku in Square payment');
+    if (!username || !sku) {
+      console.warn('⚠️ Missing username or sku in Square payment');
       return res.status(400).send('Missing data');
     }
 
@@ -48,7 +48,7 @@ const handleSquareWebhook = async (req, res) => {
 
     // Update user in DB
     const user = await User.findOneAndUpdate(
-      { userName },
+      { username },
       {
         $inc: { tokens },
         $set: { lastPurchaseAmount: newPurchase.amountSpent },
@@ -58,7 +58,7 @@ const handleSquareWebhook = async (req, res) => {
     );
 
     if (!user) {
-      console.warn(`⚠️ Webhook received for unknown user: ${userName}`);
+      console.warn(`⚠️ Webhook received for unknown user: ${username}`);
       return res.status(404).send('User not found');
     }
 
@@ -67,7 +67,7 @@ const handleSquareWebhook = async (req, res) => {
       console.error('Email send error:', err)
     );
 
-    console.log(`✅ ${userName} purchased ${tokens} tokens via Square.`);
+    console.log(`✅ ${username} purchased ${tokens} tokens via Square.`);
     res.status(200).send('Processed');
   } catch (err) {
     console.error('❌ Square webhook error:', err);
