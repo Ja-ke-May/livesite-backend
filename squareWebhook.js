@@ -6,6 +6,7 @@ const client = new Square.Client({
   accessToken: process.env.SQUARE_ACCESS_TOKEN,
   environment: "production",
 });
+const ordersApi = client.ordersApi;
 
 const skuMap = {
   tokens_400: 400,
@@ -20,7 +21,7 @@ const handleSquareWebhook = async (req, res) => {
     const event = req.body;
     console.log("📬 Incoming Square webhook:", event.type, event.event_id);
 
-    // ✅ Just log payments
+    // Just log payment events
     if (event.type?.startsWith("payment.")) {
       const payment = event.data?.object?.payment;
       if (payment) {
@@ -33,11 +34,26 @@ const handleSquareWebhook = async (req, res) => {
       return res.status(200).send("Logged payment");
     }
 
-    // ✅ Process orders (where username + sku live)
+    // Process order events
     if (event.type?.startsWith("order.")) {
-      const order = event.data?.object?.order;
+      const orderId = event.data?.object?.order?.id;
+      if (!orderId) {
+        console.warn("⚠️ Missing orderId in order webhook");
+        return res.status(200).send("Ignored");
+      }
+
+      // ✅ Deduplication: check if this order was already processed
+      const alreadyProcessed = await User.findOne({ "purchases.orderId": orderId });
+      if (alreadyProcessed) {
+        console.log(`⏩ Skipping duplicate order: ${orderId}`);
+        return res.status(200).send("Duplicate ignored");
+      }
+
+      // ✅ Retrieve full order details
+      const { result: orderResult } = await ordersApi.retrieveOrder(orderId);
+      const order = orderResult?.order;
       if (!order?.lineItems?.length) {
-        console.warn("⚠️ No line items found on order");
+        console.warn("⚠️ No line items found on retrieved order", orderId);
         return res.status(200).send("Ignored");
       }
 
@@ -64,7 +80,6 @@ const handleSquareWebhook = async (req, res) => {
         return res.status(200).send("Ignored");
       }
 
-      // Amount may not be on order, so we grab from first lineItem if needed
       const lineItem = order.lineItems[0];
       const amountSpent = lineItem.basePriceMoney?.amount
         ? lineItem.basePriceMoney.amount / 100
@@ -76,7 +91,7 @@ const handleSquareWebhook = async (req, res) => {
         amountSpent,
         currency: lineItem.basePriceMoney?.currency || "GBP",
         description: "Token Purchase",
-        orderId: order.id,
+        orderId: order.id, // 🔑 for deduplication
       };
 
       const user = await User.findOneAndUpdate(
@@ -104,7 +119,6 @@ const handleSquareWebhook = async (req, res) => {
       return res.status(200).send("Processed");
     }
 
-    // Ignore other event types
     res.status(200).send("Ignored");
   } catch (err) {
     console.error("❌ Square webhook error:", err);
