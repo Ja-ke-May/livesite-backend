@@ -26,16 +26,34 @@ const handleSquareWebhook = async (req, res) => {
       return res.status(200).send('Ignored');
     }
 
-    // Extract username/sku
-    let username = payment.metadata?.username;
-    let sku = payment.metadata?.sku;
+    // Extract username and SKU
+    let username, sku;
+
+    // First try reference_id (format: "username|sku")
+    if (payment.reference_id) {
+      const parts = payment.reference_id.split('|');
+      if (parts.length === 2) {
+        username = parts[0];
+        sku = parts[1];
+        console.log('📝 Extracted username/sku from reference_id:', { username, sku });
+      } else {
+        console.warn('⚠️ reference_id format invalid, expected "username|sku":', payment.reference_id);
+      }
+    }
+
+    // Fallback to metadata or note if reference_id failed
+    if ((!username || !sku) && payment.metadata) {
+      username = payment.metadata.username || username;
+      sku = payment.metadata.sku || sku;
+      if (username && sku) console.log('📝 Extracted username/sku from metadata:', { username, sku });
+    }
 
     if ((!username || !sku) && payment.note) {
       try {
         const parsed = JSON.parse(payment.note);
-        username = parsed.username;
-        sku = parsed.sku;
-        console.log('📝 Parsed username/sku from note:', { username, sku });
+        username = parsed.username || username;
+        sku = parsed.sku || sku;
+        if (username && sku) console.log('📝 Parsed username/sku from note:', { username, sku });
       } catch (err) {
         console.warn('⚠️ Failed to parse payment note for username/sku', payment.note);
       }
