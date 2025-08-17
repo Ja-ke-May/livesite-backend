@@ -4,6 +4,7 @@ const { sendThankYouEmail } = require('./emails');
 const handleSquareWebhook = async (req, res) => {
   try {
     const event = req.body;
+    console.log('📬 Incoming Square webhook event:', event.type, event.event_id);
 
     // Only process payment events
     if (!event.type || !event.type.startsWith('payment.')) {
@@ -12,6 +13,13 @@ const handleSquareWebhook = async (req, res) => {
     }
 
     const payment = event.data?.object?.payment;
+    console.log('💳 Incoming payment object:', {
+      id: payment?.id,
+      status: payment?.status,
+      reference_id: payment?.reference_id,
+      note: payment?.note,
+      metadata: payment?.metadata
+    });
 
     if (!payment || payment.status !== 'COMPLETED') {
       console.log('⚠️ Ignored payment not completed:', payment?.status);
@@ -27,6 +35,7 @@ const handleSquareWebhook = async (req, res) => {
         const parsed = JSON.parse(payment.note);
         username = parsed.username;
         sku = parsed.sku;
+        console.log('📝 Parsed username/sku from note:', { username, sku });
       } catch (err) {
         console.warn('⚠️ Failed to parse payment note for username/sku', payment.note);
       }
@@ -34,7 +43,7 @@ const handleSquareWebhook = async (req, res) => {
 
     if (!username || !sku) {
       console.warn('⚠️ Missing username or SKU in Square payment', { username, sku });
-      return res.status(200).send('Ignored'); // Don't fail with 400, just ignore
+      return res.status(200).send('Ignored'); // Do not fail webhook
     }
 
     const skuMap = {
@@ -61,6 +70,8 @@ const handleSquareWebhook = async (req, res) => {
       description: 'Token Purchase',
       paymentId: payment.id,
     };
+
+    console.log('💰 Processing purchase for user:', username, newPurchase);
 
     const user = await User.findOneAndUpdate(
       { username },
