@@ -27,9 +27,7 @@ const handleSquareWebhook = async (req, res) => {
     console.log('💳 Incoming payment object:', {
       id: payment.id,
       status: payment.status,
-      reference_id: payment.reference_id,
-      note: payment.note,
-      metadata: payment.metadata,
+      amount: payment.amount_money,
     });
 
     // Only handle completed payments
@@ -38,57 +36,23 @@ const handleSquareWebhook = async (req, res) => {
       return res.status(200).send('Ignored');
     }
 
-    // Step 1: Try to extract username/sku from reference_id, metadata, note
-    let username, sku;
+    // Lookup PaymentLink to get username and SKU
+    const paymentLink = await PaymentLink.findOne({
+      $or: [{ linkId: payment.id }, { orderId: payment.order_id }]
+    });
 
-    if (payment.reference_id) {
-      const parts = payment.reference_id.split('|');
-      if (parts.length === 2) {
-        username = parts[0];
-        sku = parts[1];
-        console.log('📝 Extracted username/sku from reference_id:', { username, sku });
-      }
+    if (!paymentLink) {
+      console.warn('⚠️ Could not find PaymentLink for payment', payment.id);
+      return res.status(200).send('Ignored');
     }
 
-    if ((!username || !sku) && payment.metadata) {
-      username = payment.metadata.username || username;
-      sku = payment.metadata.sku || sku;
-    }
-
-    if ((!username || !sku) && payment.note) {
-      try {
-        const parsed = JSON.parse(payment.note);
-        username = parsed.username || username;
-        sku = parsed.sku || sku;
-      } catch (err) {
-        console.warn('⚠️ Could not parse payment.note as JSON', err);
-      }
-    }
-
-    // Step 2: Fallback — find PaymentLink by payment.id or order_id
-    if (!username || !sku) {
-      const paymentLink = await PaymentLink.findOne({
-        $or: [{ linkId: payment.id }, { orderId: payment.order_id }]
-      });
-
-      if (paymentLink) {
-        username = paymentLink.username;
-        sku = paymentLink.sku;
-        console.log('🔄 Fallback: extracted username/sku from PaymentLink:', { username, sku });
-      }
-    }
-
-    if (!username || !sku) {
-      console.warn('⚠️ Missing username or SKU even after PaymentLink lookup', { username, sku });
+    const { username, sku } = paymentLink;
+    if (!username || !sku || !skuMap[sku]) {
+      console.warn('⚠️ Invalid username or SKU from PaymentLink', { username, sku });
       return res.status(200).send('Ignored');
     }
 
     const tokens = skuMap[sku];
-    if (!tokens) {
-      console.warn('⚠️ Invalid SKU:', sku);
-      return res.status(200).send('Ignored');
-    }
-
     const amountSpent = payment.amount_money?.amount ? payment.amount_money.amount / 100 : 0;
     const newPurchase = {
       date: new Date(),
@@ -101,7 +65,7 @@ const handleSquareWebhook = async (req, res) => {
 
     console.log('💰 Processing purchase for user:', username, newPurchase);
 
-    // Step 3: Update User tokens and purchase history
+    // Update User tokens and purchase history
     const user = await User.findOneAndUpdate(
       { username },
       {
@@ -117,13 +81,13 @@ const handleSquareWebhook = async (req, res) => {
       return res.status(200).send('Ignored');
     }
 
-    // Step 4: Mark PaymentLink as paid
+    // Mark PaymentLink as paid
     await PaymentLink.findOneAndUpdate(
       { $or: [{ linkId: payment.id }, { orderId: payment.order_id }] },
       { isPaid: true, paidAt: new Date() }
     );
 
-    // Step 5: Send thank-you email
+    // Send thank-you email
     sendThankYouEmail(user, newPurchase).catch(err =>
       console.error('❌ Email send error:', err)
     );
@@ -138,4 +102,3 @@ const handleSquareWebhook = async (req, res) => {
 };
 
 module.exports = handleSquareWebhook;
-

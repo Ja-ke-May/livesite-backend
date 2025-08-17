@@ -25,7 +25,6 @@ router.post("/create-checkout", async (req, res) => {
     const { name, price } = tokenDetails[sku];
     const amount = Math.round(price * 100); // amount in smallest currency unit (pence)
 
-    // Use idempotency key to prevent duplicate payment creation
     const idempotencyKey = `${username}-${sku}-${Date.now()}`;
 
     // Square Payment Link payload
@@ -37,11 +36,9 @@ router.post("/create-checkout", async (req, res) => {
         locationId: process.env.SQUARE_LOCATION_ID,
       },
       checkoutOptions: {
-        // This referenceId will be sent back in webhook so we can match user/sku
-        referenceId: `${username}|${sku}`,
         redirectUrl: process.env.CLIENT_SUCCESS_URL, // optional: redirect after payment
       },
-      note: JSON.stringify({ username, sku }),
+      // Removed referenceId and note
     };
 
     // Create payment link in Square
@@ -51,7 +48,7 @@ router.post("/create-checkout", async (req, res) => {
     const checkoutUrl = result.paymentLink?.url;
     const paymentLinkId = result.paymentLink?.id;
 
-    // Save the payment link to your DB for fallback in webhook
+    // Save the payment link to your DB for webhook mapping
     await PaymentLink.create({ linkId: paymentLinkId, username, sku });
 
     console.log(`✅ Created checkout link for ${username} (${sku}): ${checkoutUrl}`);
