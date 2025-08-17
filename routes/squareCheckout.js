@@ -10,11 +10,15 @@ const client = new Square.Client({
 });
 
 const tokenDetails = {
-  tokens_400: { name: "Tokens 400", price: 9.99 },
+  tokens_400: { name: "Tokens 400", price: 0.01 },
   tokens_1000: { name: "Tokens 1000", price: 19.99 },
   tokens_2000: { name: "Tokens 2000", price: 29.99 },
   tokens_4000: { name: "Tokens 4000", price: 49.99 },
   tokens_10000: { name: "Tokens 10000", price: 99.99 },
+  tokens_50000: { name: "Tokens 50000", price: 249.99 },
+  tokens_150000: { name: "Tokens 150000", price: 499.99 },
+  tokens_400000: { name: "Tokens 400000", price: 999.99 }, 
+  tokens_1000000: { name: "Tokens 1000000", price: 1999.99 },
 };
 
 router.post("/create-checkout", async (req, res) => {

@@ -8,6 +8,10 @@ const skuMap = {
   tokens_2000: 2000,
   tokens_4000: 4000,
   tokens_10000: 10000,
+  tokens_50000: 50000, 
+  tokens_150000: 150000, 
+tokens_400000: 400000, 
+tokens_: 1000000,
 };
 
 // Map real catalogObjectIds to SKU keys
@@ -17,7 +21,13 @@ const catalogSkuMap = {
   "CATALOG_OBJ_ID_2000": "tokens_2000",
   "CATALOG_OBJ_ID_4000": "tokens_4000",
   "CATALOG_OBJ_ID_10000": "tokens_10000",
+   "CATALOG_OBJ_ID_50000": "tokens_50000",
+  "CATALOG_OBJ_ID_150000": "tokens_150000",
+  "CATALOG_OBJ_ID_400000": "tokens_400000",
+  "CATALOG_OBJ_ID_1000000": "tokens_1000000",
 };
+
+  
 
 // Square client
 const squareClient = new Client({
