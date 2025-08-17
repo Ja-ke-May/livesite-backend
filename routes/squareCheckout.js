@@ -34,12 +34,11 @@ router.post("/create-checkout", async (req, res) => {
         priceMoney: { amount, currency: "GBP" },
         locationId: process.env.SQUARE_LOCATION_ID,
       },
-       metadata: { username, sku },s
+        metadata: { username, sku }, 
       checkoutOptions: {
         redirectUrl: process.env.CLIENT_SUCCESS_URL,
       },
     };
-
 
     const { result, errors } = await client.checkoutApi.createPaymentLink(requestPayload);
     if (errors) return res.status(500).json({ error: "Square API error", details: errors });
