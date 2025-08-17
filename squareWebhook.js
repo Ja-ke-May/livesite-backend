@@ -23,12 +23,11 @@ const handleSquareWebhook = async (req, res) => {
     console.log('💳 Incoming payment object:', {
       id: payment.id,
       status: payment.status,
-      note: payment.note,
+      metadata: payment.metadata,
     });
 
     if (payment.status !== 'COMPLETED') return res.status(200).send('Ignored');
 
-    // Step 1: Extract username & SKU
     let username, sku;
 
 if (payment.metadata) {
@@ -44,7 +43,7 @@ if (payment.metadata) {
   }
 }
 
-    // Step 2: Fallback — find PaymentLink in DB
+    
     const paymentLink = await PaymentLink.findOne({ linkId: payment.paymentLinkId });
     if (!username || !sku) {
       if (paymentLink) {
@@ -62,7 +61,7 @@ if (payment.metadata) {
       return res.status(200).send('Ignored');
     }
 
-    // Step 3: Prevent double-crediting
+    
     if (paymentLink?.isPaid) {
       console.log(`⚠️ Payment already processed: ${payment.id}`);
       return res.status(200).send('Already processed');
