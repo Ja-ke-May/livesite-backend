@@ -19,15 +19,13 @@ const squareClient = new Client({
   environment: process.env.SQUARE_ENVIRONMENT || "production",
 });
 
-// --- Convert Square amountMoney safely to Number ---
+
 function parseMoney(amountMoney) {
   if (!amountMoney || amountMoney.amount == null) return 0;
   return Number(amountMoney.amount) / 100;
 }
 
-/**
- * Extract { username, sku, shortId } from order.referenceId
- */
+
 const extractPaymentDetails = async (payment, ordersApi) => {
   let sku = null;
   let username = null;
@@ -52,9 +50,7 @@ const extractPaymentDetails = async (payment, ordersApi) => {
   return { sku, username, shortId };
 };
 
-/**
- * Main Square Webhook handler
- */
+
 const handleSquareWebhook = async (req, res) => {
   try {
     const event = req.body;
@@ -66,7 +62,7 @@ const handleSquareWebhook = async (req, res) => {
     const webhookPayment = event.data?.object?.payment;
     if (!webhookPayment) return res.status(200).send("Ignored");
 
-    // Fetch full payment
+    
     let fullPayment;
     try {
       const { result } = await squareClient.paymentsApi.getPayment(webhookPayment.id);
@@ -78,7 +74,7 @@ const handleSquareWebhook = async (req, res) => {
 
     if (fullPayment.status !== "COMPLETED") return res.status(200).send("Ignored");
 
-    // Extract username / sku / shortId
+    
     const { sku, username, shortId } = await extractPaymentDetails(
       fullPayment,
       squareClient.ordersApi
@@ -90,7 +86,7 @@ const handleSquareWebhook = async (req, res) => {
     const amountSpent = parseMoney(fullPayment.amountMoney);
     const purchaseId = `${fullPayment.id}-${shortId || "noid"}`;
 
-    // Prevent double-crediting
+    
     const existingUser = await User.findOne({
       $or: [
         { "purchases.paymentId": fullPayment.id },

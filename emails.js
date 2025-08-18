@@ -73,7 +73,7 @@ async function sendThankYouEmail(user, purchaseDetails) {
         <p style="font-size: 16px; color: white; line-height: 1.6;">Thank you for purchasing tokens on <span style="color: yellow; font-weight: bold;">MyMe.Live</span>. Your support means a lot to us!</p>
         <p style="font-size: 16px; color: white; line-height: 1.6;">You have purchased <span style="font-weight: bold; color: yellow;">${purchaseDetails.tokens}</span> tokens for a total of <span style="font-weight: bold;">${purchaseDetails.amountSpent} ${purchaseDetails.currency}</span>.</p>
 
-        <p style="font-size: 16px; color: white; line-height: 1.6;">Your tokens have been added to your account, and you can now use them to support your favorite creators.</p>
+        <p style="font-size: 16px; color: white; line-height: 1.6;">Your tokens have been added to your account, and you can now use them to support your favourite creators.</p>
 
         <div style="text-align: center; margin-top: 30px;">
           <a href="${process.env.FRONTEND_URL}/" 

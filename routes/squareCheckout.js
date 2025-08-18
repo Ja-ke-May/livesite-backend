@@ -32,18 +32,16 @@ router.post("/create-checkout", async (req, res) => {
     const { name, price } = tokenDetails[sku];
     const amount = Math.round(Number(price) * 100);
 
-    // Full unique purchase ID (for DB/logging)
     const purchaseId = `${username}-${sku}-${uuidv4()}`;
 
-    // Square requires referenceId <= 40 chars → use short random ID
-    const shortId = crypto.randomBytes(4).toString("hex"); // 8 chars
+    const shortId = crypto.randomBytes(4).toString("hex"); 
     const referenceId = `${username}-${sku}-${shortId}`.slice(0, 40);
 
     const requestPayload = {
-      idempotencyKey: purchaseId, // ✅ ensures no duplicate link creation
+      idempotencyKey: purchaseId, 
       order: {
         locationId: process.env.SQUARE_LOCATION_ID,
-        referenceId, // ✅ this is what webhook will use
+        referenceId, 
         lineItems: [
           {
             name,
