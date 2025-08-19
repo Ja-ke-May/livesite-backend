@@ -14,7 +14,7 @@ const timers = {};
 const inactivityTimeout = 3600000; 
 
 let slidePosition = 50;
-let slidePositionAmount = 2.5;
+let slidePositionAmount = 2;
 
 
 
@@ -258,7 +258,7 @@ const handleSocketConnection = (io) => {
       slidePosition = initialVote;
       lastActivity.set(socket.id, Date.now());
       io.emit('vote-update', slidePosition);
-      io.emit('current-slide-amount', 5);
+      io.emit('current-slide-amount', 2);
     });
 
     socket.on("vote", async (newPosition) => {
@@ -307,7 +307,7 @@ const handleSocketConnection = (io) => {
         slidePosition = 50;
         io.emit('vote-update', slidePosition);
       } else if (slidePosition <= 0) {
-        slidePositionAmount = 2.5;
+        slidePositionAmount = 2;
         io.emit('current-slide-amount', slidePositionAmount);
         stopLiveStream(currentStreamer, io);
       }
@@ -429,7 +429,7 @@ const handleSocketConnection = (io) => {
       io.emit("queue-length-update", liveQueue.length);
     
       slidePosition = 50;
-      slidePositionAmount = 2.5;
+      slidePositionAmount = 2;
     
       io.emit('current-position', slidePosition);
       io.emit('current-slide-amount', slidePositionAmount);
