@@ -296,12 +296,7 @@ const handleSocketConnection = (io) => {
       return;
     }
 
-    user.tokens += 10;
-    user.recentActivity.push(`Received 10 tokens through live votes`);
-    await user.save();
-
     console.log(`Awarded 10 tokens to ${currentStreamer}`);
-    io.emit("tokens-awarded", { username: currentStreamer, amount: 10 });
   } catch (error) {
     console.error(`Failed to award tokens to ${currentStreamer}:`, error.message);
   }
