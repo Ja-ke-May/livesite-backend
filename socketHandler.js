@@ -291,14 +291,14 @@ const handleSocketConnection = (io) => {
           try {
             await axios.post('https://livesite-backend.onrender.com/award-tokens', {
               username: currentStreamer,
-              amount: 100
+              amount: 10
             }, {
               headers: {
                 'Authorization': `Bearer ${yourAuthToken}`
               }
             });
 
-            console.log(`Awarded 100 tokens to ${currentStreamer}`);
+            console.log(`Awarded 10 tokens to ${currentStreamer}`);
           } catch (error) {
             console.error(`Failed to award tokens to ${currentStreamer}:`, error.response ? error.response.data : error.message);
           }
