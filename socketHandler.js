@@ -294,7 +294,7 @@ const handleSocketConnection = (io) => {
               amount: 10
             }, {
               headers: {
-                'Authorization': `Bearer ${process.env.JWT_SECRET}`
+                'Authorization': `Bearer ${yourAuthToken}`
               }
             });
 
