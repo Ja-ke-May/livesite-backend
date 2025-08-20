@@ -309,7 +309,7 @@ const handleSocketConnection = (io) => {
         io.emit('current-slide-amount', slidePositionAmount);
         stopLiveStream(currentStreamer, io);
       }
-    });
+    };
 
     if (currentStreamer) {
       socket.emit("main-feed", currentStreamer);
