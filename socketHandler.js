@@ -16,6 +16,14 @@ const inactivityTimeout = 3600000;
 let slidePosition = 50;
 let slidePositionAmount = 5;
 
+const jwt = require('jsonwebtoken');
+
+const serviceToken = jwt.sign(
+  { userId: "system", isAdmin: true },
+  process.env.JWT_SECRET,
+  { expiresIn: "1h" }
+);
+
 
 
 const User = require('./models/user');
@@ -294,7 +302,7 @@ const handleSocketConnection = (io) => {
               amount: 10
             }, {
               headers: {
-                'Authorization': `Bearer ${yourAuthToken}`
+                'Authorization': `Bearer ${serviceToken}`
               }
             });
 
