@@ -289,20 +289,23 @@ const handleSocketConnection = (io) => {
           addTime(currentStreamer, io);
 
           try {
-            await axios.post('https://livesite-backend.onrender.com/award-tokens', {
-              username: currentStreamer,
-              amount: 10
-            }, {
-              headers: {
-                'Authorization': `Bearer ${yourAuthToken}`
-              }
-            });
+          const user = await User.findOne({ userName: currentStreamer });
 
-            console.log(`Awarded 10 tokens to ${currentStreamer}`);
-          } catch (error) {
-            console.error(`Failed to award tokens to ${currentStreamer}:`, error.response ? error.response.data : error.message);
-          }
-        }
+    if (!user) {
+      console.error(`User ${currentStreamer} not found`);
+      return;
+    }
+
+    user.tokens += 10;
+    user.recentActivity.push(`Received 10 tokens through live votes`);
+    await user.save();
+
+    console.log(`Awarded 10 tokens to ${currentStreamer}`);
+    io.emit("tokens-awarded", { username: currentStreamer, amount: 10 });
+  } catch (error) {
+    console.error(`Failed to award tokens to ${currentStreamer}:`, error.message);
+  }
+}
 
         slidePosition = 50;
         io.emit('vote-update', slidePosition);
