@@ -289,18 +289,20 @@ const handleSocketConnection = (io) => {
           addTime(currentStreamer, io);
 
           try {
-  await axios.post('https://livesite-backend.onrender.com/award-tokens', {
-    username: currentStreamer,
-    amount: 10
-  });
+            await axios.post('https://livesite-backend.onrender.com/award-tokens', {
+              username: currentStreamer,
+              amount: 10
+            }, {
+              headers: {
+                'Authorization': `Bearer ${currentStreamer}`
+              }
+            });
 
-  console.log(`Awarded 10 tokens to ${currentStreamer}`);
-} catch (error) {
-  console.error(
-    `Failed to award tokens to ${currentStreamer}:`,
-    error.response ? error.response.data : error.message
-  );
-}
+            console.log(`Awarded 10 tokens to ${currentStreamer}`);
+          } catch (error) {
+            console.error(`Failed to award tokens to ${currentStreamer}:`, error.response ? error.response.data : error.message);
+          }
+        }
 
         slidePosition = 50;
         io.emit('vote-update', slidePosition);
@@ -309,7 +311,7 @@ const handleSocketConnection = (io) => {
         io.emit('current-slide-amount', slidePositionAmount);
         stopLiveStream(currentStreamer, io);
       }
-    };
+    });
 
     if (currentStreamer) {
       socket.emit("main-feed", currentStreamer);
