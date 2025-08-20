@@ -294,7 +294,7 @@ const handleSocketConnection = (io) => {
               amount: 10
             }, {
               headers: {
-                'Authorization': `Bearer ${currentStreamer}`
+                'Authorization': `Bearer ${yourAuthToken}`
               }
             });
 
