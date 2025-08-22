@@ -432,11 +432,6 @@ const handleSocketConnection = (io) => {
       io.emit('update-online-users', onlineUsers.size);
       io.emit("queue-length-update", liveQueue.length);
     
-      slidePosition = 50;
-      slidePositionAmount = 5;
-    
-      io.emit('current-position', slidePosition);
-      io.emit('current-slide-amount', slidePositionAmount);
     
       const username = onlineUsers.get(socket.id);
       if (!username) {
