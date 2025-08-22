@@ -112,7 +112,13 @@ const recordLiveDuration = async (username) => {
 const stopLiveStream = async (username, io) => {
   if (currentStreamer !== username) return;
 
-  
+  slidePosition = 50;
+  slidePositionAmount = 2;  
+  io.emit('current-position', slidePosition);
+  io.emit('current-slide-amount', slidePositionAmount);
+  io.emit('vote-update', slidePosition);
+
+
   io.to(liveUsers.get(username)).emit('reset-state');
   io.emit('main-feed', null); 
   
