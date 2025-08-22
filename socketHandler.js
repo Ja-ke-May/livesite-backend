@@ -288,9 +288,13 @@ const handleSocketConnection = (io) => {
       io.emit('vote-update', slidePosition);
 
       if (slidePosition >= 100) {
+        slidePosition = 50;
         slidePositionAmount /= 2;
+       
+        io.emit('reset-votes'); 
         io.emit('current-slide-amount', slidePositionAmount);
-        io.emit('reset-votes');
+  io.emit('vote-update', slidePosition)
+
         if (currentStreamer) {
           addTime(currentStreamer, io);
 
@@ -311,8 +315,12 @@ const handleSocketConnection = (io) => {
         slidePosition = 50;
         io.emit('vote-update', slidePosition);
       } else if (slidePosition <= 0) {
+        slidePosition = 50;
         slidePositionAmount = 5;
-        io.emit('current-slide-amount', slidePositionAmount);
+        io.emit('reset-votes');
+  io.emit('current-slide-amount', slidePositionAmount);
+  io.emit('vote-update', slidePosition);
+  
         stopLiveStream(currentStreamer, io);
       }
     });
