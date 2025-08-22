@@ -320,7 +320,7 @@ const handleSocketConnection = (io) => {
         io.emit('reset-votes');
   io.emit('current-slide-amount', slidePositionAmount);
   io.emit('vote-update', slidePosition);
-  
+
         stopLiveStream(currentStreamer, io);
       }
     });
@@ -446,6 +446,13 @@ const handleSocketConnection = (io) => {
         console.error(`Username for client ID ${socket.id} not found.`);
         return;
       }
+
+       slidePosition = 50;
+  slidePositionAmount = 5;
+  io.emit('reset-votes');
+  io.emit('current-position', slidePosition);
+  io.emit('current-slide-amount', slidePositionAmount);
+  io.emit('vote-update', slidePosition);
     
       if (currentStreamer) {
         stopLiveStream(currentStreamer, io);
