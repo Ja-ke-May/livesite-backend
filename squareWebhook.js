@@ -3,15 +3,15 @@ const User = require("./models/user");
 const { sendThankYouEmail } = require("./emails");
 
 const skuMap = {
-  tokens_400: 800,
-  tokens_1000: 2000,
-  tokens_2000: 4000,
-  tokens_4000: 8000,
-  tokens_10000: 20000,
-  tokens_50000: 100000,
-  tokens_150000: 300000,
-  tokens_400000: 800000,
-  tokens_1000000: 2000000,
+  tokens_400: 400,
+  tokens_1000: 1000,
+  tokens_2000: 2000,
+  tokens_4000: 4000,
+  tokens_10000: 10000,
+  tokens_50000: 50000,
+  tokens_150000: 150000,
+  tokens_400000: 400000,
+  tokens_1000000: 1000000,
 };
 
 const squareClient = new Client({
